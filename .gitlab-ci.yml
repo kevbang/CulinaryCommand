@@ -6,4 +6,4 @@ ping-runner:
     tags:
         - frontend
     script:
-        - echo "hello frontend"
+        - echo "hello frontend!"
