@@ -24,7 +24,6 @@ build-app:
     - frontend
   script:
     - echo "Building CulinaryCommand..."
-    - cd "C:\Users\vm-user\CulinaryCommand"
     - dotnet restore
     - dotnet build --configuration Release
     # publish to a temporary publish folder (dont overwrite folder that's currently being hosted)
@@ -45,7 +44,7 @@ deploy-app:
     - powershell -NoProfile -Command "
         Import-Module WebAdministration;
         Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
-        Copy-Item -Recurse -Force 'C:\Users\vm-user\CulinaryCommand\publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
+        Copy-Item -Recurse -Force 'publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
         Start-WebAppPool -Name 'CulinaryCommand';
       "
 
