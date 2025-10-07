@@ -24,13 +24,14 @@ build-app:
     - frontend
   script:
     - echo "Building CulinaryCommand..."
+    - dotnet clean
     - dotnet restore
     - dotnet build --configuration Release
     # publish to a temporary publish folder (dont overwrite folder that's currently being hosted)
-    - dotnet publish CulinaryCommand.csproj -c Release -o publish-temp/
+    - dotnet publish ./CulinaryCommand.csproj -c Release -o publish-temp/
   artifacts:
     paths:
-      - C:\Users\vm-user\CulinaryCommand\publish
+      - publish-temp/
     expire_in: 1 hour 
 
 # deploy to IIS
@@ -40,7 +41,7 @@ deploy-app:
     - frontend
   script:
     - echo "Deploying to IIS..."
-    # stop the app pool in IIS
+    # stop the app pool in IIS, copy contents into publish directory (that IIS uses), restart IIS app pool
     - powershell -NoProfile -Command "
         Import-Module WebAdministration;
         Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
