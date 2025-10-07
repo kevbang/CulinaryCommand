@@ -37,36 +37,24 @@ build-app:
 deploy-app:
   stage: deploy
   tags:
-    - frontend
+   - frontend
   script:
-    - echo "Deploying to IIS..."
-    - powershell -NoProfile -Command "
-      Import-Module WebAdministration;
-      
-
-      Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
-      Start-Sleep -Seconds 5;
-      
-
-      taskkill /F /IM w3wp.exe /T 2>$null;
-      Start-Sleep -Seconds 3;
-      
-
-      $processesUsingDll = Get-Process | Where-Object { 
-        try { $_.Modules.FileName -like '*CulinaryCommand*' } catch { $false }
-      };
-      if ($processesUsingDll) {
-        $processesUsingDll | Stop-Process -Force;
-        Start-Sleep -Seconds 2;
-      }
-      
-
-      Copy-Item -Recurse -Force 'publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
-      
-
-      Start-WebAppPool -Name 'CulinaryCommand';
-      
-      Write-Host 'Deployment completed successfully';
-      "
+   - echo "Deploying to IIS..."
+   - powershell -NoProfile -Command "
+     Import-Module WebAdministration;
+     Write-Host 'Stopping app pool...';
+     Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
+     Start-Sleep -Seconds 30;
+     Write-Host 'Force killing worker processes...';
+     Get-Process -Name 'w3wp' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue;
+     Start-Sleep -Seconds 10;
+     Get-Process -Name 'w3wp' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue;
+     Start-Sleep -Seconds 5;
+     Write-Host 'Copying files...';
+     Copy-Item -Recurse -Force 'publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
+     Write-Host 'Starting app pool...';
+     Start-WebAppPool -Name 'CulinaryCommand';
+     Write-Host 'Deployment complete!';
+     "
   dependencies:
-    - build-app
+   - build-app
