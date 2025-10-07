@@ -1,6 +1,8 @@
 stages:
     - frontend-verify
-    - backend-verify
+    # - backend-verify # temporarily disabled while 
+    - build
+    - deploy
 
 ping-frontend:
     stage: frontend-verify
@@ -9,9 +11,41 @@ ping-frontend:
     script:
         - echo "hello frontend!"
 
-ping-backend:
-    stage: backend-verify
-    tags:
-        - backend
-    script:
-        - echo "backend backend backend"
+# ping-backend:
+#     stage: backend-verify
+#     tags:
+#         - backend
+#     script:
+#         - echo "backend backend backend"
+
+build-app:
+  stage: build
+  tags:
+    - frontend
+  script:
+    - echo "Building CulinaryCommand..."
+    - cd "C:\Users\vm-user\CulinaryCommand"
+    - dotnet restore
+    - dotnet build --configuration Release
+    # publish to a temporary publish folder (dont overwrite folder that's currently being hosted)
+    - dotnet publish CulinaryCommand.csproj -c Release -o publish-temp/
+  artifacts:
+    paths:
+      - C:\Users\vm-user\CulinaryCommand\publish
+    expire_in: 1 hour 
+
+# deploy to IIS
+deploy-app:
+  stage: deploy
+  tags:
+    - frontend
+  script:
+    - echo "Deploying to IIS..."
+    # stop the app pool in IIS
+    - powershell "Import-Module WebAdministration; Stop-WebAppPool -Name 'CulinaryCommand'"
+    # copy published files into "production" publish folder
+    - powershell "Copy-Item -Recurse -Force 'C:\Users\vm-user\CulinaryCommand\publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish-temp\*'"
+    # restart the app pool in IIS
+    - powershell "Import-Module WebAdministration; Start-WebAppPool -Name 'CulinaryCommand'"
+  dependencies:
+    - build-app
