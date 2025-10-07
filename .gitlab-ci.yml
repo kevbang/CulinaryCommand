@@ -43,11 +43,11 @@ deploy-app:
     - echo "Deploying to IIS..."
     # stop the app pool in IIS
     - powershell -NoProfile -Command "
-    Import-Module WebAdministration;
-    Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
-    Copy-Item -Recurse -Force 'C:\Users\vm-user\CulinaryCommand\publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
-    Start-WebAppPool -Name 'CulinaryCommand';
-    "
+        Import-Module WebAdministration;
+        Stop-WebAppPool -Name 'CulinaryCommand' -ErrorAction SilentlyContinue;
+        Copy-Item -Recurse -Force 'C:\Users\vm-user\CulinaryCommand\publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
+        Start-WebAppPool -Name 'CulinaryCommand';
+      "
 
   dependencies:
     - build-app
