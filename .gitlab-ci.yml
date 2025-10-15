@@ -1,6 +1,5 @@
 stages:
     - frontend-verify
-    # - backend-verify # temporarily disabled while 
     - build
     - deploy
 
@@ -11,19 +10,16 @@ ping-frontend:
     script:
         - echo "hello frontend!"
 
-# ping-backend:
-#     stage: backend-verify
-#     tags:
-#         - backend
-#     script:
-#         - echo "backend backend backend"
-
 build-app:
   stage: build
   tags:
     - frontend
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  only:
+  - main
   script:
     - echo "Building CulinaryCommand..."
+    - dotnet --version # debugging purposes
     - dotnet clean
     - dotnet restore
     - dotnet build --configuration Release
@@ -38,6 +34,8 @@ deploy-app:
   stage: deploy
   tags:
    - frontend
+  only:
+   - main
   script:
    - echo "Deploying to IIS..."
    - powershell -NoProfile -Command "
