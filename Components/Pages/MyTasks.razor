@@ -4,10 +4,7 @@
 <div class="container mt-4">
     <h1 class="fw-bold mb-3">Current Tasks</h1>
     <h5>Good morning, @username 👋</h5>
-    <p class="text-danger fw-bold fs-4">Bootstrap Test</p>
     <h5>Here's what's on your prep list today</h5>
-
-    <button class="btn btn-secondary mb-3" @onclick="() => taskList.Clear()">Clear All</button>
 
     @if (taskList == null || taskList.Count == 0)
     {
@@ -45,11 +42,11 @@
     {
         await Task.Delay(500);
         taskList = new()
-{
-new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
-new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
-new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
-};
+        {
+        new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
+        new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
+        new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
+        };
     }
 
     private void MarkTaskComplete(TaskData task)
