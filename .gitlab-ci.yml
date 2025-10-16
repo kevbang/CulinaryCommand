@@ -39,7 +39,16 @@ deploy-app:
   only:
    - main
   script:
+   # this stage depoloys the built app to the VM running IIS (Microsfoft Internet Information Services)
+   # IIS is Microsoft's web server used to host and serve web applications
+   # IIS hosts CulinaryCommand in the app pool, which is the container that isolates the app
+   # The app pool is pointing to the folder 'C:\Users\vm-user\CulinaryCommand\publish\' on the VM
    - echo "Deploying to IIS..."
+   # powershell script:
+   #  - stops Microsoft IIS app pool
+   #  - kills extra worker processes
+   #  - copies the new publish output on the runner to the \publish\ folder on the VM
+   #  - restarts the Microsoft IIS app pool, 
    - powershell -NoProfile -Command "
      Import-Module WebAdministration;
      Write-Host 'Stopping app pool...';
