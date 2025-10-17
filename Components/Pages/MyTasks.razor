@@ -16,8 +16,8 @@
             @foreach (var t in taskList) // task list defined below
             {
                 <div class="col-12 col-sm-6 col-lg-4">
-                    <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
-                        OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" />
+                    @* <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
+                        OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" /> *@
                 </div>
             }
         </div>
