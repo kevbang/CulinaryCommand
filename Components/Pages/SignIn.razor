@@ -1,50 +1,61 @@
 @page "/signin"
 
-<PageTitle>Sign In</PageTitle>
+<PageTitle>Sign In - Culinary Command</PageTitle>
 
-<div class="sign-in-container">
-    <div class="sign-in-card">
+<div class="signin-container">
+    <div class="signin-card">
         <div class="text-center mb-4">
             <h1 class="app-title">Culinary Command</h1>
-            <p class="subtitle">Sign In to Your Account</p>
+            <p class="subtitle">Sign In To Your Account</p>
         </div>
-    </div>
-</div>
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <InputText id="username" class="form-control" @bind-Value="signInModel.username" />
-                    </div>
+        <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit">
+            <!-- Selecting your role (Manager or Cook) -->
+            <!-- Radio only allows one selection at a time (manager or cook)-->
+            <div class="role-selection mb-4">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="role" id="manager" value="Manager" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Manager")">
+                    <label class="btn btn-outline-success role-btn" for="manager">
+                        Manager
+                    </label>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <InputText type="password" id="password" class="form-control" @bind-Value="signInModel.password" />
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Sign In</button>
-                </EditForm>
+                    <input type="radio" class="btn-check" name="role" id="cook" value="Cook" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Cook")">
+                    <label class="btn btn-outline-success role-btn" for="cook">
+                        Cook
+                    </label>
+                </div>
             </div>
-        </div>
+        </EditForm>
     </div>
 </div>
 
 @code {
-
-
     private SignInModel signInModel = new();
+    private bool showPassword = false;
 
-    private void HandleSubmit() {
-        Console.WriteLine($"Username: {signInModel.username}");
-        Console.WriteLine($"Username: {signInModel.password}");
-    }    
+    protected override void OnInitialized()
+    {
+        signInModel.Role = "Manager"; // Default to Manager
+    }
 
-    private class SignInModel {
-        public string username {get; set;} = string.Empty;
-        public string password {get; set;} = string.Empty;
+    private void HandleSubmit() 
+    {
+        Console.WriteLine($"Role: {signInModel.Role}");
+        Console.WriteLine($"Username: {signInModel.Username}");
+        Console.WriteLine($"Password: {signInModel.Password}");
+        Console.WriteLine($"Remember Me: {signInModel.RememberMe}");
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
+    private class SignInModel 
+    {
+        public string Role { get; set; } = "Manager";
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool RememberMe { get; set; } = false;
     }
 }
