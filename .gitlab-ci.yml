@@ -1,29 +1,27 @@
 stages:
     - frontend-verify
-    # - backend-verify # temporarily disabled while 
     - build
     - deploy
 
-ping-frontend:
+verify-frontend:
     stage: frontend-verify
+    rules:
+      - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
     tags:
         - frontend
     script:
         - echo "hello frontend!"
 
-# ping-backend:
-#     stage: backend-verify
-#     tags:
-#         - backend
-#     script:
-#         - echo "backend backend backend"
-
 build-app:
   stage: build
   tags:
     - frontend
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  only:
+  - main
   script:
     - echo "Building CulinaryCommand..."
+    - dotnet --version # debugging purposes
     - dotnet clean
     - dotnet restore
     - dotnet build --configuration Release
@@ -38,8 +36,19 @@ deploy-app:
   stage: deploy
   tags:
    - frontend
+  only:
+   - main
   script:
+   # this stage depoloys the built app to the VM running IIS (Microsfoft Internet Information Services)
+   # IIS is Microsoft's web server used to host and serve web applications
+   # IIS hosts CulinaryCommand in the app pool, which is the container that isolates the app
+   # The app pool is pointing to the folder 'C:\Users\vm-user\CulinaryCommand\publish\' on the VM
    - echo "Deploying to IIS..."
+   # powershell script:
+   #  - stops Microsoft IIS app pool
+   #  - kills extra worker processes
+   #  - copies the new publish output on the runner to the \publish\ folder on the VM
+   #  - restarts the Microsoft IIS app pool, loads latest commit
    - powershell -NoProfile -Command "
      Import-Module WebAdministration;
      Write-Host 'Stopping app pool...';

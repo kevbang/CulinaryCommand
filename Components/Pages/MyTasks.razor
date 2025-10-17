@@ -1,66 +1,63 @@
 @page "/tasks"
 <PageTitle>My Tasks</PageTitle>
 
-<h1 class="text-2xl font-bold mb-4">Current Tasks</h1>
+<div class="container mt-4">
+    <h1 class="fw-bold mb-3">Current Tasks</h1>
+    <h5>Good morning, @username 👋</h5>
+    <h5>Here's what's on your prep list today</h5>
 
-<p>Good morning, @username 👋</p>
-
-<p>Here's what's on your prep list today</p>
-
-
-@if (taskList == null || taskList.Count == 0)
-{
-    <p><em>No tasks available.</em></p>
-}
-else
-{
-    <table class="table-auto w-full border-collapse border border-gray-300">
-        <thead class="bg-gray-100">
-            <tr>
-                <th class="border border-gray-300 px-4 py-2 text-left">Task</th>
-                <th class="border border-gray-300 px-4 py-2 text-left">Station</th>
-                <th class="border border-gray-300 px-4 py-2 text-left">Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var t in taskList)
+    @if (taskList == null || taskList.Count == 0)
+    {
+        <p><em>No tasks available.</em></p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var t in taskList) // task list defined below
             {
-                <tr>
-                    <td class="border border-gray-300 px-4 py-2">@t.TaskName</td>
-                    <td class="border border-gray-300 px-4 py-2">@t.Station</td>
-                    <td class="border border-gray-300 px-4 py-2">@t.Date</td>
-                </tr>
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
+                        OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" />
+                </div>
             }
-        </tbody>
-    </table>
-}
+        </div>
+    }
+</div>
 
 @code {
-    // define structure for a task
-    private class TaskItem
+    private class TaskData
     {
         public string TaskName { get; set; } = "";
         public string Station { get; set; } = "";
-        public string Date { get; set; } = "";
+        public string Time { get; set; } = "";
+        public string Status { get; set; } = "Pending";
     }
 
-    // a list of tasks to display
-    private List<TaskItem> taskList = new();
+    private List<TaskData> taskList = new();
+    private string username = "Dan";
 
-    //username to display on page
-    string username = "Dan";
-
+    // tasks are currently hardcoded to this component
+    // in the future, this will be an API call
     protected override async Task OnInitializedAsync()
     {
-        // Simulate loading data 
         await Task.Delay(500);
-
-        taskList = new List<TaskItem>
-
+        taskList = new()
         {
-            new() { TaskName = "Cook chicken", Station = "Grill", Date = "10am" },
-            new() { TaskName = "Cut peppers", Station = "Prep", Date = "2pm" },
-            new() { TaskName = "Clean dishes", Station = "Dish", Date = "10pm" }
+        new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
+        new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
+        new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
         };
+    }
+
+    private void MarkTaskComplete(TaskData task)
+    {
+        Console.WriteLine($"[DEBUG] MarkTaskComplete called for {task.TaskName}");
+        task.Status = "Completed";
+        StateHasChanged(); //re-render UI
+    }
+    private void RemoveTask(TaskData task)
+    {
+        taskList.Remove(task);
+        StateHasChanged();
     }
 }
