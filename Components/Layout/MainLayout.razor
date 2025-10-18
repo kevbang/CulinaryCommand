@@ -1,13 +1,28 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
+    <!-- Sidebar -->
     <div class="sidebar">
         <NavMenu />
     </div>
 
+    <!-- Main Page containing the top row and main content-->
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-4 justify-content-right align-items-center">
+
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" id="profileMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="images/profile.jpg" alt="Profile" class="rounded-circle" width="30" height="30" />
+                    Ryan
+                </button>
+
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+                    <li><a class="dropdown-item" href="/profile">View Profile</a></li>
+                    <li><a class="dropdown-item" href="/settings">Settings</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                </ul>
+            </div>
         </div>
 
         <article class="content px-4">
