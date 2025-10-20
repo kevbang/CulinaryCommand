@@ -1,5 +1,22 @@
-.dashboard-card {
+/* .dashboard-card {
     min-height: 100px;
+} */
+
+/* Adds spacing and dividers between rendered activity cards */
+.activity-list .activity {
+  display: block;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e9ecef;
 }
 
+/* Remove divider after the last activity */
+.activity-list .activity:last-child {
+  border-bottom: none;
+}
 
+/* Optional hover effect */
+.activity-list .activity:hover {
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease-in-out;
+}
