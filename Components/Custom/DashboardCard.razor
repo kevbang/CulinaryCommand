@@ -1,6 +1,6 @@
 <div class="card dashboard-card shadow-sm d-flex flex-row align-items-center py-2 px-3 mb-5">
     <!-- Left colored box with icon -->
-    <div class="icon-box d-flex align-items-center justify-content-center me-4"
+    <div class="icon-box d-flex align-items-center justify-content-center me-4 ms-2"
         style="background-color:@LightenColor(Color); width:4rem; height:4rem; border-radius:0.75rem;">
         <i class="@IconClass fs-2" style="color:@Color; "></i>
     </div>
@@ -16,7 +16,7 @@
         <div class="d-flex justify-content-between align-items-start mt-auto">
             @if (!string.IsNullOrEmpty(Value))
             {
-                <p class="mb-0 fw-bold">@Value</p>
+                <p class="mb-0 fs-5 fw-bold">@Value</p>
             }
             <a href="@Link" class="small text-decoration-none me-2" style="color:green;">View All <i class="bi bi-arrow-right"></i></a>
         </div>
