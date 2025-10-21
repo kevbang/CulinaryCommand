@@ -1,0 +1,23 @@
+/* DashboardCard.razor.css */
+.dashboard-card {
+    min-height: 150px;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.icon-box {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+}
+
+.icon-box {
+    width: 60px;
+    height: 60px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -1,4 +1,6 @@
 @page "/tasks"
+@using CulinaryCommand.Components.Custom
+
 <PageTitle>My Tasks</PageTitle>
 
 <div class="container mt-4">
@@ -14,12 +16,12 @@
     {
         <div class="row g-3">
             @foreach (var t in taskList) // task list defined below
-            {
-                <div class="col-12 col-sm-6 col-lg-4">
-                    @* <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
-                        OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" /> *@
-                </div>
-            }
+{
+    <div class="col-12 col-sm-6 col-lg-4">
+        <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
+            OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" />
+    </div>
+}
         </div>
     }
 </div>
@@ -42,11 +44,11 @@
     {
         await Task.Delay(500);
         taskList = new()
-        {
-        new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
-        new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
-        new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
-        };
+{
+new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
+new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
+new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
+};
     }
 
     private void MarkTaskComplete(TaskData task)

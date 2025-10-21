@@ -1,0 +1,47 @@
+<div class="card dashboard-card shadow d-flex flex-row align-items-center py-2 px-3 mb-5">
+    <!-- Left colored box with icon -->
+    <div class="icon-box d-flex align-items-center justify-content-center me-4 ms-2"
+        style="background-color:@LightenColor(Color); width:4rem; height:4rem; border-radius:0.75rem; min-height: 100px;">
+        <i class="@IconClass fs-2" style="color:@Color; "></i>
+    </div>
+
+    <!-- Card content -->
+    <div class="flex-grow-1 d-flex flex-column justify-content-between" style="min-height:6rem;">
+        <!-- Title at the top -->
+        <div>
+            <h5 class="mb-1 text-muted">@Title</h5>
+        </div>
+
+        <!-- Value left / Go link right at the bottom -->
+        <div class="d-flex justify-content-between align-items-start mt-auto">
+            @if (!string.IsNullOrEmpty(Value))
+            {
+                <p class="mb-0 fs-5 fw-bold">@Value</p>
+            }
+            <a href="@Link" class="small text-decoration-none me-2" style="color:green;">View All <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = ""; // optional summary / count
+    [Parameter] public string IconClass { get; set; } = "bi bi-info-circle"; // bootstrap icon
+    [Parameter] public string Color { get; set; } = "#0d6efd"; // default bootstrap primary
+    [Parameter] public string Link { get; set; } = "#";
+
+    // Lightens the color for icon background
+    private string LightenColor(string hex, double factor = 0.7)
+    {
+        hex = hex.Replace("#", "");
+        int r = int.Parse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+        int g = int.Parse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+        int b = int.Parse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+
+        r = (int)(r + (255 - r) * factor);
+        g = (int)(g + (255 - g) * factor);
+        b = (int)(b + (255 - b) * factor);
+
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+}
