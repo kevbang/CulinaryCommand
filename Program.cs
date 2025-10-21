@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-// using CulinaryCommand.Data;
 using CulinaryCommand.Components;
+using CulinaryCommand.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,9 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// var conn = builder.Configuration.GetConnectionString("Default");
-// builder.Services.AddDbContext<AppDbContext>(opt =>
-//     opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
+// DB hookup
+var conn = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
 
 
 var app = builder.Build();

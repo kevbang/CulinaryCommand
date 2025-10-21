@@ -1,33 +1,35 @@
-using System.Collections;
 using System.ComponentModel.DataAnnotations;
-using System.Data.SqlTypes;
-using System.Numerics;
 
-public class User
+namespace CulinaryCommand.Data.Entities
 {
-    [Key]
-    public int Id { get; set; }
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
 
-    [Required, MaxLength(256)]
-    public string? Name { get; set; }
+        [Required, MaxLength(256)]
+        public string? Name { get; set; }
 
-    [Required, MaxLength(12)]
-    public string? Phone { get; set; }
+        [Required, MaxLength(12)]
+        public string? Phone { get; set; }
 
-    [Required, MaxLength(256)]
-    public string? Email { get; set; }
+        [Required, MaxLength(256)]
+        public string? Email { get; set; }
 
-    [Required, MaxLength(28)]
-    public string? Password { get; set; }
+        [Required, MaxLength(28)]
+        public string? Password { get; set; }
 
-    [Required, MaxLength(128)]
-    public String? Role { get; set; } = string.Empty;  // Change to ICollection?
+        [Required, MaxLength(128)]
+        public String? Role { get; set; } = string.Empty;  // Change to ICollection?
 
-    // Navigation property for UserStation experience
-    public ICollection<String>? StationsWorked { get; set; }
+        // Navigation property for UserStation experience
+        public ICollection<String>? StationsWorked { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<int>? LocationId { get; set; }
+        public ICollection<int>? LocationId { get; set; }
+    }
 }
+
+
