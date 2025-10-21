@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@namespace CulinaryCommand.Components.Layout
+@using CulinaryCommand.Components.Custom
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">CulinaryCommand</a>
     </div>
@@ -9,14 +12,14 @@
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill nav-icon" aria-hidden="true"></span> Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="dashboard"">
-                <span class="bi bi-house-door-fill nav-icon" aria-hidden="true"></span> Dashboard
+            <NavLink class="nav-link" href="dashboard">
+                <span class="bi bi-speedometer2 nav-icon" aria-hidden="true"></span> Dashboard
             </NavLink>
         </div>
 
@@ -37,6 +40,5 @@
                 <span class="bi bi-list-nested nav-icon" aria-hidden="true"></span> My Tasks
             </NavLink>
         </div>
-
     </nav>
 </div>
