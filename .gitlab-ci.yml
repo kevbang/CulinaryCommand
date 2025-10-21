@@ -22,10 +22,10 @@ build-app:
   script:
     - echo "Building CulinaryCommand..."
     - dotnet --version # debugging purposes
-    - dotnet clean
-    - dotnet restore
-    - dotnet build --configuration Release
-    - dotnet publish ./CulinaryCommand.csproj -c Release -o publish-temp/
+    - dotnet clean CulinaryCommand.csproj
+    - dotnet restore CulinaryCommand.csproj
+    - dotnet build CulinaryCommand.csproj --configuration Release
+    - dotnet publish CulinaryCommand.csproj -c Release -o publish-temp/
   artifacts:
     paths:
       - publish-temp/
