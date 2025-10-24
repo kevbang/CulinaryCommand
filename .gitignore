@@ -35,3 +35,5 @@ logs/
 # Publish output
 # ============================
 publish/
+
+appsettings.Development.json
