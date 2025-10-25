@@ -12,7 +12,7 @@ namespace CulinaryCommand.Data
 
         public DbSet<Location> Locations => Set<Location>();
         public DbSet<User> Users => Set<User>();
-        public DbSet<Task> Tasks => Set<Task>();
+        public DbSet<WorkTask> Tasks => Set<WorkTask>();
     }  
 }
 

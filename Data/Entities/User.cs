@@ -16,7 +16,7 @@ namespace CulinaryCommand.Data.Entities
         [Required, MaxLength(256)]
         public string? Email { get; set; }
 
-        [Required, MaxLength(28)]
+        [Required, MaxLength(256)]
         public string? Password { get; set; }
 
         [Required, MaxLength(128)]

@@ -1,4 +1,9 @@
 @page "/signup"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components
+@using CulinaryCommand.Services
+@inject IUserService UserService
+@inject NavigationManager Navigation
 
 <PageTitle>Sign Up - Culinary Command</PageTitle>
 
@@ -9,7 +14,26 @@
             <p class="signup-subtitle">Create a new account</p>
         </div>
 
-        <EditForm Model="@signUpModel" OnValidSubmit="@HandleSubmit">
+        @*display error message if registering fails*@
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role ="alert">
+            @errorMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success" role="alert">
+                @successMessage
+            </div>
+        }
+
+        <EditForm Model="@signUpModel" OnValidSubmit="@HandleSubmit" FormName="SignUpForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+
             <!-- Role Selection -->
             <div class="role-selection mb-4">
                 <div class="btn-group w-100" role="group">
@@ -18,7 +42,7 @@
                         <i class="fas fa-building me-2"></i>Manager
                     </label>
 
-                    <input type="radio" class="btn-check" name="role" id="cook" value="Cook" @onchange="@((e) => signUpModel.Role = e.Value?.ToString())" checked="@(signUpModel.Role == "Cook")">
+                    <input type="radio" class="btn-check" name="role" id="employee" value="Employee" @onchange="@((e) => signUpModel.Role = e.Value?.ToString())" checked="@(signUpModel.Role == "Employee")">
                     <label class="btn btn-outline-secondary role-btn" for="cook">
                         <i class="fas fa-chef-hat me-2"></i>Cook
                     </label>
@@ -29,12 +53,18 @@
             <div class="mb-3">
                 <label for="fullname" class="form-label">Full name</label>
                 <InputText id="fullname" type="text" class="form-control" @bind-Value="signUpModel.FullName" placeholder="Enter your full name" />
+
+                @* Display validation errors for fullname field *@
+                <ValidationMessage For="@(() => signUpModel.FullName)"/>
             </div>
 
             <!-- Email Address -->
             <div class="mb-3">
                 <label for="email" class="form-label">Email address</label>
                 <InputText id="email" type="email" class="form-control" @bind-Value="signUpModel.Email" placeholder="Enter your email" />
+                
+                @* Display validation errors for email field *@
+                <ValidationMessage For="@(() => signUpModel.Email)" />
             </div>
 
             <!-- Password -->
@@ -46,6 +76,8 @@
                         <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye")"></i>
                     </button>
                 </div>
+                @* Display validation errors for password field *@
+                <ValidationMessage For="@(() => signUpModel.Password)" />
             </div>
 
             <!-- Confirm Password -->
@@ -57,10 +89,24 @@
                         <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
                     </button>
                 </div>
+
+                @* Display validation errors for confirm password field *@
+                <ValidationMessage For="@(() => signUpModel.ConfirmPassword)" />
             </div>
 
             <!-- Create Account Button -->
-            <button type="submit" class="btn btn-success w-100 signup-btn">Create account</button>
+            @* Disable create button while submitting to prevent double submissions*@
+            <button type="submit" class="btn btn-success w-100 signup-btn" disabled="@isSubmitting">
+            @if (isSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Creating account...</span>
+            }
+            else
+            {
+                <span>Create account</span>
+            }
+            </button>
         </EditForm>
 
         <!-- Sign In Link -->
@@ -72,22 +118,66 @@
 </div>
 
 @code {
-    private SignUpModel signUpModel = new();
+    [SupplyParameterFromForm]
+    private SignUpModel signUpModel { get; set; } = new();
+    
     private bool showPassword = false;
     private bool showConfirmPassword = false;
+
+    //flag to track if form is being submitted
+    private bool isSubmitting = false;
+
+    // messages to display to the user
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
 
     protected override void OnInitialized()
     {
         signUpModel.Role = "Manager"; // Default to Manager
     }
 
-    private void HandleSubmit() 
+    private async Task HandleSubmit() 
     {
-        Console.WriteLine($"Role: {signUpModel.Role}");
-        Console.WriteLine($"Full Name: {signUpModel.FullName}");
-        Console.WriteLine($"Email: {signUpModel.Email}");
-        Console.WriteLine($"Password: {signUpModel.Password}");
-        Console.WriteLine($"Confirm Password: {signUpModel.ConfirmPassword}");
+        @* clear previous messages*@
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        // set flag to true
+        isSubmitting = true;
+        try {
+            //validate if both passwords match
+            if (signUpModel.Password != signUpModel.ConfirmPassword) {
+                errorMessage = "Passwords do not match.";
+                isSubmitting = false;
+                return;
+            }
+
+            // continue to create user
+            var user = await UserService.CreateUserAsync(
+                signUpModel.FullName,
+                signUpModel.Email,
+                signUpModel.Password,
+                signUpModel.Role
+            );
+
+            if (user == null)
+            {
+                errorMessage = "A user with this email already exists.";
+                isSubmitting = false;
+                return;
+            }
+
+            // User created successfully - navigate immediately
+            Navigation.NavigateTo("/signin", forceLoad: true);
+        }
+        catch (NavigationException)
+        {
+            // NavigationException is expected during navigation - just ignore it
+        }
+        catch (Exception ex){
+            errorMessage = $"An error occured: {ex.Message}";
+            isSubmitting = false;
+        }
     }
 
     private void TogglePasswordVisibility()
@@ -102,10 +192,27 @@
 
     private class SignUpModel 
     {
+        // Role field - defaults to Manager, must be selected
+        [Required(ErrorMessage = "Role is required")]
         public string Role { get; set; } = "Manager";
+
+        // Full name field - required, minimum 2 characters
+        [Required(ErrorMessage = "Full name is required")]
+        [MinLength(2, ErrorMessage = "Name must be at least 2 characters")]
         public string FullName { get; set; } = string.Empty;
+
+        // Email field - required, must be valid email format
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
         public string Email { get; set; } = string.Empty;
+
+        // Password field - required, minimum 6 characters
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
         public string Password { get; set; } = string.Empty;
+
+        // Confirm password field - required (matching is validated in HandleSubmit)
+        [Required(ErrorMessage = "Please confirm your password")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

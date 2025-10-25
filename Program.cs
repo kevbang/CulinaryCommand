@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data;
 using CulinaryCommand.Components;
+using CulinaryCommand.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
 
 
+// registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.
+builder.Services.AddScoped<IUserService, UserService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -24,7 +28,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Temporarily disable HTTPS redirect for development
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
