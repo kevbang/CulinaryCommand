@@ -1,7 +1,18 @@
 ﻿@page "/"
+@inject NavigationManager Nav
+@inject AuthService Auth
 
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+@code {
+    protected override void OnInitialized()
+    {
+        // Redirect unauthenticated users to SignIn
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/signin", true);
+        }
+        else
+        {
+            Nav.NavigateTo("/dashboard", true);
+        }
+    }
+}

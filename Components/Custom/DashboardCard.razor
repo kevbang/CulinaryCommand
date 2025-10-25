@@ -1,4 +1,4 @@
-@namespace CulinaryCommand.Components.Custom
+@* @namespace CulinaryCommand.Components.Custom *@
 
 <div class="card dashboard-card shadow d-flex flex-row align-items-center py-2 px-3 mb-5">
     <!-- Left colored box with icon -->
@@ -26,6 +26,7 @@
 </div>
 
 @code {
+    @namespace CulinaryCommand.Components.Custom
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string Value { get; set; } = ""; // optional summary / count
     [Parameter] public string IconClass { get; set; } = "bi bi-info-circle"; // bootstrap icon

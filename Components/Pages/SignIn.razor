@@ -1,4 +1,11 @@
 @page "/signin"
+@namespace CulinaryCommand.Components.Pages
+@inject IUserService UserService
+@inject AuthService Auth
+@inject NavigationManager Nav
+@using Microsoft.AspNetCore.Components.Forms
+@rendermode InteractiveServer
+
 
 <PageTitle>Sign In - Culinary Command</PageTitle>
 
@@ -8,8 +15,13 @@
             <h1 class="app-title">Culinary Command</h1>
             <p class="subtitle">Sign In To Your Account</p>
         </div>
+    <p class="text-muted small">
+    @($"Live Username: {signInModel?.Username ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
+</p>
 
-        <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit">
+        <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit" FormName="SignInForm">
+        <DataAnnotationsValidator />
+
             <!-- Selecting your role (Manager or Cook) -->
             <!-- Radio only allows one selection at a time (manager or cook)-->
             <div class="role-selection mb-4">
@@ -66,20 +78,35 @@
 </div>
 
 @code {
-    private SignInModel signInModel = new();
+    private SignInModel signInModel;
     private bool showPassword = false;
 
     protected override void OnInitialized()
     {
-        signInModel.Role = "Manager"; // Default to Manager
+        if (signInModel == null)
+        signInModel = new() { Role = "Manager" }; // Default to manager
+        if (Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/dashboard", true);
+        }
     }
 
-    private void HandleSubmit() 
+    private async Task HandleSubmit() 
     {
         Console.WriteLine($"Role: {signInModel.Role}");
         Console.WriteLine($"Username: {signInModel.Username}");
         Console.WriteLine($"Password: {signInModel.Password}");
         Console.WriteLine($"Remember Me: {signInModel.RememberMe}");
+        bool isValid = await UserService.ValidateCredentialsAsync(signInModel.Username, signInModel.Password);
+        if (isValid)
+        {
+            await Auth.SignInAsync(signInModel.Username);
+            Nav.NavigateTo("/dashboard", true);
+        }
+        else
+        {
+            Console.WriteLine(value: $"NOT VALID");
+        }
     }
 
     private void TogglePasswordVisibility()
@@ -90,8 +117,8 @@
     private class SignInModel 
     {
         public string Role { get; set; } = "Manager";
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string Username { get; set; }
+        public string Password { get; set; }
         public bool RememberMe { get; set; } = false;
     }
 }

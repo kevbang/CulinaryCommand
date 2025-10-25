@@ -60,7 +60,7 @@ namespace CulinaryCommand.Services
             {
                 return false;
             }
-            return VerifyPassword(password, user.Password);
+            return VerifyPassword(password, HashPassword(user.Password));
         }
 
 

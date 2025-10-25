@@ -1,5 +1,8 @@
-﻿@inherits LayoutComponentBase
+﻿@inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager NavigationManager
 
+@inherits LayoutComponentBase
+@using CulinaryCommand.Services
 <div class="page">
     <!-- Sidebar -->
     <div class="sidebar">
@@ -13,14 +16,21 @@
             <div class="dropdown">
                 <button class="btn btn-light dropdown-toggle" type="button" id="profileMenu" data-bs-toggle="dropdown" aria-expanded="false">
                     <img src="images/profile.jpg" alt="Profile" class="rounded-circle" width="30" height="30" />
-                    Bob
+                    @if (Auth.IsSignedIn)
+                    {
+                        @Auth.CurrentUser
+                    }
+                    else
+                    {
+                        <span>Guest</span>
+                    }
                 </button>
 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
                     <li><a class="dropdown-item" href="/profile">View Profile</a></li>
                     <li><a class="dropdown-item" href="/settings">Settings</a></li>
                     <li><hr class="dropdown-divider" /></li>
-                    <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                    <li><a class="dropdown-item" href="#" @onclick="Logout">Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -36,3 +46,24 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.OnAuthStateChanged += RefreshLayout;
+        await Auth.EnsureInitializedAsync();
+    }
+
+    private void RefreshLayout() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Auth.OnAuthStateChanged -= RefreshLayout;
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        NavigationManager.NavigateTo("/signin", true);
+    }
+}

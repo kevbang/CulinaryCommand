@@ -1,6 +1,37 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@namespace CulinaryCommand.Components
+@inject AuthService Auth
+
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn))
+        {
+            <!-- Render these pages with NO layout -->
+            <RouteView RouteData="@routeData" />
+        }
+        else
+        {
+            <!-- Everything else uses MainLayout -->
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        }
     </Found>
+
+    <NotFound>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <p>Sorry, nothing found at this address.</p>
+        </LayoutView>
+    </NotFound>
 </Router>
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await Auth.EnsureInitializedAsync();
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+}

@@ -9,14 +9,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+//builder.Services.AddRazorPages();
+
 // DB hookup
-var conn = builder.Configuration.GetConnectionString("Default");
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
 
 
 // registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.
 builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<AuthService>();
+
 
 var app = builder.Build();
 
@@ -29,11 +34,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Temporarily disable HTTPS redirect for development
-// app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
+//app.UseRouting();
+//app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+//app.MapRazorPages();
 
 app.Run();
