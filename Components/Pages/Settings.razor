@@ -9,51 +9,147 @@
             <p class="subtitle">Manage your account preferences</p>
         </div>
 
-        <!-- Profile Settings -->
-        <div class="settings-content">
-            <h4 class="mb-4">
-                <i class="fas fa-user me-2"></i>Profile Information
-            </h4>
-            
-            <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="firstName" class="form-label">First Name</label>
-                        <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
-                    </div>
-                    <div class="col-md-6">
-                        <label for="lastName" class="form-label">Last Name</label>
-                        <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
-                    </div>
-                </div>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs settings-tabs mb-4" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "profile" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("profile"))" 
+                        type="button">
+                    <i class="fas fa-user me-2"></i>Profile
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "security" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("security"))" 
+                        type="button">
+                    <i class="fas fa-lock me-2"></i>Security
+                </button>
+            </li>
+        </ul>
 
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email Address</label>
-                    <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
-                </div>
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Profile Tab -->
+            @if (activeTab == "profile")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user me-2"></i>Profile Information
+                    </h4>
+                    
+                    <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
+                            </div>
+                        </div>
 
-                <div class="mb-3">
-                    <label for="phone" class="form-label">Phone Number</label>
-                    <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
-                </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
+                        </div>
 
-                <div class="mb-3">
-                    <label for="role" class="form-label">Current Role</label>
-                    <select id="role" class="form-control" @bind="profileModel.Role">
-                        <option value="Manager">Manager</option>
-                        <option value="Cook">Cook</option>
-                        <option value="Admin">Admin</option>
-                    </select>
-                </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
+                        </div>
 
-                <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
-            </EditForm>
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Current Role</label>
+                            <select id="role" class="form-control" @bind="profileModel.Role">
+                                <option value="Manager">Manager</option>
+                                <option value="Cook">Cook</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
+                    </EditForm>
+                </div>
+            }
+
+            <!-- Security Tab -->
+            @if (activeTab == "security")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-lock me-2"></i>Security Settings
+                    </h4>
+                    
+                    <EditForm Model="@securityModel" OnValidSubmit="@HandleSecuritySubmit">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <div class="password-input-container">
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.CurrentPassword" 
+                                          placeholder="Enter current password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                    <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <div class="password-input-container">
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.NewPassword" 
+                                          placeholder="Enter new password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
+                                    <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">
+                                Password must be at least 8 characters long
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <div class="password-input-container">
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.ConfirmPassword" 
+                                          placeholder="Confirm new password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                    <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="security-section mb-4">
+                            <h5 class="mb-3">Two-Factor Authentication</h5>
+                            <div class="form-check">
+                                <InputCheckbox id="twoFactor" class="form-check-input" @bind-Value="securityModel.EnableTwoFactor" />
+                                <label class="form-check-label" for="twoFactor">
+                                    Enable Two-Factor Authentication
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Add an extra layer of security to your account
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Security Settings</button>
+                    </EditForm>
+                </div>
+            }
         </div>
     </div>
 </div>
 
 @code {
+    private string activeTab = "profile";
+    private bool showCurrentPassword = false;
+    private bool showNewPassword = false;
+    private bool showConfirmPassword = false;
+
     private ProfileModel profileModel = new();
+    private SecurityModel securityModel = new();
 
     protected override void OnInitialized()
     {
@@ -68,10 +164,26 @@
         };
     }
 
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
     private void HandleProfileSubmit()
     {
         Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
         // Add actual profile update logic here
+    }
+
+    private void HandleSecuritySubmit()
+    {
+        if (securityModel.NewPassword != securityModel.ConfirmPassword)
+        {
+            Console.WriteLine("Passwords do not match!");
+            return;
+        }
+        Console.WriteLine("Security settings updated");
+        // Add actual security update logic here
     }
 
     private class ProfileModel
@@ -81,5 +193,13 @@
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Role { get; set; } = "Manager";
+    }
+
+    private class SecurityModel
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+        public bool EnableTwoFactor { get; set; } = false;
     }
 }

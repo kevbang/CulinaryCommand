@@ -13,7 +13,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 40px;
     width: 100%;
-    max-width: 600px;
+    max-width: 700px;
 }
 
 .app-title {
@@ -29,15 +29,63 @@
     margin-bottom: 0;
 }
 
-.settings-content h4 {
+/* Tab Styling */
+.settings-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.settings-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 20px;
+    margin-bottom: -2px;
+    transition: all 0.3s ease;
+}
+
+.settings-tabs .nav-link:hover {
+    border-bottom-color: #198754;
+    color: #198754;
+    background: none;
+}
+
+.settings-tabs .nav-link.active {
+    border-bottom-color: #198754;
+    color: #198754;
+    background: none;
+}
+
+.settings-tabs .nav-link i {
+    font-size: 0.9rem;
+}
+
+/* Tab Content */
+.tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-pane h4 {
     color: #2c3e50;
     font-weight: 600;
     border-bottom: 2px solid #dee2e6;
     padding-bottom: 8px;
 }
 
-.settings-content h4 i {
+.tab-pane h4 i {
     color: #198754;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Form Styling */
@@ -63,6 +111,58 @@
 
 .form-control:hover {
     border-color: #adb5bd;
+}
+
+/* Password Input Container */
+.password-input-container {
+    position: relative;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.3s ease;
+}
+
+.password-toggle-btn:hover {
+    color: #198754;
+}
+
+/* Security Section */
+.security-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #198754;
+}
+
+.security-section h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+/* Checkbox Styling */
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.form-check-input:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.form-check-label {
+    color: #2c3e50;
+    font-weight: 400;
 }
 
 /* Button Styling */
@@ -97,6 +197,11 @@ select.form-control {
     opacity: 1;
 }
 
+.form-text {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .settings-container {
@@ -106,6 +211,15 @@ select.form-control {
     .settings-card {
         padding: 20px;
         max-width: 100%;
+    }
+    
+    .settings-tabs .nav-link {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .settings-tabs .nav-link i {
+        display: none;
     }
     
     .row .col-md-6 {
