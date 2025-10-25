@@ -149,6 +149,42 @@
     margin-bottom: 12px;
 }
 
+/* Notification Section */
+.notification-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #198754;
+    margin-bottom: 1.5rem;
+}
+
+.notification-section h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.notification-section h5 i {
+    color: #198754;
+    font-size: 1rem;
+}
+
+.notification-section .form-check {
+    padding: 12px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.notification-section .form-check:last-child {
+    border-bottom: none;
+}
+
+.notification-section .form-check-label strong {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
 /* Checkbox Styling */
 .form-check-input:checked {
     background-color: #198754;
