@@ -1,0 +1,85 @@
+@page "/settings"
+
+<PageTitle>Settings - Culinary Command</PageTitle>
+
+<div class="settings-container">
+    <div class="settings-card">
+        <div class="text-center mb-4">
+            <h1 class="app-title">Settings</h1>
+            <p class="subtitle">Manage your account preferences</p>
+        </div>
+
+        <!-- Profile Settings -->
+        <div class="settings-content">
+            <h4 class="mb-4">
+                <i class="fas fa-user me-2"></i>Profile Information
+            </h4>
+            
+            <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone Number</label>
+                    <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="role" class="form-label">Current Role</label>
+                    <select id="role" class="form-control" @bind="profileModel.Role">
+                        <option value="Manager">Manager</option>
+                        <option value="Cook">Cook</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ProfileModel profileModel = new();
+
+    protected override void OnInitialized()
+    {
+        // Initialize with default/current user data
+        profileModel = new ProfileModel
+        {
+            FirstName = "Bob",
+            LastName = "Smith",
+            Email = "bob.smith@example.com",
+            Phone = "(555) 123-4567",
+            Role = "Manager"
+        };
+    }
+
+    private void HandleProfileSubmit()
+    {
+        Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
+        // Add actual profile update logic here
+    }
+
+    private class ProfileModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Role { get; set; } = "Manager";
+    }
+}
