@@ -1,0 +1,569 @@
+@page "/settings"
+
+<PageTitle>Settings - Culinary Command</PageTitle>
+
+<div class="settings-container">
+    <div class="settings-card">
+        <div class="text-center mb-4">
+            <h1 class="app-title">Settings</h1>
+            <p class="subtitle">Manage your account preferences</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs settings-tabs mb-4" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "profile" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("profile"))" 
+                        type="button">
+                    <i class="fas fa-user me-2"></i>Profile
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "security" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("security"))" 
+                        type="button">
+                    <i class="fas fa-lock me-2"></i>Security
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "notifications" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("notifications"))" 
+                        type="button">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "preferences" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("preferences"))" 
+                        type="button">
+                    <i class="fas fa-cog me-2"></i>Preferences
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Profile Tab -->
+            @if (activeTab == "profile")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user me-2"></i>Profile Information
+                    </h4>
+                    
+                    <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Current Role</label>
+                            <select id="role" class="form-control" @bind="profileModel.Role">
+                                <option value="Manager">Manager</option>
+                                <option value="Cook">Cook</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
+                    </EditForm>
+                </div>
+            }
+
+            <!-- Security Tab -->
+            @if (activeTab == "security")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-lock me-2"></i>Security Settings
+                    </h4>
+                    
+                    <EditForm Model="@securityModel" OnValidSubmit="@HandleSecuritySubmit">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <div class="password-input-container">
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.CurrentPassword" 
+                                          placeholder="Enter current password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                    <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <div class="password-input-container">
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.NewPassword" 
+                                          placeholder="Enter new password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
+                                    <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">
+                                Password must be at least 8 characters long
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <div class="password-input-container">
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
+                                          class="form-control" @bind-Value="securityModel.ConfirmPassword" 
+                                          placeholder="Confirm new password" />
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                    <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="security-section mb-4">
+                            <h5 class="mb-3">Two-Factor Authentication</h5>
+                            <div class="form-check">
+                                <InputCheckbox id="twoFactor" class="form-check-input" @bind-Value="securityModel.EnableTwoFactor" />
+                                <label class="form-check-label" for="twoFactor">
+                                    Enable Two-Factor Authentication
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Add an extra layer of security to your account
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Security Settings</button>
+                    </EditForm>
+                </div>
+            }
+
+            <!-- Notifications Tab -->
+            @if (activeTab == "notifications")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-bell me-2"></i>Notification Preferences
+                    </h4>
+                    
+                    <EditForm Model="@notificationModel" OnValidSubmit="@HandleNotificationSubmit">
+                        <div class="notification-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-envelope me-2"></i>Email Notifications
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="taskNotifications" class="form-check-input" @bind-Value="notificationModel.TaskNotifications" />
+                                    <label class="form-check-label" for="taskNotifications">
+                                        <strong>Task assignments and updates</strong>
+                                        <br><small class="text-muted">Receive emails when tasks are assigned to you or updated</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="scheduleNotifications" class="form-check-input" @bind-Value="notificationModel.ScheduleNotifications" />
+                                    <label class="form-check-label" for="scheduleNotifications">
+                                        <strong>Schedule changes and reminders</strong>
+                                        <br><small class="text-muted">Get notified about shift changes and upcoming schedules</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="systemNotifications" class="form-check-input" @bind-Value="notificationModel.SystemNotifications" />
+                                    <label class="form-check-label" for="systemNotifications">
+                                        <strong>System announcements</strong>
+                                        <br><small class="text-muted">Important updates and maintenance notifications</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="notification-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-mobile-alt me-2"></i>Push Notifications
+                            </h5>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="pushNotifications" class="form-check-input" @bind-Value="notificationModel.PushNotifications" />
+                                    <label class="form-check-label" for="pushNotifications">
+                                        <strong>Enable push notifications</strong>
+                                        <br><small class="text-muted">Receive real-time notifications on your device</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="urgentOnly" class="form-check-input" @bind-Value="notificationModel.UrgentOnly" />
+                                    <label class="form-check-label" for="urgentOnly">
+                                        <strong>Only urgent notifications</strong>
+                                        <br><small class="text-muted">Limit push notifications to critical alerts only</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="notification-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-clock me-2"></i>Notification Timing
+                            </h5>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="quietHoursStart" class="form-label">Quiet Hours Start</label>
+                                    <InputText id="quietHoursStart" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursStart" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="quietHoursEnd" class="form-label">Quiet Hours End</label>
+                                    <InputText id="quietHoursEnd" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursEnd" />
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                During quiet hours, only urgent notifications will be sent
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Notification Settings</button>
+                    </EditForm>
+                </div>
+            }
+
+            <!-- Preferences Tab -->
+            @if (activeTab == "preferences")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-cog me-2"></i>User Preferences
+                    </h4>
+                    
+                    <EditForm Model="@preferencesModel" OnValidSubmit="@HandlePreferencesSubmit">
+                        <div class="preferences-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-palette me-2"></i>Appearance
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="theme" class="form-label">Theme</label>
+                                <select id="theme" class="form-control" @bind="preferencesModel.Theme">
+                                    <option value="Light">Light</option>
+                                    <option value="Dark">Dark</option>
+                                    <option value="Auto">Auto (System)</option>
+                                </select>
+                                <small class="form-text text-muted">Choose your preferred color theme</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="compactMode" class="form-check-input" @bind-Value="preferencesModel.CompactMode" />
+                                    <label class="form-check-label" for="compactMode">
+                                        <strong>Compact mode</strong>
+                                        <br><small class="text-muted">Use a more condensed layout to fit more content</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="preferences-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-globe me-2"></i>Localization
+                            </h5>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="language" class="form-label">Language</label>
+                                    <select id="language" class="form-control" @bind="preferencesModel.Language">
+                                        <option value="English">English</option>
+                                        <option value="Spanish">Spanish</option>
+                                        <option value="French">French</option>
+                                        <option value="German">German</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select id="timezone" class="form-control" @bind="preferencesModel.Timezone">
+                                        <option value="UTC-5">Eastern Time (UTC-5)</option>
+                                        <option value="UTC-6">Central Time (UTC-6)</option>
+                                        <option value="UTC-7">Mountain Time (UTC-7)</option>
+                                        <option value="UTC-8">Pacific Time (UTC-8)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="dateFormat" class="form-label">Date Format</label>
+                                <select id="dateFormat" class="form-control" @bind="preferencesModel.DateFormat">
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY (US Format)</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY (European Format)</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD (ISO Format)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="preferences-section mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-sliders-h me-2"></i>Behavior
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="autoSave" class="form-check-input" @bind-Value="preferencesModel.AutoSave" />
+                                    <label class="form-check-label" for="autoSave">
+                                        <strong>Auto-save changes</strong>
+                                        <br><small class="text-muted">Automatically save form changes without manual confirmation</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="showTooltips" class="form-check-input" @bind-Value="preferencesModel.ShowTooltips" />
+                                    <label class="form-check-label" for="showTooltips">
+                                        <strong>Show helpful tooltips</strong>
+                                        <br><small class="text-muted">Display additional information when hovering over elements</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="itemsPerPage" class="form-label">Items per page</label>
+                                <select id="itemsPerPage" class="form-control" @bind="preferencesModel.ItemsPerPage">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <small class="form-text text-muted">Number of items to display in tables and lists</small>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">Update Preferences</button>
+                    </EditForm>
+                </div>
+            }
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone mt-5">
+            <h5 class="text-danger mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+            </h5>
+            <p class="text-muted mb-4">
+                These actions are permanent and cannot be undone. Please proceed with caution.
+            </p>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Export Your Data</h6>
+                        <p class="text-muted small mb-3">Download a copy of all your account data</p>
+                        <button class="btn btn-outline-info w-100" @onclick="ExportData">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Reset All Settings</h6>
+                        <p class="text-muted small mb-3">Restore all settings to default values</p>
+                        <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
+                            <i class="fas fa-undo me-2"></i>Reset Settings
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Deactivate Account</h6>
+                        <p class="text-muted small mb-3">Temporarily disable your account access</p>
+                        <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Delete Account</h6>
+                        <p class="text-muted small mb-3">Permanently delete your account and all data</p>
+                        <button class="btn btn-danger w-100" @onclick="DeleteAccount">
+                            <i class="fas fa-trash me-2"></i>Delete Forever
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string activeTab = "profile";
+    private bool showCurrentPassword = false;
+    private bool showNewPassword = false;
+    private bool showConfirmPassword = false;
+
+    private ProfileModel profileModel = new();
+    private SecurityModel securityModel = new();
+    private NotificationModel notificationModel = new();
+    private PreferencesModel preferencesModel = new();
+
+    protected override void OnInitialized()
+    {
+        // Initialize with default/current user data
+        profileModel = new ProfileModel
+        {
+            FirstName = "Bob",
+            LastName = "Smith",
+            Email = "bob.smith@example.com",
+            Phone = "(555) 123-4567",
+            Role = "Manager"
+        };
+
+        notificationModel = new NotificationModel
+        {
+            TaskNotifications = true,
+            ScheduleNotifications = true,
+            SystemNotifications = false,
+            PushNotifications = true,
+            UrgentOnly = false,
+            QuietHoursStart = "22:00",
+            QuietHoursEnd = "08:00"
+        };
+
+        preferencesModel = new PreferencesModel
+        {
+            Theme = "Light",
+            Language = "English",
+            Timezone = "UTC-6",
+            DateFormat = "MM/DD/YYYY",
+            AutoSave = true,
+            CompactMode = false,
+            ShowTooltips = true,
+            ItemsPerPage = "25"
+        };
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private void HandleProfileSubmit()
+    {
+        Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
+        // Add actual profile update logic here
+    }
+
+    private void HandleSecuritySubmit()
+    {
+        if (securityModel.NewPassword != securityModel.ConfirmPassword)
+        {
+            Console.WriteLine("Passwords do not match!");
+            return;
+        }
+        Console.WriteLine("Security settings updated");
+        // Add actual security update logic here
+    }
+
+    private void HandleNotificationSubmit()
+    {
+        Console.WriteLine("Notification settings updated");
+        Console.WriteLine($"Task Notifications: {notificationModel.TaskNotifications}");
+        Console.WriteLine($"Push Notifications: {notificationModel.PushNotifications}");
+        // Add actual notification update logic here
+    }
+
+    private void HandlePreferencesSubmit()
+    {
+        Console.WriteLine("Preferences updated");
+        Console.WriteLine($"Theme: {preferencesModel.Theme}");
+        Console.WriteLine($"Language: {preferencesModel.Language}");
+        // Add actual preferences update logic here
+    }
+
+    private void ExportData()
+    {
+        Console.WriteLine("Exporting user data...");
+        // Add data export logic here
+        // This would typically generate a downloadable file with user data
+    }
+
+    private void ResetSettings()
+    {
+        Console.WriteLine("Resetting all settings to defaults...");
+        // Add logic to reset all settings to default values
+        // This would typically show a confirmation dialog first
+    }
+
+    private void DeactivateAccount()
+    {
+        Console.WriteLine("Account deactivation requested...");
+        // Add account deactivation logic here
+        // This would typically show a confirmation dialog and require password
+    }
+
+    private void DeleteAccount()
+    {
+        Console.WriteLine("Account deletion requested...");
+        // Add account deletion logic here
+        // This would typically require multiple confirmations and password verification
+    }
+
+    private class ProfileModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Role { get; set; } = "Manager";
+    }
+
+    private class SecurityModel
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+        public bool EnableTwoFactor { get; set; } = false;
+    }
+
+    private class NotificationModel
+    {
+        public bool TaskNotifications { get; set; } = true;
+        public bool ScheduleNotifications { get; set; } = true;
+        public bool SystemNotifications { get; set; } = false;
+        public bool PushNotifications { get; set; } = true;
+        public bool UrgentOnly { get; set; } = false;
+        public string QuietHoursStart { get; set; } = "22:00";
+        public string QuietHoursEnd { get; set; } = "08:00";
+    }
+
+    private class PreferencesModel
+    {
+        public string Theme { get; set; } = "Light";
+        public string Language { get; set; } = "English";
+        public string Timezone { get; set; } = "UTC-6";
+        public string DateFormat { get; set; } = "MM/DD/YYYY";
+        public bool AutoSave { get; set; } = true;
+        public bool CompactMode { get; set; } = false;
+        public bool ShowTooltips { get; set; } = true;
+        public string ItemsPerPage { get; set; } = "25";
+    }
+}
