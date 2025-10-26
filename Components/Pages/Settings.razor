@@ -362,6 +362,55 @@
                 </div>
             }
         </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone mt-5">
+            <h5 class="text-danger mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+            </h5>
+            <p class="text-muted mb-4">
+                These actions are permanent and cannot be undone. Please proceed with caution.
+            </p>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Export Your Data</h6>
+                        <p class="text-muted small mb-3">Download a copy of all your account data</p>
+                        <button class="btn btn-outline-info w-100" @onclick="ExportData">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Reset All Settings</h6>
+                        <p class="text-muted small mb-3">Restore all settings to default values</p>
+                        <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
+                            <i class="fas fa-undo me-2"></i>Reset Settings
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Deactivate Account</h6>
+                        <p class="text-muted small mb-3">Temporarily disable your account access</p>
+                        <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Delete Account</h6>
+                        <p class="text-muted small mb-3">Permanently delete your account and all data</p>
+                        <button class="btn btn-danger w-100" @onclick="DeleteAccount">
+                            <i class="fas fa-trash me-2"></i>Delete Forever
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -448,6 +497,34 @@
         Console.WriteLine($"Theme: {preferencesModel.Theme}");
         Console.WriteLine($"Language: {preferencesModel.Language}");
         // Add actual preferences update logic here
+    }
+
+    private void ExportData()
+    {
+        Console.WriteLine("Exporting user data...");
+        // Add data export logic here
+        // This would typically generate a downloadable file with user data
+    }
+
+    private void ResetSettings()
+    {
+        Console.WriteLine("Resetting all settings to defaults...");
+        // Add logic to reset all settings to default values
+        // This would typically show a confirmation dialog first
+    }
+
+    private void DeactivateAccount()
+    {
+        Console.WriteLine("Account deactivation requested...");
+        // Add account deactivation logic here
+        // This would typically show a confirmation dialog and require password
+    }
+
+    private void DeleteAccount()
+    {
+        Console.WriteLine("Account deletion requested...");
+        // Add account deletion logic here
+        // This would typically require multiple confirmations and password verification
     }
 
     private class ProfileModel
