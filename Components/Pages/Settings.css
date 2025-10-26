@@ -185,6 +185,42 @@
     font-weight: 500;
 }
 
+/* Preferences Section */
+.preferences-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #198754;
+    margin-bottom: 1.5rem;
+}
+
+.preferences-section h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.preferences-section h5 i {
+    color: #198754;
+    font-size: 1rem;
+}
+
+.preferences-section .form-check {
+    padding: 12px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.preferences-section .form-check:last-child {
+    border-bottom: none;
+}
+
+.preferences-section .form-check-label strong {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
 /* Checkbox Styling */
 .form-check-input:checked {
     background-color: #198754;
