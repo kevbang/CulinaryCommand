@@ -15,22 +15,33 @@
 
     <!-- Business Dropdown -->
     <div class="dropdown me-3">
-        <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button"
-                id="businessMenu" data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;">
+    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button"
+            id="businessMenu" data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;">
 
-            <div class="icon-box d-flex align-items-center justify-content-center me-2"
-                style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
-                <i class="bi bi-building-check fs-4" style="color:#688f72;"></i>
-            </div>
-            <span>Downtown Bistro</span>
-        </button>
+        <div class="icon-box d-flex align-items-center justify-content-center me-2"
+             style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
+            <i class="bi bi-building-check fs-4" style="color:#688f72;"></i>
+        </div>
+        <span>Downtown Bistro</span>
+    </button>
 
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="businessMenu">
-            <li><h6 class="dropdown-header">Restaurants</h6></li>
-            <li><a class="dropdown-item" href="/settings">Uptown Cafe</a></li>
-            <li><a class="dropdown-item" href="/settings">Light Deli</a></li>
-        </ul>
-    </div>
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="businessMenu">
+        <li><h6 class="dropdown-header">Restaurants</h6></li>
+
+        @foreach (var restaurant in restaurants)
+        {
+            <li>
+                <div class="dropdown-item d-flex justify-content-between align-items-center @(currentRestaurant == restaurant ? "active" : "")">
+                    <a href="/settings" class="text-decoration-none text-reset flex-grow-1">@restaurant</a>
+                    <button class="btn btn-link p-0 ms-2 edit-btn" title="Edit @restaurant">
+                        <i class="bi bi-pencil-fill fs-9 text-muted"></i>
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
 
     <!-- Profile Dropdown -->
     <div class="dropdown">
@@ -50,7 +61,7 @@
             }
         </button>
 
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="profileMenu">
             <li><a class="dropdown-item" href="/profile">View Profile</a></li>
             <li><a class="dropdown-item" href="/settings">Settings</a></li>
             <li><hr class="dropdown-divider" /></li>
@@ -73,6 +84,15 @@
 </div>
 
 @code {
+    private string currentRestaurant = "Downtown Bistro";
+
+    private List<string> restaurants = new()
+    {
+        "Downtown Bistro",
+        "Uptown Cafe",
+        "Light Deli"
+    };
+
     protected override async Task OnInitializedAsync()
     {
         Auth.OnAuthStateChanged += RefreshLayout;
@@ -91,4 +111,11 @@
         await Auth.LogoutAsync();
         NavigationManager.NavigateTo("/signin", true);
     }
+
+    private void EditRestaurant(string restaurant)
+    {
+        // Add logic here for editing
+        Console.WriteLine($"Edit clicked for {restaurant}");
+    }
 }
+

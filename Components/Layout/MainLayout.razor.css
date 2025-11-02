@@ -88,6 +88,12 @@ main {
   padding: 0.5rem 1rem;
   font-size: 0.95rem;
 }
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: #d3ddd5;
+  color: black;
+}
+
 .dropdown-header {
   font-size: 0.85rem;
   font-weight: 600;
