@@ -21,7 +21,7 @@ namespace CulinaryCommand.Data.Entities
 
 
         [Required, MaxLength(128)]
-        public ICollection<string> Roles { get; set; } = new List<string>();  // Change to ICollection?
+        public ICollection<string> Roles { get; set; } = new List<string>();
 
         // Navigation property for UserStation experience
         public ICollection<String>? StationsWorked { get; set; }
