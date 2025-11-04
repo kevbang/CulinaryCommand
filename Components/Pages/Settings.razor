@@ -1,4 +1,6 @@
 @page "/settings"
+@rendermode InteractiveServer
+
 
 <PageTitle>Settings - Culinary Command</PageTitle>
 
@@ -37,6 +39,13 @@
                         @onclick="@(() => SetActiveTab("preferences"))" 
                         type="button">
                     <i class="fas fa-cog me-2"></i>Preferences
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "restaurants" ? "active" : "")" 
+                        @onclick="@(() => SetActiveTab("restaurants"))" 
+                        type="button">
+                    <i class="fas fa-user me-2"></i>Restaurants
                 </button>
             </li>
         </ul>
@@ -84,6 +93,55 @@
 
                         <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
                     </EditForm>
+
+                    <!-- Danger Zone -->
+                    <div class="danger-zone mt-5">
+                        <h5 class="text-danger mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+                        </h5>
+                        <p class="text-muted mb-4">
+                            These actions are permanent and cannot be undone. Please proceed with caution.
+                        </p>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="danger-action-card">
+                                    <h6 class="mb-2">Export Your Data</h6>
+                                    <p class="text-muted small mb-3">Download a copy of all your account data</p>
+                                    <button class="btn btn-outline-info w-100" @onclick="ExportData">
+                                        <i class="fas fa-download me-2"></i>Export Data
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="danger-action-card">
+                                    <h6 class="mb-2">Reset All Settings</h6>
+                                    <p class="text-muted small mb-3">Restore all settings to default values</p>
+                                    <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
+                                        <i class="fas fa-undo me-2"></i>Reset Settings
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="danger-action-card">
+                                    <h6 class="mb-2">Deactivate Account</h6>
+                                    <p class="text-muted small mb-3">Temporarily disable your account access</p>
+                                    <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
+                                        <i class="fas fa-user-slash me-2"></i>Deactivate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="danger-action-card">
+                                    <h6 class="mb-2">Delete Account</h6>
+                                    <p class="text-muted small mb-3">Permanently delete your account and all data</p>
+                                    <button class="btn btn-danger w-100" @onclick="DeleteAccount">
+                                        <i class="fas fa-trash me-2"></i>Delete Forever
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
 
@@ -361,56 +419,65 @@
                     </EditForm>
                 </div>
             }
+
+            @if (activeTab == "restaurants")
+            {
+                <div class="tab-pane active">
+                    <h4 class="mb-4">
+                        <i class="fas fa-utensils me-2"></i>Restaurant Information
+                    </h4>
+
+                    <EditForm Model="@restaurantModel" OnValidSubmit="@HandleRestaurantSubmit">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="restaurantName" class="form-label">Restaurant Name</label>
+                                <InputText id="restaurantName" class="form-control" @bind-Value="restaurantModel.Name" placeholder="Enter restaurant name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cuisineType" class="form-label">Cuisine Type</label>
+                                <InputText id="cuisineType" class="form-control" @bind-Value="restaurantModel.CuisineType" placeholder="Italian, Mexican, etc." />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">  
+                            <label for="address" class="form-label">Address</label>
+                            <InputText id="address" class="form-control" @bind-Value="restaurantModel.Address" placeholder="123 Main Street" />
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone</label>
+                                <InputText id="phone" class="form-control" @bind-Value="restaurantModel.Phone" placeholder="(555) 123-4567" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email</label>
+                                <InputText id="email" type="email" class="form-control" @bind-Value="restaurantModel.Email" placeholder="contact@restaurant.com" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <InputTextArea id="description" class="form-control" @bind-Value="restaurantModel.Description" placeholder="Short description or notes about the restaurant" rows="3" />
+                        </div>
+
+                        <div class="row mb-3">
+                            
+                            <div class="col-md-6">
+                                <label for="website" class="form-label">Website</label>
+                                <InputText id="website" class="form-control" @bind-Value="restaurantModel.Website" placeholder="https://example.com" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success settings-btn">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </EditForm>
+                </div>
+            }
+
         </div>
 
-        <!-- Danger Zone -->
-        <div class="danger-zone mt-5">
-            <h5 class="text-danger mb-3">
-                <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
-            </h5>
-            <p class="text-muted mb-4">
-                These actions are permanent and cannot be undone. Please proceed with caution.
-            </p>
-            
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="danger-action-card">
-                        <h6 class="mb-2">Export Your Data</h6>
-                        <p class="text-muted small mb-3">Download a copy of all your account data</p>
-                        <button class="btn btn-outline-info w-100" @onclick="ExportData">
-                            <i class="fas fa-download me-2"></i>Export Data
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="danger-action-card">
-                        <h6 class="mb-2">Reset All Settings</h6>
-                        <p class="text-muted small mb-3">Restore all settings to default values</p>
-                        <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
-                            <i class="fas fa-undo me-2"></i>Reset Settings
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="danger-action-card">
-                        <h6 class="mb-2">Deactivate Account</h6>
-                        <p class="text-muted small mb-3">Temporarily disable your account access</p>
-                        <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
-                            <i class="fas fa-user-slash me-2"></i>Deactivate
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="danger-action-card">
-                        <h6 class="mb-2">Delete Account</h6>
-                        <p class="text-muted small mb-3">Permanently delete your account and all data</p>
-                        <button class="btn btn-danger w-100" @onclick="DeleteAccount">
-                            <i class="fas fa-trash me-2"></i>Delete Forever
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
     </div>
 </div>
 
@@ -424,6 +491,8 @@
     private SecurityModel securityModel = new();
     private NotificationModel notificationModel = new();
     private PreferencesModel preferencesModel = new();
+
+    private RestaurantModel restaurantModel = new();
 
     protected override void OnInitialized()
     {
@@ -459,6 +528,8 @@
             ShowTooltips = true,
             ItemsPerPage = "25"
         };
+
+        
     }
 
     private void SetActiveTab(string tab)
@@ -497,6 +568,24 @@
         Console.WriteLine($"Theme: {preferencesModel.Theme}");
         Console.WriteLine($"Language: {preferencesModel.Language}");
         // Add actual preferences update logic here
+    }
+
+    private void HandleRestaurantSubmit()
+{
+    Console.WriteLine($"Restaurant updated: {restaurantModel.Name} ({restaurantModel.CuisineType})");
+    // TODO: Add actual database update logic or API call
+}
+
+    private class RestaurantModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string CuisineType { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int Rating { get; set; } = 5;
+        public string Website { get; set; } = string.Empty;
     }
 
     private void ExportData()

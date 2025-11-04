@@ -83,3 +83,19 @@ main {
   right: 0.75rem;
   top: 0.5rem;
 }
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+}
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: #d3ddd5;
+  color: black;
+}
+
+.dropdown-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6c757d;
+}
