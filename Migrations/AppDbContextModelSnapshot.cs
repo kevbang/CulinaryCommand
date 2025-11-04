@@ -76,12 +76,6 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.PrimitiveCollection<string>("LocationId")
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("LocationId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -97,7 +91,7 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(12)
                         .HasColumnType("varchar(12)");
 
-                    b.Property<string>("Role")
+                    b.PrimitiveCollection<string>("Roles")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
@@ -109,8 +103,6 @@ namespace CulinaryCommand.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LocationId1");
 
                     b.ToTable("Users");
                 });
@@ -160,11 +152,19 @@ namespace CulinaryCommand.Migrations
                     b.ToTable("Tasks");
                 });
 
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>
+            modelBuilder.Entity("LocationUser", b =>
                 {
-                    b.HasOne("CulinaryCommand.Data.Entities.Location", null)
-                        .WithMany("Users")
-                        .HasForeignKey("LocationId1");
+                    b.Property<int>("LocationsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LocationsId", "UsersId");
+
+                    b.HasIndex("UsersId");
+
+                    b.ToTable("LocationUser");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.WorkTask", b =>
@@ -176,9 +176,19 @@ namespace CulinaryCommand.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
+            modelBuilder.Entity("LocationUser", b =>
                 {
-                    b.Navigation("Users");
+                    b.HasOne("CulinaryCommand.Data.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CulinaryCommand.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
