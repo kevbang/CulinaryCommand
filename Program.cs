@@ -12,9 +12,9 @@ builder.Services.AddRazorComponents()
 //builder.Services.AddRazorPages();
 
 // DB hookup
-var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+var conn = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
+    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 23))));
 
 
 // registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.

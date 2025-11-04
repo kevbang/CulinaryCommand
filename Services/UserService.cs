@@ -35,7 +35,7 @@ namespace CulinaryCommand.Services
                 Name = name,
                 Email = email,
                 Password = HashPassword(password),
-                Role = role,
+                Roles = new List<string> { role },
                 Phone = "",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -60,7 +60,7 @@ namespace CulinaryCommand.Services
             {
                 return false;
             }
-            return VerifyPassword(password, HashPassword(user.Password));
+            return VerifyPassword(password, user.Password);
         }
 
 

@@ -19,8 +19,9 @@ namespace CulinaryCommand.Data.Entities
         [Required, MaxLength(256)]
         public string? Password { get; set; }
 
+
         [Required, MaxLength(128)]
-        public String? Role { get; set; } = string.Empty;  // Change to ICollection?
+        public ICollection<string> Roles { get; set; } = new List<string>();
 
         // Navigation property for UserStation experience
         public ICollection<String>? StationsWorked { get; set; }
@@ -28,7 +29,7 @@ namespace CulinaryCommand.Data.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public ICollection<int>? LocationId { get; set; }
+        public ICollection<Location>? Locations { get; set; }
     }
 }
 
