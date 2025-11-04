@@ -1,0 +1,62 @@
+@namespace CulinaryCommand.Components.Custom
+@using CulinaryCommand.Data.Entities
+
+<div class="cc-card">
+    <div class="cc-card-header">
+        <h3>Today's Prep Tasks</h3>
+    </div>
+
+    @if (Tasks is null || Tasks.Count == 0)
+    {
+        <div class="cc-empty">No prep tasks for today.</div>
+    }
+    else
+    {
+        <ul class="cc-task-list">
+            @foreach (var t in Tasks)
+            {
+                <li class="cc-task @(t.IsDone ? "cc-task-done" : null)">
+                    <button class="cc-check" @onclick="() => ToggleDone(t)" aria-label="toggle complete">
+                        <span class="cc-check-circle @(t.IsDone ? "checked" : "")"></span>
+                    </button>
+
+                    <div class="cc-task-main">
+                        <div class="cc-title">@t.Title</div>
+                        <div class="cc-metrics">
+                            <span>Par: <strong>@t.Par</strong></span>
+                            <span>Count: <strong>@t.Count</strong></span>
+                            <span>Prep: <strong>@t.Prep</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="cc-task-meta">
+                        @if (t.DurationMin is not null)
+                        {
+                            <div class="cc-duration">🕒 @t.DurationMin min</div>
+                        }
+                        <button class="cc-mark" @onclick="() => MarkDone(t)" disabled="@(t.IsDone)">
+                            Mark Done
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public List<PrepTask> Tasks { get; set; } = new();
+    [Parameter] public EventCallback<PrepTask> OnMarkDone { get; set; }
+
+    void ToggleDone(PrepTask t)
+    {
+        t.IsDone = !t.IsDone;
+        StateHasChanged();
+    }
+
+    async Task MarkDone(PrepTask t)
+    {
+        if (!t.IsDone) t.IsDone = true;
+        if (OnMarkDone.HasDelegate) await OnMarkDone.InvokeAsync(t);
+    }
+}

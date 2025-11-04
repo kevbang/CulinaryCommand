@@ -1,66 +1,34 @@
 @page "/tasks"
 @namespace CulinaryCommand.Components.Pages
 @using CulinaryCommand.Components.Custom
+@using CulinaryCommand.Data.Entities
 
 <PageTitle>My Tasks</PageTitle>
 
 <div class="container mt-4">
-    <h1 class="fw-bold mb-3">Current Tasks</h1>
-    <h5>Good morning, @username 👋</h5>
-    <h5>Here's what's on your prep list today</h5>
+    <h1 class="fw-bold mb-1">Welcome, @username</h1>
+    <div class="text-muted mb-3">Here's what needs your attention today.</div>
 
-    @if (taskList == null || taskList.Count == 0)
-    {
-        <p><em>No tasks available.</em></p>
-    }
-    else
-    {
-        <div class="row g-3">
-            @foreach (var t in taskList) // task list defined below
-{
-    <div class="col-12 col-sm-6 col-lg-4">
-        <TaskCard TaskName="@t.TaskName" Station="@t.Station" Time="@t.Time" Status="@t.Status"
-            OnComplete="() => MarkTaskComplete(t)" OnDelete="() => RemoveTask(t)" />
-    </div>
-}
-        </div>
-    }
+    <PrepTasksPanel Tasks="@prepTasks" OnMarkDone="HandleMarkDone" />
 </div>
 
 @code {
-    private class TaskData
-    {
-        public string TaskName { get; set; } = "";
-        public string Station { get; set; } = "";
-        public string Time { get; set; } = "";
-        public string Status { get; set; } = "Pending";
-    }
+    private string username = "Alex";
 
-    private List<TaskData> taskList = new();
-    private string username = "Dan";
+    // Temporary sample data (replace with API call)
+    private List<PrepTask> prepTasks = new()
+    {
+        new() { Title="Chop onions", Par=5, Count=2, DurationMin=30 },
+        new() { Title="Prepare marinara sauce", Par=3, Count=1, DurationMin=30 },
+        new() { Title="Portion chicken breasts", Par=10, Count=4, DurationMin=30 },
+        new() { Title="Mix house dressing", Par=2, Count=0, DurationMin=30 },
+        new() { Title="Slice fresh bread", Par=8, Count=2, DurationMin=30 },
+    };
 
-    // tasks are currently hardcoded to this component
-    // in the future, this will be an API call
-    protected override async Task OnInitializedAsync()
+    Task HandleMarkDone(PrepTask t)
     {
-        await Task.Delay(500);
-        taskList = new()
-{
-new() { TaskName = "Cook chicken", Station = "Grill", Time = "10am" },
-new() { TaskName = "Cut peppers", Station = "Prep", Time = "2pm" },
-new() { TaskName = "Clean dishes", Station = "Dish", Time = "10pm" }
-};
-    }
-
-    private void MarkTaskComplete(TaskData task)
-    {
-        Console.WriteLine($"[DEBUG] MarkTaskComplete called for {task.TaskName}");
-        task.Status = "Completed";
-        StateHasChanged(); //re-render UI
-    }
-    private void RemoveTask(TaskData task)
-    {
-        taskList.Remove(task);
-        StateHasChanged();
+        // TODO: persist completion via your API
+        Console.WriteLine($"[DEBUG] Marked done: {t.Title}");
+        return Task.CompletedTask;
     }
 }

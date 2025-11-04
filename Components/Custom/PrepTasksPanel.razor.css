@@ -1,0 +1,25 @@
+.cc-card{background:#fff;border:1px solid #e6e8eb;border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.cc-card-header{padding:16px 20px;border-bottom:1px solid #eef0f2}
+.cc-card-header h3{margin:0;font-size:16px;font-weight:600;color:#111827}
+.cc-empty{padding:20px;color:#6b7280}
+
+.cc-task-list{list-style:none;margin:0;padding:0}
+.cc-task{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #f2f4f7}
+.cc-task:last-child{border-bottom:none}
+.cc-task-done .cc-title{color:#6b7280;text-decoration:line-through}
+
+.cc-check{border:0;background:transparent;padding:0;cursor:pointer}
+.cc-check-circle{width:20px;height:20px;border-radius:50%;border:2px solid #cbd5e1;display:inline-block}
+.cc-check-circle.checked{background:#22c55e;border-color:#22c55e;box-shadow:inset 0 0 0 2px #fff}
+
+.cc-task-main{flex:1 1 auto;min-width:0}
+.cc-title{font-weight:600;color:#111827;margin-bottom:4px}
+.cc-metrics{display:flex;gap:16px;color:#6b7280;font-size:13px}
+.cc-metrics strong{color:#111827;font-weight:600}
+
+.cc-task-meta{display:flex;align-items:center;gap:12px}
+.cc-duration{color:#6b7280;font-size:13px}
+.cc-mark{border:1px solid #e5e7eb;background:#f9fafb;color:#111827;border-radius:8px;
+        padding:8px 12px;font-weight:600;cursor:pointer}
+.cc-mark:hover{background:#f3f4f6}
+.cc-mark:disabled{opacity:.6;cursor:not-allowed}
