@@ -67,13 +67,15 @@ deploy-app:
      Start-Sleep -Seconds 5;
      Write-Host 'Copying files...';
      Copy-Item -Recurse -Force 'publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
+
      Write-Host 'Updating connection string in appsettings.json...';
-     `$connString = `"Server=${env:DB_SERVER};Port=3306;Database=${env:DB_NAME};User=${env:DB_USER};Password=${env:DB_PASSWORD};SslMode=None;TreatTinyAsBoolean=false`";
-     `$configPath = 'C:\Users\vm-user\CulinaryCommand\publish\appsettings.json';
-     `$appSettings = Get-Content `$configPath | ConvertFrom-Json;
-     `$appSettings.ConnectionStrings.DefaultConnection = `$connString;
-     `$appSettings | ConvertTo-Json -Depth 10 | Set-Content `$configPath;
+     $connString = \"Server=${DB_SERVER};Port=3306;Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};SslMode=None;TreatTinyAsBoolean=false\";
+     $configPath = 'C:\Users\vm-user\CulinaryCommand\publish\appsettings.json';
+     $appSettings = Get-Content $configPath | ConvertFrom-Json;
+     $appSettings.ConnectionStrings.DefaultConnection = $connString;
+     $appSettings | ConvertTo-Json -Depth 10 | Set-Content $configPath;
      Write-Host 'Connection string updated successfully';
+
      Write-Host 'Starting app pool...';
      Start-WebAppPool -Name 'CulinaryCommand';
      Write-Host 'Deployment complete!';
