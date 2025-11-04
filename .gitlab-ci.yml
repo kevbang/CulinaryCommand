@@ -69,7 +69,7 @@ deploy-app:
      Copy-Item -Recurse -Force 'publish-temp\*' 'C:\Users\vm-user\CulinaryCommand\publish\';
 
      Write-Host 'Updating connection string in appsettings.json...';
-     $connString = \"Server=${DB_SERVER};Port=3306;Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};SslMode=None;TreatTinyAsBoolean=false\";
+     $connString = \'Server=${DB_SERVER};Port=3306;Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};SslMode=None;TreatTinyAsBoolean=false\'';
      $configPath = 'C:\Users\vm-user\CulinaryCommand\publish\appsettings.json';
      $appSettings = Get-Content $configPath | ConvertFrom-Json;
      $appSettings.ConnectionStrings.DefaultConnection = $connString;
