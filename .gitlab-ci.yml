@@ -22,6 +22,8 @@ build-app:
   script:
     - echo "Building CulinaryCommand..."
     - dotnet --version # debugging purposes
+    # Verify connection string is set (will show first 50 chars only for security)
+    - echo "Connection string loaded:" ${ConnectionStrings__DefaultConnection:0:50}...
     - dotnet clean CulinaryCommand.csproj
     - dotnet restore CulinaryCommand.csproj
     - dotnet build CulinaryCommand.csproj --configuration Release
@@ -30,6 +32,9 @@ build-app:
     paths:
       - publish-temp/
     expire_in: 1 hour 
+
+variables:
+  ConnectionStrings__DefaultConnection: "Server=${DB_SERVER};Port=3306;Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};SslMode=None;TreatTinyAsBoolean=false"
 
 # deploy to IIS
 deploy-app:
