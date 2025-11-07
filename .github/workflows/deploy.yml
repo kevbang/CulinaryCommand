@@ -1,0 +1,60 @@
+name: Deploy Culinary Command
+
+on:
+    push:
+        branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        env:
+            AWS_REGION: us-east-2
+            AWS_ACCOUNT_NUMBER: 578513450318
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_NUMBER }}:role/culinary-command-iac-role
+                aws-region: ${{ env.AWS_REGION }}
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+
+            - name: Terraform Init
+              working-directory: terraform
+              env:
+                TF_IN_AUTOMATION: true
+                TF_INPUT: false
+              run: terraform init -input=false -no-color
+
+            - name: Terraform Plan
+              working-directory: terraform
+              env:
+                TF_IN_AUTOMATION: true
+                TF_INPUT: false
+                TF_VAR_lightsail_instance_name: culinary-command
+                TF_VAR_blueprint_id: ubuntu_24_04
+                TF_VAR_bundle_id: nano_3_0
+              run: terraform plan -input=false -no-color -out tfplan
+
+            - name: Terraform Apply
+              if: github.ref == 'refs/heads/main'
+              working-directory: terraform
+              env:
+                  TF_IN_AUTOMATION: true
+                  TF_INPUT: false
+                  TF_VAR_lightsail_instance_name: culinary-command
+                  TF_VAR_blueprint_id: ubuntu_24_04
+                  TF_VAR_bundle_id: nano_3_0
+              run: terraform apply -input=false -auto-approve tfplan
+
+            - name: Display output variables
+              working-directory: terraform
+              run: terraform output -no-color
