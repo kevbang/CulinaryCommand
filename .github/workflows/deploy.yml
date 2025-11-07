@@ -40,8 +40,8 @@ jobs:
                 TF_IN_AUTOMATION: true
                 TF_INPUT: false
                 TF_VAR_lightsail_instance_name: culinary-command
-                TF_VAR_blueprint_id: ubuntu_24_04
-                TF_VAR_bundle_id: nano_3_0
+                TF_VAR_blueprint_id: ubuntu_22_04
+                TF_VAR_bundle_id: nano_2_0
                 TF_VAR_key_pair_name: culinary-command-key
               run: terraform plan -input=false -no-color -out tfplan
 
@@ -52,8 +52,8 @@ jobs:
                   TF_IN_AUTOMATION: true
                   TF_INPUT: false
                   TF_VAR_lightsail_instance_name: culinary-command
-                  TF_VAR_blueprint_id: ubuntu_24_04
-                  TF_VAR_bundle_id: nano_3_0
+                  TF_VAR_blueprint_id: ubuntu_22_04
+                  TF_VAR_bundle_id: nano_2_0
                   TF_VAR_key_pair_name: culinary-command-key
               run: terraform apply -input=false -auto-approve tfplan
 

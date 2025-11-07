@@ -5,12 +5,12 @@ variable "lightsail_instance_name" {
 
 variable "blueprint_id" {
   type    = string
-  default = "ubuntu_24_04"
+  default = "ubuntu_22_04"
 }
 
 variable "bundle_id" {
   type    = string
-  default = "nano_3_0"
+  default = "nano_2_0"
 }
 
 variable "key_pair_name" {
