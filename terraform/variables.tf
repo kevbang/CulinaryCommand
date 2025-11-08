@@ -15,5 +15,5 @@ variable "bundle_id" {
 
 variable "key_pair_name" {
     type = string
-    default = null
+    default = "culinary-command-key"
 }
