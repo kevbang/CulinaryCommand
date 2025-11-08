@@ -8,12 +8,20 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
     deploy:
         runs-on: ubuntu-latest
         env:
             AWS_REGION: us-east-2
             AWS_ACCOUNT_NUMBER: 578513450318
+            PROJECT_PATH: CulinaryCommand.csproj
+            PUBLISH_DIR: ./publish
+            REMOTE_APP_DIR: /var/www/culinarycommand
+            SERVICE_NAME: culinarycommand
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -60,3 +68,45 @@ jobs:
             - name: Display output variables
               working-directory: terraform
               run: terraform output -no-color
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: 9.0.x
+
+            - name: Build and publish Blazor Server
+              run: |
+                dotnet restore "${{ env.PROJECT_PATH }}"
+                dotnet publish "${{ env.PROJECT_PATH }}" -c Release -o "${{ env.PUBLISH_DIR }}"
+
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add host key
+              run: |
+                mkdir -p ~/.ssh
+                ssh-keyscan -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Upload artifacts to Lightsail instance
+              run: |
+                REMOTE_TMP="~/deploy/${{ github.sha }}"
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
+                rsync -az --delete "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
+
+            - name: Activate release and restart service
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  sudo mkdir -p '${{ env.REMOTE_APP_DIR }}' && \
+                  sudo rsync -a --delete ~/deploy/${{ github.sha }}/ '${{ env.REMOTE_APP_DIR }}'/ && \
+                  sudo chown -R www-data:www-data '${{ env.REMOTE_APP_DIR }}' && \
+                  rm -rf ~/deploy/${{ github.sha }} && \
+                  sudo systemctl restart '${{ env.SERVICE_NAME }}' && \
+                  sudo systemctl --no-pager --lines=5 status '${{ env.SERVICE_NAME }}' || true"
+
+            - name: Health check (local port 5000)
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  curl -sS -I http://127.0.0.1:5000 || (sudo systemctl status --no-pager -l '${{ env.SERVICE_NAME }}'; \
+                  sudo journalctl -u '${{ env.SERVICE_NAME }}' -n 100 --no-pager; exit 1)"
