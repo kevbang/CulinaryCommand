@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // DB hookup
-var conn = builder.Configuration.GetConnectionString("Default");
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(conn))
 {
     throw new InvalidOperationException("Missing connection string 'Default'. Set ConnectionStrings__Default via environment or config.");
