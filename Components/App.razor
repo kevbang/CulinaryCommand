@@ -1,4 +1,6 @@
 ﻿@namespace CulinaryCommand.Components
+@inject NavigationManager Nav
+@inject CulinaryCommand.Services.AuthService Auth
 
 <!DOCTYPE html>
 <html lang="en">
@@ -27,3 +29,23 @@
 </body>
 
 </html>
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            // Don't re-hydrate if user is already on /signin or /signup
+            var path = Nav.Uri.ToLower();
+            if (!path.Contains("/signin") && !path.Contains("/signup"))
+            {
+                await Auth.InitializeFromJsAsync();
+            }
+
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+}

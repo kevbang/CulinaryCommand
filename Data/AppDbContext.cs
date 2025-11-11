@@ -13,16 +13,30 @@ namespace CulinaryCommand.Data
         public DbSet<Location> Locations => Set<Location>();
         public DbSet<User> Users => Set<User>();
         public DbSet<WorkTask> Tasks => Set<WorkTask>();
+        public DbSet<Company> Companies => Set<Company>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Set up many-to-many relationship between Users and Locations
-            // This allows users to be associated with multiple locations and vice versa
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Company)
+                .WithMany(c => c.Employees)
+                .HasForeignKey(u => u.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Location>()
+                .HasOne(l => l.Company)
+                .WithMany(c => c.Locations)
+                .HasForeignKey(l => l.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 🔹 Many-to-many relationship: User <-> Location
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Locations)
-                .WithMany(l => l.Users);
+                .WithMany(l => l.Users)
+                .UsingEntity(j => j.ToTable("UserLocations"));
         }
     }  
 }
-
-

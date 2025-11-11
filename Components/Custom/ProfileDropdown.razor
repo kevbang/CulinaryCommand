@@ -1,0 +1,44 @@
+@using CulinaryCommand.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="dropdown">
+    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 px-3"
+            type="button"
+            id="profileMenu"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="height:3rem;"
+            title="Profile">
+        <img src="images/profile.jpg"
+             alt="Profile"
+             class="rounded-circle me-2"
+             style="width:2.5rem; height:2.5rem;" />
+
+        <div class="text-start">
+            <div class="fw-semibold">@Auth.CurrentUser</div>
+            <small class="text-muted">@Auth.UserRole</small>
+        </div>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="profileMenu">
+        <li><h6 class="dropdown-header">@Auth.Company</h6></li>
+        <li><a class="dropdown-item" href="/profile">View Profile</a></li>
+        <li><a class="dropdown-item" href="/settings">Settings</a></li>
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+            <button class="dropdown-item text-danger fw-semibold" @onclick="Logout">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+            </button>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin", forceLoad: true);
+    }
+}

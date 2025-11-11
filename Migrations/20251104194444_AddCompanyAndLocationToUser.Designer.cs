@@ -4,6 +4,7 @@ using CulinaryCommand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251104194444_AddCompanyAndLocationToUser")]
+    partial class AddCompanyAndLocationToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,68 +24,6 @@ namespace CulinaryCommand.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Company", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("CompanyCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("LLCName")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("State")
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<string>("TaxId")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("ZipCode")
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Companies");
-                });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
                 {
@@ -102,14 +43,6 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MarginEdgeKey")
-                        .IsRequired()
-                        .HasMaxLength(124)
-                        .HasColumnType("varchar(124)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -127,8 +60,6 @@ namespace CulinaryCommand.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
                     b.ToTable("Locations");
                 });
 
@@ -140,8 +71,11 @@ namespace CulinaryCommand.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CompanyId")
-                        .HasColumnType("int");
+                    b.Property<string>("Company")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("CompanyCode")
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -152,9 +86,7 @@ namespace CulinaryCommand.Migrations
                         .HasColumnType("varchar(256)");
 
                     b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -183,8 +115,6 @@ namespace CulinaryCommand.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
 
                     b.ToTable("Users");
                 });
@@ -246,28 +176,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasIndex("UsersId");
 
-                    b.ToTable("UserLocations", (string)null);
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Company", "Company")
-                        .WithMany("Locations")
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Company");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Company", "Company")
-                        .WithMany("Employees")
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Company");
+                    b.ToTable("LocationUser");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.WorkTask", b =>
@@ -292,13 +201,6 @@ namespace CulinaryCommand.Migrations
                         .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Company", b =>
-                {
-                    b.Navigation("Employees");
-
-                    b.Navigation("Locations");
                 });
 #pragma warning restore 612, 618
         }

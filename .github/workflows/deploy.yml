@@ -1,0 +1,120 @@
+name: Deploy Culinary Command
+
+on:
+    push:
+        branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        env:
+            AWS_REGION: us-east-2
+            AWS_ACCOUNT_NUMBER: 578513450318
+            PROJECT_PATH: CulinaryCommand.csproj
+            PUBLISH_DIR: ./publish
+            REMOTE_APP_DIR: /var/www/culinarycommand
+            SERVICE_NAME: culinarycommand
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Add host key
+              run: |
+                mkdir -p ~/.ssh
+                ssh-keyscan -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_NUMBER }}:role/culinary-command-iac-role
+                aws-region: ${{ env.AWS_REGION }}
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+
+            - name: Terraform Init
+              working-directory: terraform
+              env:
+                TF_IN_AUTOMATION: true
+                TF_INPUT: false
+              run: terraform init -input=false -no-color
+
+            - name: Terraform Plan
+              working-directory: terraform
+              env:
+                TF_IN_AUTOMATION: true
+                TF_INPUT: false
+                TF_VAR_lightsail_instance_name: culinary-command
+                TF_VAR_blueprint_id: ubuntu_22_04
+                TF_VAR_bundle_id: nano_2_0
+                TF_VAR_key_pair_name: culinary-command-key
+              run: terraform plan -input=false -no-color -out tfplan
+
+            - name: Terraform Apply
+              if: github.ref == 'refs/heads/main'
+              working-directory: terraform
+              env:
+                  TF_IN_AUTOMATION: true
+                  TF_INPUT: false
+                  TF_VAR_lightsail_instance_name: culinary-command
+                  TF_VAR_blueprint_id: ubuntu_22_04
+                  TF_VAR_bundle_id: nano_2_0
+                  TF_VAR_key_pair_name: culinary-command-key
+              run: terraform apply -input=false -auto-approve tfplan
+
+            - name: Display output variables
+              working-directory: terraform
+              run: terraform output -no-color
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: 9.0.x
+
+            - name: Build and publish Blazor Server
+              run: |
+                dotnet restore "${{ env.PROJECT_PATH }}"
+                dotnet publish "${{ env.PROJECT_PATH }}" -c Release -o "${{ env.PUBLISH_DIR }}"
+
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Upload artifacts to Lightsail instance
+              run: |
+                REMOTE_TMP="~/deploy/${{ github.sha }}"
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
+                rsync -az --delete --exclude='.env' "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
+
+
+            - name: Write RDS connection env file
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  sudo mkdir -p /var/www/culinarycommand && \
+                  printf 'ASPNETCORE_ENVIRONMENT=Production\nConnectionStrings__Default=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;\n' | \
+                  sudo tee /var/www/culinarycommand/.env > /dev/null"
+
+            - name: RDS port check (via peering)
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
+                  nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
+
+            - name: Activate release and restart service
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  sudo mkdir -p '${{ env.REMOTE_APP_DIR }}' && \
+                  sudo rsync -a --delete --exclude='.env' ~/deploy/${{ github.sha }}/ '${{ env.REMOTE_APP_DIR }}'/ && \
+                  sudo chown -R www-data:www-data '${{ env.REMOTE_APP_DIR }}' && \
+                  rm -rf ~/deploy/${{ github.sha }} && \
+                  sudo systemctl restart '${{ env.SERVICE_NAME }}' && \
+                  sudo systemctl --no-pager --lines=5 status '${{ env.SERVICE_NAME }}' || true"

@@ -1,0 +1,13 @@
+@rendermode InteractiveServer
+@inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager Nav
+
+<button class="btn btn-outline-danger" @onclick="Logout">Logout</button>
+
+@code {
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin", true); // hard reload
+    }
+}

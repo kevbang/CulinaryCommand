@@ -8,11 +8,11 @@
         // Redirect unauthenticated users to SignIn
         if (!Auth.IsSignedIn)
         {
-            Nav.NavigateTo("/signin", true);
+            Nav.NavigateTo("/signin");
         }
         else
         {
-            Nav.NavigateTo("/dashboard", true);
+            Nav.NavigateTo("/dashboard");
         }
     }
 }

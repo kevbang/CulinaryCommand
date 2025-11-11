@@ -11,9 +11,11 @@ namespace CulinaryCommand.Services
         Task<User?> CreateUserAsync(string name, string email, string password, string role);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> ValidateCredentialsAsync(string email, string password);
+        //Task<List<User>> GetSubordinatesAsync(User user);
     }
 
-    public class UserService : IUserService {
+    public class UserService : IUserService
+    {
         private readonly AppDbContext _context;
 
         // constructer
@@ -45,14 +47,18 @@ namespace CulinaryCommand.Services
             // add user to database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-            
+
             return user;
         }
 
         public async Task<User?> GetUserByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
+            return await _context.Users
+                .Include(u => u.Company)
+                .Include(u => u.Locations)
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
+
 
         public async Task<User?> ValidateCredentialsAsync(string email, string password)
         {
@@ -79,6 +85,24 @@ namespace CulinaryCommand.Services
             var hashOfInput = HashPassword(password);
             return hashOfInput == HashPassword(hashedPassword);
         }
+
+        // public async Task<List<User>> GetSubordinatesAsync(User user)
+        // {
+        //     if (user.Role == "Admin")
+        //     {
+        //         return await _context.Users
+        //             .Where(u => u.CompanyCode == user.CompanyCode && u.Role != "Admin")
+        //             .ToListAsync();
+        //     }
+        //     else if (user.Role == "Manager")
+        //     {
+        //         return await _context.Users
+        //             .Where(u => u.CompanyCode == user.CompanyCode && u.Location == user.Location && u.Role == "Employee")
+        //             .ToListAsync();
+        //     }
+
+        //     return new List<User>();
+        // }
     }
 
 }
