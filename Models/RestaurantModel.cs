@@ -2,7 +2,7 @@ namespace CulinaryCommand.Models
 {
     public class RestaurantModel
     {
-        public int Id { get; set; } = 0;
+        public int? Id { get; set; } = null;
         public string Name { get; set; } = string.Empty;
         public string CuisineType { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;

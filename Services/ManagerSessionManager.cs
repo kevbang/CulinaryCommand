@@ -53,7 +53,7 @@ namespace CulinaryCommand.Services
         {
             ManagerId = null;
             ManagerName = null;
-            Restaurants = null;
+            Restaurants = new List<RestaurantModel>(); //empty list
         }
     }
 }
