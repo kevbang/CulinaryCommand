@@ -83,7 +83,7 @@ namespace CulinaryCommand.Services
         private bool VerifyPassword(string password, string hashedPassword)
         {
             var hashOfInput = HashPassword(password);
-            return hashOfInput == hashedPassword;
+            return hashOfInput == HashPassword(hashedPassword);
         }
 
         // public async Task<List<User>> GetSubordinatesAsync(User user)

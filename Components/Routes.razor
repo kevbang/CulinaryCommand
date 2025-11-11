@@ -1,10 +1,12 @@
-﻿@* @namespace CulinaryCommand.Components
+﻿@namespace CulinaryCommand.Components
 @inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager Nav
 @rendermode InteractiveServer
 
-<Router AppAssembly="@typeof(Program).Assembly">
+<Router AppAssembly="@typeof(Program).Assembly" PreferExactMatches="true">
     <Found Context="routeData">
-        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn))
+        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp))
         {
             <RouteView RouteData="@routeData" />
         }
@@ -13,7 +15,6 @@
             <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
         }
     </Found>
-
     <NotFound>
         <LayoutView Layout="@typeof(Layout.MainLayout)">
             <p>Sorry, nothing found at this address.</p>
@@ -24,21 +25,19 @@
 @code {
     private bool _initialized;
 
-    // Only call JS after the app is interactive (not during prerender)
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_initialized)
         {
-            try
+            // Don't re-hydrate if user is already on /signin or /signup
+            var path = Nav.Uri.ToLower();
+            if (!path.Contains("/signin") && !path.Contains("/signup"))
             {
-                await Auth.InitializeFromJsAsync();   // the safe JS version
-                _initialized = true;
-                StateHasChanged();
+                await Auth.InitializeFromJsAsync();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ Auth init failed (App): {ex.Message}");
-            }
+
+            _initialized = true;
+            StateHasChanged();
         }
     }
-} *@
+}
