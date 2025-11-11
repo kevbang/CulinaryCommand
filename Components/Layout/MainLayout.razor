@@ -35,7 +35,7 @@
                 <div class="dropdown-item d-flex justify-content-between align-items-center @(currentRestaurant == restaurant ? "active" : "")">
                     <span class="flex-grow-1" 
                         style="cursor: pointer;" 
-                        @onclick="() => EditRestaurant(restaurant)">
+                        @onclick="() => ChangeRestaurant(restaurant)">
                         @restaurant
                     </span>
                     <button class="btn btn-link p-0 ms-2 edit-btn" 
@@ -128,6 +128,7 @@
 
     private void ChangeRestaurant(string restaurant) {
         Console.WriteLine($"Editing {restaurant}");
+        currentRestaurant = restaurant;
         NavigationManager.NavigateTo($"/dashboard", forceLoad: false);
     }
 }
