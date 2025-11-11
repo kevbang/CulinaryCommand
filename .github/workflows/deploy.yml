@@ -95,6 +95,20 @@ jobs:
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
                 rsync -az --delete "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
 
+
+            - name: Write RDS connection env file
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  sudo mkdir -p /var/www/culinarycommand && \
+                  printf 'ASPNETCORE_ENVIRONMENT=Production\nConnectionStrings__Default=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;\n' | \
+                  sudo tee /var/www/culinarycommand/.env > /dev/null"
+
+            - name: RDS port check (via peering)
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
+                  nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
+
             - name: Activate release and restart service
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\

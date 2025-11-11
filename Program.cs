@@ -9,19 +9,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-//builder.Services.AddRazorPages();
-
 // DB hookup
 var conn = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 23))));
+if (string.IsNullOrWhiteSpace(conn))
+{
+    throw new InvalidOperationException("Missing connection string 'Default'. Set ConnectionStrings__Default via environment or config.");
+}
 
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
 
 // registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<AuthService>();
-
 
 var app = builder.Build();
 
@@ -37,12 +38,11 @@ if (!app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
-//app.UseRouting();
-//app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-//app.MapRazorPages();
+// Simple health endpoint for load balancers/CI checks
+app.MapGet("/health", () => "OK");
 
 app.Run();

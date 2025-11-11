@@ -77,7 +77,7 @@ namespace CulinaryCommand.Services
         private bool VerifyPassword(string password, string hashedPassword)
         {
             var hashOfInput = HashPassword(password);
-            return hashOfInput == HashPassword(hashedPassword);
+            return hashOfInput == hashedPassword;
         }
     }
 
