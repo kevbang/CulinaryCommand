@@ -93,7 +93,7 @@ jobs:
               run: |
                 REMOTE_TMP="~/deploy/${{ github.sha }}"
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
-                rsync -az --delete "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
+                rsync -az --delete --exclude='.env' "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
 
 
             - name: Write RDS connection env file
@@ -113,7 +113,7 @@ jobs:
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
                   sudo mkdir -p '${{ env.REMOTE_APP_DIR }}' && \
-                  sudo rsync -a --delete ~/deploy/${{ github.sha }}/ '${{ env.REMOTE_APP_DIR }}'/ && \
+                  sudo rsync -a --delete --exclude='.env' ~/deploy/${{ github.sha }}/ '${{ env.REMOTE_APP_DIR }}'/ && \
                   sudo chown -R www-data:www-data '${{ env.REMOTE_APP_DIR }}' && \
                   rm -rf ~/deploy/${{ github.sha }} && \
                   sudo systemctl restart '${{ env.SERVICE_NAME }}' && \
