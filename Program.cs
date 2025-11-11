@@ -17,7 +17,8 @@ if (string.IsNullOrWhiteSpace(conn))
 }
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseMySql(conn, ServerVersion.AutoDetect(conn)));
+    // Use an explicit MySQL server version to avoid ServerVersion.AutoDetect opening a connection at design-time
+    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36))));
 
 // registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.
 builder.Services.AddScoped<IUserService, UserService>();
@@ -26,13 +27,20 @@ builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+// Apply pending EF core migrations at startup
+using (var scope = app.Services.CreateScope())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    database.Database.Migrate();
 }
+
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        app.UseHsts();
+    }
 
 // Temporarily disable HTTPS redirect for development
 //app.UseHttpsRedirection();
