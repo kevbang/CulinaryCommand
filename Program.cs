@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<RestaurantState>();
 
 
 var app = builder.Build();

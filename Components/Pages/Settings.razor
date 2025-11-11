@@ -16,37 +16,32 @@
         <!-- Navigation Tabs -->
         <ul class="nav nav-tabs settings-tabs mb-4" id="settingsTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "profile" ? "active" : "")" 
-                        @onclick="@(() => OnTabClicked("profile"))" 
-                        type="button">
+                <button class="nav-link @(activeTab == "profile" ? "active" : "")"
+                    @onclick="@(() => OnTabClicked("profile"))" type="button">
                     <i class="fas fa-user me-2"></i>Profile
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "security" ? "active" : "")" 
-                        @onclick="@(() => OnTabClicked("security"))" 
-                        type="button">
+                <button class="nav-link @(activeTab == "security" ? "active" : "")"
+                    @onclick="@(() => OnTabClicked("security"))" type="button">
                     <i class="fas fa-lock me-2"></i>Security
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "notifications" ? "active" : "")" 
-                        @onclick="@(() => OnTabClicked("notifications"))" 
-                        type="button">
+                <button class="nav-link @(activeTab == "notifications" ? "active" : "")"
+                    @onclick="@(() => OnTabClicked("notifications"))" type="button">
                     <i class="fas fa-bell me-2"></i>Notifications
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "preferences" ? "active" : "")" 
-                        @onclick="@(() => OnTabClicked("preferences"))" 
-                        type="button">
+                <button class="nav-link @(activeTab == "preferences" ? "active" : "")"
+                    @onclick="@(() => OnTabClicked("preferences"))" type="button">
                     <i class="fas fa-cog me-2"></i>Preferences
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "restaurants" ? "active" : "")" 
-                        @onclick="@(() => OnTabClicked("restaurants"))" 
-                        type="button">
+                <button class="nav-link @(activeTab == "restaurants" ? "active" : "")"
+                    @onclick="@(() => OnTabClicked("restaurants"))" type="button">
                     <i class="fas fa-user me-2"></i>Restaurants
                 </button>
             </li>
@@ -61,27 +56,31 @@
                     <h4 class="mb-4">
                         <i class="fas fa-user me-2"></i>Profile Information
                     </h4>
-                    
+
                     <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="firstName" class="form-label">First Name</label>
-                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
+                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName"
+                                    placeholder="Enter your first name" />
                             </div>
                             <div class="col-md-6">
                                 <label for="lastName" class="form-label">Last Name</label>
-                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
+                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName"
+                                    placeholder="Enter your last name" />
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
+                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email"
+                                placeholder="Enter your email" />
                         </div>
 
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
+                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone"
+                                placeholder="Enter your phone number" />
                         </div>
 
                         <div class="mb-3">
@@ -104,7 +103,7 @@
                         <p class="text-muted mb-4">
                             These actions are permanent and cannot be undone. Please proceed with caution.
                         </p>
-                        
+
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="danger-action-card">
@@ -154,15 +153,16 @@
                     <h4 class="mb-4">
                         <i class="fas fa-lock me-2"></i>Security Settings
                     </h4>
-                    
+
                     <EditForm Model="@securityModel" OnValidSubmit="@HandleSecuritySubmit">
                         <div class="mb-3">
                             <label for="currentPassword" class="form-label">Current Password</label>
                             <div class="password-input-container">
-                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
-                                          class="form-control" @bind-Value="securityModel.CurrentPassword" 
-                                          placeholder="Enter current password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.CurrentPassword"
+                                    placeholder="Enter current password" />
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
                                     <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -171,10 +171,11 @@
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">New Password</label>
                             <div class="password-input-container">
-                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
-                                          class="form-control" @bind-Value="securityModel.NewPassword" 
-                                          placeholder="Enter new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.NewPassword"
+                                    placeholder="Enter new password" />
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showNewPassword = !showNewPassword)">
                                     <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -186,10 +187,11 @@
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">Confirm New Password</label>
                             <div class="password-input-container">
-                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
-                                          class="form-control" @bind-Value="securityModel.ConfirmPassword" 
-                                          placeholder="Confirm new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.ConfirmPassword"
+                                    placeholder="Confirm new password" />
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
                                     <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -198,7 +200,8 @@
                         <div class="security-section mb-4">
                             <h5 class="mb-3">Two-Factor Authentication</h5>
                             <div class="form-check">
-                                <InputCheckbox id="twoFactor" class="form-check-input" @bind-Value="securityModel.EnableTwoFactor" />
+                                <InputCheckbox id="twoFactor" class="form-check-input"
+                                    @bind-Value="securityModel.EnableTwoFactor" />
                                 <label class="form-check-label" for="twoFactor">
                                     Enable Two-Factor Authentication
                                 </label>
@@ -220,39 +223,45 @@
                     <h4 class="mb-4">
                         <i class="fas fa-bell me-2"></i>Notification Preferences
                     </h4>
-                    
+
                     <EditForm Model="@notificationModel" OnValidSubmit="@HandleNotificationSubmit">
                         <div class="notification-section mb-4">
                             <h5 class="mb-3">
                                 <i class="fas fa-envelope me-2"></i>Email Notifications
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="taskNotifications" class="form-check-input" @bind-Value="notificationModel.TaskNotifications" />
+                                    <InputCheckbox id="taskNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.TaskNotifications" />
                                     <label class="form-check-label" for="taskNotifications">
                                         <strong>Task assignments and updates</strong>
-                                        <br><small class="text-muted">Receive emails when tasks are assigned to you or updated</small>
+                                        <br><small class="text-muted">Receive emails when tasks are assigned to you or
+                                            updated</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="scheduleNotifications" class="form-check-input" @bind-Value="notificationModel.ScheduleNotifications" />
+                                    <InputCheckbox id="scheduleNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.ScheduleNotifications" />
                                     <label class="form-check-label" for="scheduleNotifications">
                                         <strong>Schedule changes and reminders</strong>
-                                        <br><small class="text-muted">Get notified about shift changes and upcoming schedules</small>
+                                        <br><small class="text-muted">Get notified about shift changes and upcoming
+                                            schedules</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="systemNotifications" class="form-check-input" @bind-Value="notificationModel.SystemNotifications" />
+                                    <InputCheckbox id="systemNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.SystemNotifications" />
                                     <label class="form-check-label" for="systemNotifications">
                                         <strong>System announcements</strong>
-                                        <br><small class="text-muted">Important updates and maintenance notifications</small>
+                                        <br><small class="text-muted">Important updates and maintenance
+                                            notifications</small>
                                     </label>
                                 </div>
                             </div>
@@ -265,7 +274,8 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="pushNotifications" class="form-check-input" @bind-Value="notificationModel.PushNotifications" />
+                                    <InputCheckbox id="pushNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.PushNotifications" />
                                     <label class="form-check-label" for="pushNotifications">
                                         <strong>Enable push notifications</strong>
                                         <br><small class="text-muted">Receive real-time notifications on your device</small>
@@ -275,10 +285,12 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="urgentOnly" class="form-check-input" @bind-Value="notificationModel.UrgentOnly" />
+                                    <InputCheckbox id="urgentOnly" class="form-check-input"
+                                        @bind-Value="notificationModel.UrgentOnly" />
                                     <label class="form-check-label" for="urgentOnly">
                                         <strong>Only urgent notifications</strong>
-                                        <br><small class="text-muted">Limit push notifications to critical alerts only</small>
+                                        <br><small class="text-muted">Limit push notifications to critical alerts
+                                            only</small>
                                     </label>
                                 </div>
                             </div>
@@ -288,15 +300,17 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-clock me-2"></i>Notification Timing
                             </h5>
-                            
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="quietHoursStart" class="form-label">Quiet Hours Start</label>
-                                    <InputText id="quietHoursStart" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursStart" />
+                                    <InputText id="quietHoursStart" type="time" class="form-control"
+                                        @bind-Value="notificationModel.QuietHoursStart" />
                                 </div>
                                 <div class="col-md-6">
                                     <label for="quietHoursEnd" class="form-label">Quiet Hours End</label>
-                                    <InputText id="quietHoursEnd" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursEnd" />
+                                    <InputText id="quietHoursEnd" type="time" class="form-control"
+                                        @bind-Value="notificationModel.QuietHoursEnd" />
                                 </div>
                             </div>
                             <small class="form-text text-muted">
@@ -316,13 +330,13 @@
                     <h4 class="mb-4">
                         <i class="fas fa-cog me-2"></i>User Preferences
                     </h4>
-                    
+
                     <EditForm Model="@preferencesModel" OnValidSubmit="@HandlePreferencesSubmit">
                         <div class="preferences-section mb-4">
                             <h5 class="mb-3">
                                 <i class="fas fa-palette me-2"></i>Appearance
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <label for="theme" class="form-label">Theme</label>
                                 <select id="theme" class="form-control" @bind="preferencesModel.Theme">
@@ -335,10 +349,12 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="compactMode" class="form-check-input" @bind-Value="preferencesModel.CompactMode" />
+                                    <InputCheckbox id="compactMode" class="form-check-input"
+                                        @bind-Value="preferencesModel.CompactMode" />
                                     <label class="form-check-label" for="compactMode">
                                         <strong>Compact mode</strong>
-                                        <br><small class="text-muted">Use a more condensed layout to fit more content</small>
+                                        <br><small class="text-muted">Use a more condensed layout to fit more
+                                            content</small>
                                     </label>
                                 </div>
                             </div>
@@ -348,7 +364,7 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-globe me-2"></i>Localization
                             </h5>
-                            
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="language" class="form-label">Language</label>
@@ -384,23 +400,27 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-sliders-h me-2"></i>Behavior
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="autoSave" class="form-check-input" @bind-Value="preferencesModel.AutoSave" />
+                                    <InputCheckbox id="autoSave" class="form-check-input"
+                                        @bind-Value="preferencesModel.AutoSave" />
                                     <label class="form-check-label" for="autoSave">
                                         <strong>Auto-save changes</strong>
-                                        <br><small class="text-muted">Automatically save form changes without manual confirmation</small>
+                                        <br><small class="text-muted">Automatically save form changes without manual
+                                            confirmation</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="showTooltips" class="form-check-input" @bind-Value="preferencesModel.ShowTooltips" />
+                                    <InputCheckbox id="showTooltips" class="form-check-input"
+                                        @bind-Value="preferencesModel.ShowTooltips" />
                                     <label class="form-check-label" for="showTooltips">
                                         <strong>Show helpful tooltips</strong>
-                                        <br><small class="text-muted">Display additional information when hovering over elements</small>
+                                        <br><small class="text-muted">Display additional information when hovering over
+                                            elements</small>
                                     </label>
                                 </div>
                             </div>
@@ -422,6 +442,7 @@
                 </div>
             }
 
+            <!-- Restaurants Tab -->
             @if (activeTab == "restaurants")
             {
                 <div class="tab-pane active">
@@ -433,40 +454,47 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="restaurantName" class="form-label">Restaurant Name</label>
-                                <InputText id="restaurantName" class="form-control" @bind-Value="restaurantModel.Name" placeholder="Enter restaurant name" />
+                                <InputText id="restaurantName" class="form-control" @bind-Value="restaurantModel.Name"
+                                    placeholder="Enter restaurant name" />
                             </div>
                             <div class="col-md-6">
                                 <label for="cuisineType" class="form-label">Cuisine Type</label>
-                                <InputText id="cuisineType" class="form-control" @bind-Value="restaurantModel.CuisineType" placeholder="Italian, Mexican, etc." />
+                                <InputText id="cuisineType" class="form-control" @bind-Value="restaurantModel.CuisineType"
+                                    placeholder="Italian, Mexican, etc." />
                             </div>
                         </div>
 
-                        <div class="mb-3">  
+                        <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
-                            <InputText id="address" class="form-control" @bind-Value="restaurantModel.Address" placeholder="123 Main Street" />
+                            <InputText id="address" class="form-control" @bind-Value="restaurantModel.Address"
+                                placeholder="123 Main Street" />
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">Phone</label>
-                                <InputText id="phone" class="form-control" @bind-Value="restaurantModel.Phone" placeholder="(555) 123-4567" />
+                                <InputText id="phone" class="form-control" @bind-Value="restaurantModel.Phone"
+                                    placeholder="(555) 123-4567" />
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label">Email</label>
-                                <InputText id="email" type="email" class="form-control" @bind-Value="restaurantModel.Email" placeholder="contact@restaurant.com" />
+                                <InputText id="email" type="email" class="form-control" @bind-Value="restaurantModel.Email"
+                                    placeholder="contact@restaurant.com" />
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <InputTextArea id="description" class="form-control" @bind-Value="restaurantModel.Description" placeholder="Short description or notes about the restaurant" rows="3" />
+                            <InputTextArea id="description" class="form-control" @bind-Value="restaurantModel.Description"
+                                placeholder="Short description or notes about the restaurant" rows="3" />
                         </div>
 
                         <div class="row mb-3">
-                            
+
                             <div class="col-md-6">
                                 <label for="website" class="form-label">Website</label>
-                                <InputText id="website" class="form-control" @bind-Value="restaurantModel.Website" placeholder="https://example.com" />
+                                <InputText id="website" class="form-control" @bind-Value="restaurantModel.Website"
+                                    placeholder="https://example.com" />
                             </div>
                         </div>
 
@@ -479,18 +507,18 @@
 
         </div>
 
-        
+
     </div>
 </div>
 
 @code {
     [Parameter]
-    [SupplyParameterFromQuery(Name="tab")]
-    public string activeTab {get; set;}
-    
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string activeTab { get; set; }
+
     //private string activeTab = "profile";
 
-    
+
     private bool showCurrentPassword = false;
     private bool showNewPassword = false;
     private bool showConfirmPassword = false;
@@ -551,7 +579,10 @@
             ItemsPerPage = "25"
         };
 
-        
+        restaurantModel = new RestaurantModel
+        {
+            
+        };
     }
 
     private void OnTabClicked(string tab)
@@ -594,10 +625,10 @@
     }
 
     private void HandleRestaurantSubmit()
-{
-    Console.WriteLine($"Restaurant updated: {restaurantModel.Name} ({restaurantModel.CuisineType})");
-    // TODO: Add actual database update logic or API call
-}
+    {
+        Console.WriteLine($"Restaurant updated: {restaurantModel.Name} ({restaurantModel.CuisineType})");
+        // TODO: Add actual database update logic or API call
+    }
 
     private class RestaurantModel
     {
@@ -610,6 +641,41 @@
         public int Rating { get; set; } = 5;
         public string Website { get; set; } = string.Empty;
     }
+
+    private List<RestaurantModel> restaurants = new()
+{
+new RestaurantModel
+{
+Name = "Downtown Bistro",
+CuisineType = "Modern American",
+Address = "123 Main Street, Downtown, IA 50010",
+Phone = "(515) 555-1234",
+Email = "info@downtownbistro.com",
+Description = "A modern eatery offering farm-to-table dishes and craft cocktails in a cozy downtown setting.",
+Website = "https://www.downtownbistro.com"
+},
+new RestaurantModel
+{
+Name = "Uptown Cafe",
+CuisineType = "Breakfast & Brunch",
+Address = "456 Elm Street, Uptown, IA 50011",
+Phone = "(515) 555-4567",
+Email = "contact@uptowncafe.com",
+Description = "Popular brunch spot known for fresh pastries, hearty breakfast plates, and artisan coffee.",
+Website = "https://www.uptowncafe.com"
+},
+new RestaurantModel
+{
+Name = "Light Deli",
+CuisineType = "Deli & Sandwiches",
+Address = "789 Oak Avenue, Midtown, IA 50012",
+Phone = "(515) 555-7890",
+Email = "hello@lightdeli.com",
+Description = "A bright and casual deli serving gourmet sandwiches, soups, and salads with local ingredients.",
+Website = "https://www.lightdeli.com"
+}
+};
+
 
     private void ExportData()
     {
