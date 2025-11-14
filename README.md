@@ -1,3 +1,5 @@
-# Culinary Command
+# Senior Design Website
 https://sdmay26-44.sd.ece.iastate.edu
-testing
+
+# Testing Application
+http://3.20.198.36/
