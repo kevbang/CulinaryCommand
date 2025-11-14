@@ -29,8 +29,20 @@ namespace CulinaryCommand.Data.Entities
         public int CompanyId { get; set; }
         public Company Company { get; set; }
 
-        // Relationships
+        /* list of users that WORK at this location
+         *
+         * many to many relationship, many users can work at multiple locations
+         */
         public ICollection<User> Users { get; set; } = new List<User>();
+
+        /**
+         * list of users that MANAGE this location
+         *
+         * right now, i have this as a many-to-many relationship between 
+         * locations and managers, meaning each locations can have multiple managers
+         */
+        public ICollection<User> Managers { get; set; } = new List<User>();
+
     }
 }
 
