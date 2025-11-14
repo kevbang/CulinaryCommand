@@ -40,6 +40,9 @@ namespace CulinaryCommand.Services
                 Password = HashPassword(password),
                 Role = Roles.Manager.ToString(),
                 Phone = "",
+                Location = "TEMP", // TODO: remove or update login logic later
+                // this was added because logins were not allowed without it
+                // Location is a NOT NULL value in the migration i think -ryan
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
