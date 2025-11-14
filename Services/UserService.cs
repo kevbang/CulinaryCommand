@@ -66,6 +66,7 @@ namespace CulinaryCommand.Services
         public async Task<User?> ValidateCredentialsAsync(string email, string password)
         {
             var user = await GetUserByEmailAsync(email);
+            Console.WriteLine("get user by email:" + email);
             if (user == null)
             {
                 return null;
@@ -86,7 +87,11 @@ namespace CulinaryCommand.Services
         private bool VerifyPassword(string password, string hashedPassword)
         {
             var hashOfInput = HashPassword(password);
-            return hashOfInput == HashPassword(hashedPassword);
+
+            Console.WriteLine("INPUT HASH:     " + hashOfInput);
+            Console.WriteLine("STORED HASH:    " + hashedPassword);
+
+            return hashOfInput == hashedPassword;
         }
 
         // public async Task<List<User>> GetSubordinatesAsync(User user)

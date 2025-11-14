@@ -18,7 +18,7 @@
             <p class="subtitle">Sign In To Your Account</p>
         </div>
     <p class="text-muted small">
-    @($"Live Username: {signInModel?.Username ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
+    @($"Live Email: {signInModel?.Email ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
 </p>
 
         <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit" FormName="SignInForm">
@@ -40,10 +40,10 @@
                     </label>
                 </div>
             </div>
-            <!-- Username -->
+            <!-- Email -->
             <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <InputText id="username" type="text" class="form-control" @bind-Value="signInModel.Username" placeholder="Enter your username" />
+                <label for="username" class="form-label">Email</label>
+                <InputText id="username" type="text" class="form-control" @bind-Value="signInModel.Email" placeholder="Enter your email" />
             </div>
 
             <!-- Password -->
@@ -97,10 +97,10 @@
     private async Task HandleSubmit() 
     {
         Console.WriteLine($"Role: {signInModel.Role}");
-        Console.WriteLine($"Username: {signInModel.Username}");
+        Console.WriteLine($"Username: {signInModel.Email}");
         Console.WriteLine($"Password: {signInModel.Password}");
         Console.WriteLine($"Remember Me: {signInModel.RememberMe}");
-        User? user = await UserService.ValidateCredentialsAsync(signInModel.Username, signInModel.Password);
+        User? user = await UserService.ValidateCredentialsAsync(signInModel.Email, signInModel.Password);
         if (user != null)
         {
             await Auth.SignInAsync(user);
@@ -121,7 +121,7 @@
     private class SignInModel 
     {
         public string Role { get; set; } 
-        public string Username { get; set; }
+        public string Email { get; set; }
         public string Password { get; set; }
         public bool RememberMe { get; set; } = false;
     }
