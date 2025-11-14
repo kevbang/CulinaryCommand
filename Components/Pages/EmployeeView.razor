@@ -1,0 +1,15 @@
+@rendermode InteractiveServer
+<div class="employee-dashboard">
+    <h2 class="mb-4 text-warning">Employee Dashboard</h2>
+    <p>Welcome, @Auth.CurrentUser!</p>
+
+    <ul>
+        <li>View your active tasks and prep items</li>
+        <li>Check your assigned location: @Auth.Location</li>
+        <li>Submit updates to your manager</li>
+    </ul>
+</div>
+
+@code {
+    [Inject] private CulinaryCommand.Services.AuthService Auth { get; set; } = default!;
+}

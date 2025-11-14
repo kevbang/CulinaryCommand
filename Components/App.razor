@@ -1,4 +1,6 @@
 ﻿@namespace CulinaryCommand.Components
+@inject NavigationManager Nav
+@inject CulinaryCommand.Services.AuthService Auth
 
 <!DOCTYPE html>
 <html lang="en">
@@ -15,9 +17,12 @@
     <HeadOutlet />
 </head>
 
-<body> 
-    <Routes @rendermode=RenderMode.InteractiveServer />
-    
+
+<body>
+    @* <Routes @rendermode=RenderMode.InteractiveServer /> *@
+
+    <Routes />
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -27,3 +32,23 @@
 </body>
 
 </html>
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            // Don't re-hydrate if user is already on /signin or /signup
+            var path = Nav.Uri.ToLower();
+            if (!path.Contains("/signin") && !path.Contains("/signup"))
+            {
+                await Auth.InitializeFromJsAsync();
+            }
+
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+}

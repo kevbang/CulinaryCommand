@@ -1,17 +1,26 @@
-﻿@inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager NavigationManager
 
 @inherits LayoutComponentBase
 @using CulinaryCommand.Models
 @using CulinaryCommand.Services
 @inject ManagerSessionManager SessionManager
+@inject CulinaryCommand.Services.AuthService Auth
+@inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager Nav
+@using CulinaryCommand.Services
+@using System.Threading.Tasks
+
 
 <div class="page">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <NavMenu />
+  <div class="sidebar"><NavMenu /></div>
+
+  <main>
+    <div class="top-row px-4 d-flex justify-content-end align-items-center">
+        <LocationSelector />
+        <ProfileDropdown />
     </div>
 
+@*
     <!-- Main Page containing the top row and main content-->
     <main>
         <div class="top-row px-4 d-flex justify-content-end align-items-center">
@@ -139,3 +148,11 @@
         NavigationManager.NavigateTo($"/dashboard", forceLoad: false);
     }
 }
+*@
+    <article class="content px-4">
+      @Body
+    </article>
+  </main>
+</div>
+
+

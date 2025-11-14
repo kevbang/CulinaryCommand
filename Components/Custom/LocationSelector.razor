@@ -1,0 +1,61 @@
+@using CulinaryCommand.Services
+@inject AuthService Auth
+@inject IJSRuntime JS
+
+<div class="dropdown me-3">
+    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3"
+            type="button" id="locationMenu"
+            data-bs-toggle="dropdown" aria-expanded="false"
+            style="height:3rem;" title="Switch location">
+
+        <i class="bi bi-geo-alt-fill text-success me-2"></i>
+        <span>@(CurrentLocation ?? "Select Location")</span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="locationMenu">
+        @if (Locations == null || Locations.Count == 0)
+        {
+            <li class="dropdown-item text-muted">No locations available</li>
+        }
+        else
+        {
+            @foreach (var loc in Locations)
+            {
+                <li>
+                    <button class="dropdown-item @(loc == CurrentLocation ? "active" : "")"
+                            @onclick="() => ChangeLocation(loc)">
+                        @loc
+                    </button>
+                </li>
+            }
+        }
+    </ul>
+</div>
+
+@code {
+    private List<string> Locations = new();
+    private string? CurrentLocation;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load from Auth (or localStorage if needed)
+            await Auth.InitializeFromJsAsync();
+            CurrentLocation = Auth.Location ?? "Unknown";
+
+            // For now, just mock multiple locations if needed
+            Locations = Auth.Locations ?? new List<string> { CurrentLocation ?? "Main Location" };
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task ChangeLocation(string newLoc)
+    {
+        CurrentLocation = newLoc;
+        await Auth.UpdateLocation(newLoc);
+        await JS.InvokeVoidAsync("localStorage.setItem", "cc_location", newLoc);
+        Auth.NotifyStateChanged();
+    }
+}

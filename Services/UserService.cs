@@ -11,9 +11,11 @@ namespace CulinaryCommand.Services
         Task<User?> CreateUserAsync(string name, string email, string password, string role);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> ValidateCredentialsAsync(string email, string password);
+        //Task<List<User>> GetSubordinatesAsync(User user);
     }
 
-    public class UserService : IUserService {
+    public class UserService : IUserService
+    {
         private readonly AppDbContext _context;
 
         // constructer
@@ -38,6 +40,9 @@ namespace CulinaryCommand.Services
                 Password = HashPassword(password),
                 Role = Roles.Manager.ToString(),
                 Phone = "",
+                Location = "TEMP", // TODO: remove or update login logic later
+                // this was added because logins were not allowed without it
+                // Location is a NOT NULL value in the migration i think -ryan
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -45,18 +50,23 @@ namespace CulinaryCommand.Services
             // add user to database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-            
+
             return user;
         }
 
         public async Task<User?> GetUserByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
+            return await _context.Users
+                .Include(u => u.Company)
+                .Include(u => u.Locations)
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
+
 
         public async Task<User?> ValidateCredentialsAsync(string email, string password)
         {
             var user = await GetUserByEmailAsync(email);
+            Console.WriteLine("get user by email:" + email);
             if (user == null)
             {
                 return null;
@@ -77,8 +87,30 @@ namespace CulinaryCommand.Services
         private bool VerifyPassword(string password, string hashedPassword)
         {
             var hashOfInput = HashPassword(password);
-            return hashOfInput == HashPassword(hashedPassword);
+
+            Console.WriteLine("INPUT HASH:     " + hashOfInput);
+            Console.WriteLine("STORED HASH:    " + hashedPassword);
+
+            return hashOfInput == hashedPassword;
         }
+
+        // public async Task<List<User>> GetSubordinatesAsync(User user)
+        // {
+        //     if (user.Role == "Admin")
+        //     {
+        //         return await _context.Users
+        //             .Where(u => u.CompanyCode == user.CompanyCode && u.Role != "Admin")
+        //             .ToListAsync();
+        //     }
+        //     else if (user.Role == "Manager")
+        //     {
+        //         return await _context.Users
+        //             .Where(u => u.CompanyCode == user.CompanyCode && u.Location == user.Location && u.Role == "Employee")
+        //             .ToListAsync();
+        //     }
+
+        //     return new List<User>();
+        // }
     }
 
 }

@@ -1,20 +1,20 @@
 ﻿@namespace CulinaryCommand.Components
-@inject AuthService Auth
+@inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager Nav
+@rendermode InteractiveServer
 
-<Router AppAssembly="@typeof(Program).Assembly">
+<Router AppAssembly="@typeof(Program).Assembly" PreferExactMatches="true">
     <Found Context="routeData">
-        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn))
+        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp))
         {
-            <!-- Render these pages with NO layout -->
             <RouteView RouteData="@routeData" />
         }
         else
         {
-            <!-- Everything else uses MainLayout -->
             <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
         }
     </Found>
-
     <NotFound>
         <LayoutView Layout="@typeof(Layout.MainLayout)">
             <p>Sorry, nothing found at this address.</p>
@@ -29,7 +29,13 @@
     {
         if (firstRender && !_initialized)
         {
-            await Auth.EnsureInitializedAsync();
+            // Don't re-hydrate if user is already on /signin or /signup
+            var path = Nav.Uri.ToLower();
+            if (!path.Contains("/signin") && !path.Contains("/signup"))
+            {
+                await Auth.InitializeFromJsAsync();
+            }
+
             _initialized = true;
             StateHasChanged();
         }

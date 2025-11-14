@@ -1,48 +1,54 @@
 @page "/dashboard"
 @rendermode InteractiveServer
+
 @using CulinaryCommand.Components.Custom
 
-<PageTitle>Dashboard</PageTitle>
+@inject CulinaryCommand.Services.AuthService Auth
+@inject NavigationManager Nav
 
-<div class="container mt-4">
-    <div class="row g-5">
-        <div class="col-12 col-md-6">
-            <DashboardCard Title="Prep Items Needing Attention" Value="5 items" Color="#ffc107"
-                IconClass="bi bi-exclamation-triangle" Link="/prep" />
-            <DashboardCard Title="Orders Pending Approval" Value="3 orders" Color="#688f72"
-                IconClass="bi bi-file-earmark-check" Link="/orders" />
-            <DashboardCard Title="Daily Summaries / Reports" Value="1" Color="#883ae1" IconClass="bi bi-file-text"
-                Link="/reports" />
-        </div>
-        <div class="col-12 col-md-6">
-            <DashboardCard Title="Active Tasks by Employee" Value="6 tasks" Color="#3662e3" IconClass="bi bi-people"
-                Link="/tasks" />
-            <DashboardCard Title="Low Stock Ingredients" Value="2" Color="#ca3a31" IconClass="bi bi-box-seam"
-                Link="/inventory" />
-            <DashboardCard Title="Manage Employees" Value="35" Color="#e28743" IconClass="bi bi-person-gear"
-                Link="/employees" />
-        </div>
+
+@if (!_ready)
+{
+    <div class="text-center mt-5">Loading…</div>
+}
+else if (!Auth.IsSignedIn)
+{
+    <div class="text-center mt-5">
+        You’re not signed in. <button class="btn btn-success" @onclick="() => NavigateToSignIn()">Go to Sign In</button>
     </div>
-
-    <div class="row g-5">
-        <div class="col-12">
-            <div class="card shadow d-flex flex-column py-3 px-4 mb-5">
-                <p class="fs-5 fw-semibold mb-3">Recent Activity</p>
-                <div class="activity-list">
-                    <ActivityCard Title="Sarah assigned 3 new prep tasks to kitchen staff" TimeInfo="10 minutes ago"
-                        IconClass="bi bi-people" />
-                    <ActivityCard Title="New order #1234 received from Table 7" TimeInfo="35 minutes ago"
-                        IconClass="bi bi-file-earmark-check" />
-                    <ActivityCard Title="Inventory alert: Tomatoes below threshold" TimeInfo="1 hour ago"
-                        IconClass="bi bi-box-seam" />
-                </div>
-
-            </div>
-        </div>
+}
+else
+{
+    <div class="container mt-4">
+        @if (Auth.UserRole == "Admin") 
+        { 
+            <AdminView /> 
+        }
+        else if (Auth.UserRole == "Manager") 
+        { 
+            <ManagerView /> 
+        }
+        else 
+        { 
+            <EmployeeView /> 
+        }
     </div>
-
-</div>
+}
 
 @code {
+    private bool _ready;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.InitializeFromJsAsync();   // safe here (interactive)
+            _ready = true;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToSignIn(){
+        Nav.NavigateTo("/signin");
+    }
 }

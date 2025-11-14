@@ -1,0 +1,15 @@
+@rendermode InteractiveServer
+<div class="manager-dashboard">
+    <h2 class="mb-4 text-primary">Manager Dashboard</h2>
+    <p>Welcome, Manager of @Auth.Location (@Auth.CompanyCode)</p>
+
+    <ul>
+        <li>View and assign employee tasks</li>
+        <li>Review daily summaries for your location</li>
+        <li>Manage inventory and prep items</li>
+    </ul>
+</div>
+
+@code {
+    [Inject] private CulinaryCommand.Services.AuthService Auth { get; set; } = default!;
+}

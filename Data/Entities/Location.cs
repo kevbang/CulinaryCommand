@@ -23,6 +23,12 @@ namespace CulinaryCommand.Data.Entities
         [Required, MaxLength(256)]
         public string? ZipCode { get; set; }
 
+        [Required, MaxLength(124)]
+        public string? MarginEdgeKey { get; set; }
+
+        public int CompanyId { get; set; }
+        public Company Company { get; set; }
+
         // Relationships
         public ICollection<User> Users { get; set; } = new List<User>();
     }

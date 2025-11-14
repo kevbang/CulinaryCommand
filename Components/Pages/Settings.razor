@@ -159,11 +159,12 @@
                         <div class="mb-3">
                             <label for="currentPassword" class="form-label">Current Password</label>
                             <div class="password-input-container">
-                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")"
-                                    class="form-control" @bind-Value="securityModel.CurrentPassword"
+
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
+                                    class="form-control" @bind-Value="securityModel.CurrentPassword" 
                                     placeholder="Enter current password" />
-                                <button type="button" class="password-toggle-btn"
-                                    @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+
                                     <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -172,11 +173,11 @@
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">New Password</label>
                             <div class="password-input-container">
-                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")"
-                                    class="form-control" @bind-Value="securityModel.NewPassword"
+
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
+                                    class="form-control" @bind-Value="securityModel.NewPassword" 
                                     placeholder="Enter new password" />
-                                <button type="button" class="password-toggle-btn"
-                                    @onclick="@(() => showNewPassword = !showNewPassword)">
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
                                     <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -188,11 +189,10 @@
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">Confirm New Password</label>
                             <div class="password-input-container">
-                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")"
-                                    class="form-control" @bind-Value="securityModel.ConfirmPassword"
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
+                                    class="form-control" @bind-Value="securityModel.ConfirmPassword" 
                                     placeholder="Confirm new password" />
-                                <button type="button" class="password-toggle-btn"
-                                    @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
                                     <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>

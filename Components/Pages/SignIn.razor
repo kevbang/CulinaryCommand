@@ -18,11 +18,12 @@
             <p class="subtitle">Sign In To Your Account</p>
         </div>
     <p class="text-muted small">
-    @($"Live Username: {signInModel?.Username ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
+    @($"Live Email: {signInModel?.Email ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
 </p>
 
         <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit" FormName="SignInForm">
         <DataAnnotationsValidator />
+        <ValidationSummary />
 
             <!-- Selecting your role (Manager or Cook) -->
             <!-- Radio only allows one selection at a time (manager or cook)-->
@@ -30,19 +31,19 @@
                 <div class="btn-group w-100" role="group">
                     <input type="radio" class="btn-check" name="role" id="manager" value="Manager" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Manager")">
                     <label class="btn btn-outline-success role-btn" for="manager">
-                        Manager
+                    <i class="fas fa-building me-2"></i>Manager
                     </label>
 
                     <input type="radio" class="btn-check" name="role" id="cook" value="Cook" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Cook")">
                     <label class="btn btn-outline-success role-btn" for="cook">
-                        Cook
+                    <i class="fas fa-building me-2"></i>Cook
                     </label>
                 </div>
             </div>
-            <!-- Username -->
+            <!-- Email -->
             <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <InputText id="username" type="text" class="form-control" @bind-Value="signInModel.Username" placeholder="Enter your username" />
+                <label for="username" class="form-label">Email</label>
+                <InputText id="username" type="text" class="form-control" @bind-Value="signInModel.Email" placeholder="Enter your email" />
             </div>
 
             <!-- Password -->
@@ -89,22 +90,23 @@
         signInModel = new() { Role = Roles.Manager.ToString() }; // Default to manager
         if (Auth.IsSignedIn)
         {
-            Nav.NavigateTo("/dashboard", true);
+            Nav.NavigateTo("/dashboard");
         }
     }
 
     private async Task HandleSubmit() 
     {
         Console.WriteLine($"Role: {signInModel.Role}");
-        Console.WriteLine($"Username: {signInModel.Username}");
+        Console.WriteLine($"Email: {signInModel.Email}");
         Console.WriteLine($"Password: {signInModel.Password}");
         Console.WriteLine($"Remember Me: {signInModel.RememberMe}");
-        User? user = await UserService.ValidateCredentialsAsync(signInModel.Username, signInModel.Password);
+        User? user = await UserService.ValidateCredentialsAsync(signInModel.Email, signInModel.Password);
         if (user != null)
         {
-            await Auth.SignInAsync(signInModel.Username, signInModel.Role);
-            Nav.NavigateTo("/dashboard", true);
+            await Auth.SignInAsync(user);
+            Nav.NavigateTo("/dashboard");
         }
+
         else
         {
             Console.WriteLine(value: $"NOT VALID");
@@ -118,8 +120,8 @@
 
     private class SignInModel 
     {
-        public string Role { get; set; } = Roles.Manager.ToString();           // Enum example
-        public string Username { get; set; }
+        public string Role { get; set; } 
+        public string Email { get; set; }
         public string Password { get; set; }
         public bool RememberMe { get; set; } = false;
     }

@@ -40,12 +40,12 @@
                 <div class="btn-group w-100" role="group">
                     <input type="radio" class="btn-check" name="role" id="manager" value="Manager" @onchange="@((e) => signUpModel.Role = e.Value?.ToString())" checked="@(signUpModel.Role == "Manager")">
                     <label class="btn btn-outline-success role-btn" for="manager">
-                        <i class="fas fa-building me-2"></i>Manager
+                    <i class="fas fa-building me-2"></i>Manager
                     </label>
 
-                    <input type="radio" class="btn-check" name="role" id="employee" value="Employee" @onchange="@((e) => signUpModel.Role = e.Value?.ToString())" checked="@(signUpModel.Role == "Employee")">
-                    <label class="btn btn-outline-secondary role-btn" for="cook">
-                        <i class="fas fa-chef-hat me-2"></i>Cook
+                    <input type="radio" class="btn-check" name="role" id="cook" value="Cook" @onchange="@((e) => signUpModel.Role = e.Value?.ToString())" checked="@(signUpModel.Role == "Cook")">
+                    <label class="btn btn-outline-success role-btn" for="cook">
+                    <i class="fas fa-building me-2"></i>Cook
                     </label>
                 </div>
             </div>
