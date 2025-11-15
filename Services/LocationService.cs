@@ -1,0 +1,143 @@
+using CulinaryCommand.Data;
+using CulinaryCommand.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace CulinaryCommand.Services
+{
+    public interface ILocationService
+    {
+        Task<List<Location>> GetAllLocationsAsync();
+        Task<Location?> GetLocationByIdAsync(int id);
+        Task<Location?> CreateLocationAsync(Location location);
+        Task<bool> UpdateLocationAsync(Location location);
+        Task<bool> DeleteLocationAsync(int id);
+
+        // User-specific operations (have not implemented yet)
+
+        // Task<bool> AddUserToLocationAsync(int locationId, int userId);
+        // Task<bool> RemoveUserFromLocationAsync(int locationId, int userId);
+        // Task<List<User>> GetUsersForLocationAsync(int locationId);
+
+        // Manager-specific operations
+        Task<bool> AddManagerToLocationAsync(int locationId, int managerId);
+        Task<bool> RemoveManagerFromLocationAsync(int locationId, int managerId);
+        Task<List<User>> GetManagersForLocationAsync(int locationId);
+
+        Task<List<Location>> GetLocationsByManagerAsync(int managerId);
+    }
+
+    public class LocationService : ILocationService
+    {
+        private readonly AppDbContext _context;
+
+        public LocationService(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // -------------------- CRUD --------------------
+        public async Task<List<Location>> GetAllLocationsAsync()
+        {
+            return await _context.Locations
+                .Include(l => l.Company)
+                .Include(l => l.Managers)
+                .ToListAsync();
+        }
+
+        public async Task<Location?> GetLocationByIdAsync(int id)
+        {
+            return await _context.Locations
+                .Include(l => l.Company)
+                .Include(l => l.Managers)
+                .FirstOrDefaultAsync(l => l.Id == id);
+        }
+
+        public async Task<Location?> CreateLocationAsync(Location location)
+        {
+            _context.Locations.Add(location);
+            await _context.SaveChangesAsync();
+            return location;
+        }
+
+        public async Task<bool> UpdateLocationAsync(Location location)
+        {
+            var existing = await _context.Locations.FindAsync(location.Id);
+            if (existing == null) return false;
+
+            existing.Name = location.Name;
+            existing.Address = location.Address;
+            existing.City = location.City;
+            existing.State = location.State;
+            existing.ZipCode = location.ZipCode;
+            existing.MarginEdgeKey = location.MarginEdgeKey;
+            existing.CompanyId = location.CompanyId;
+
+            _context.Locations.Update(existing);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteLocationAsync(int id)
+        {
+            var loc = await _context.Locations.FindAsync(id);
+            if (loc == null) return false;
+
+            _context.Locations.Remove(loc);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // -------------------- Manager Operations --------------------
+        public async Task<bool> AddManagerToLocationAsync(int locationId, int managerId)
+        {
+            var location = await _context.Locations
+                .Include(l => l.Managers)
+                .FirstOrDefaultAsync(l => l.Id == locationId);
+            var manager = await _context.Users.FindAsync(managerId);
+
+            if (location == null || manager == null) return false;
+
+            if (!location.Managers.Contains(manager))
+            {
+                location.Managers.Add(manager);
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
+        }
+
+        public async Task<bool> RemoveManagerFromLocationAsync(int locationId, int managerId)
+        {
+            var location = await _context.Locations
+                .Include(l => l.Managers)
+                .FirstOrDefaultAsync(l => l.Id == locationId);
+            var manager = await _context.Users.FindAsync(managerId);
+
+            if (location == null || manager == null) return false;
+
+            if (location.Managers.Contains(manager))
+            {
+                location.Managers.Remove(manager);
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
+        }
+
+        public async Task<List<User>> GetManagersForLocationAsync(int locationId)
+        {
+            var location = await _context.Locations
+                .Include(l => l.Managers)
+                .FirstOrDefaultAsync(l => l.Id == locationId);
+
+            return location?.Managers.ToList() ?? new List<User>();
+        }
+
+        public async Task<List<Location>> GetLocationsByManagerAsync(int managerId)
+        {
+            return await _context.Locations
+            .Where(l => l.Managers.Any(m => m.Id == managerId))
+            .ToListAsync();
+        }
+    }
+}

@@ -25,6 +25,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<AuthService>();
 
+builder.Services.AddScoped<ILocationService, LocationService>();
 
 // for manager state info (using it to store restaurants right now, no interaction with the backend yet)
 builder.Services.AddScoped<ManagerSessionManager>();

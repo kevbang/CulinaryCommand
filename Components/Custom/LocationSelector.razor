@@ -1,6 +1,12 @@
+@using CulinaryCommand.Models
 @using CulinaryCommand.Services
+@using CulinaryCommand.Data.Entities
 @inject AuthService Auth
+
+@inject ILocationService LocationService
+
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 
 <div class="dropdown me-3">
     <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3"
@@ -32,23 +38,65 @@
     </ul>
 </div>
 
+<!-- Business Dropdown -->
+<div class="dropdown me-3">
+    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button"
+        id="businessMenu" data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;"
+        title="View and edit restaurants">
+
+        <div class="icon-box d-flex align-items-center justify-content-center me-2"
+            style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
+            <i class="bi bi-building fs-4" style="color:#688f72;"></i>
+        </div>
+        <span>@CurrentLocation</span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="businessMenu">
+        <li>
+            <h6 class="dropdown-header">Restaurants</h6>
+        </li>
+
+        @foreach (Location location in ManagedLocations)
+        {
+            <li>
+                <div
+                    class="dropdown-item d-flex justify-content-between align-items-center @(currentRestaurant == location ? "active" : "")">
+                    <span class="flex-grow-1" style="cursor: pointer;"
+                        @onclick="() => ChangeRestaurant(location)">
+                        @location.Name
+                    </span>
+                    <button class="btn btn-link p-0 ms-2 edit-btn" title="Edit @location.Name"
+                        @onclick="() => EditRestaurant(location)" @onclick:stopPropagation="true">
+                        <i class="bi bi-pencil-fill fs-9 text-muted"></i>
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
 @code {
     private List<string> Locations = new();
+    private List<Location> ManagedLocations { get; set; } = new();
     private string? CurrentLocation;
+    private Location? currentRestaurant;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
-        {
-            // Load from Auth (or localStorage if needed)
-            await Auth.InitializeFromJsAsync();
-            CurrentLocation = Auth.Location ?? "Unknown";
 
-            // For now, just mock multiple locations if needed
-            Locations = Auth.Locations ?? new List<string> { CurrentLocation ?? "Main Location" };
 
-            StateHasChanged();
-        }
+        // Load from Auth (or localStorage if needed)
+        await Auth.InitializeFromJsAsync();
+        CurrentLocation = Auth.Location ?? "Unknown";
+
+        // For now, just mock multiple locations if needed
+        Locations = Auth.Locations ?? new List<string> { CurrentLocation ?? "Main Location" };
+
+        ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId);
+
+        StateHasChanged();
+
     }
 
     private async Task ChangeLocation(string newLoc)
@@ -57,6 +105,19 @@
         await Auth.UpdateLocation(newLoc);
         await JS.InvokeVoidAsync("localStorage.setItem", "cc_location", newLoc);
         Auth.NotifyStateChanged();
+    }
+
+    private void EditRestaurant(Location restaurant)
+    {
+        Console.WriteLine($"Editing {restaurant.Name}");
+        NavigationManager.NavigateTo($"/settings/restaurants?restaurant={restaurant.Id}", forceLoad: false);
+    }
+
+    private void ChangeRestaurant(Location restaurant)
+    {
+        Console.WriteLine($"Editing restaurant {restaurant.Name}");
+        currentRestaurant = restaurant;
+        NavigationManager.NavigateTo($"/dashboard", forceLoad: false);
     }
 }
 

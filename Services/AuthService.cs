@@ -11,7 +11,9 @@ namespace CulinaryCommand.Services
         public AuthService(IJSRuntime js) { _js = js; }
 
         public bool IsSignedIn { get; private set; }
-        public string? CurrentUser { get; private set; }
+        public User? CurrentUser { get; private set; }
+        public string? UserEmail { get; private set; }
+        public int UserId { get; private set; }
         public string? UserRole { get; private set; }
         public string? Company { get; private set; }
         public string? CompanyCode { get; private set; }
@@ -30,13 +32,14 @@ namespace CulinaryCommand.Services
             if (_hydrated) return;
             try
             {
-                CurrentUser = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_user");
+                UserId = await _js.InvokeAsync<int>("localStorage.getItem", "cc_userId");
+                UserEmail = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_user");
                 UserRole = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_role");
                 Company = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_company");
                 CompanyCode = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_companyCode");
                 Location = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_location");
 
-                IsSignedIn = !string.IsNullOrEmpty(CurrentUser);
+                IsSignedIn = !string.IsNullOrEmpty(UserEmail);
             }
             catch
             {
@@ -52,7 +55,9 @@ namespace CulinaryCommand.Services
 
         public async Task SignInAsync(User user)
         {
-            CurrentUser = user.Email;
+            CurrentUser = user;
+            UserEmail = user.Email;
+            UserId = user.Id;
             UserRole = user.Role;
             Company = user.Company?.Name;
             CompanyCode = user.Company?.CompanyCode;
@@ -60,7 +65,7 @@ namespace CulinaryCommand.Services
             Location = user.Locations.FirstOrDefault()?.Name;
             IsSignedIn = true;
 
-            await _js.InvokeVoidAsync("localStorage.setItem", "cc_user", CurrentUser ?? "");
+            await _js.InvokeVoidAsync("localStorage.setItem", "cc_email", UserEmail ?? "");
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_role", UserRole ?? "");
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_company", Company ?? "");
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_companyCode", CompanyCode ?? "");
