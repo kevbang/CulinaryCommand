@@ -30,9 +30,10 @@ namespace CulinaryCommand.Services
     {
         private readonly AppDbContext _context;
 
-        public LocationService(AppDbContext context)
+        public LocationService(AppDbContext context, LocationState locationState)
         {
             _context = context;
+
         }
 
         // -------------------- CRUD --------------------

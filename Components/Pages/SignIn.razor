@@ -1,6 +1,8 @@
 @page "/signin"
 @namespace CulinaryCommand.Components.Pages
 @inject IUserService UserService
+@inject ILocationService LocationService
+@inject LocationState LocationState
 @inject AuthService Auth
 @inject NavigationManager Nav
 @using CulinaryCommand.Data.Enums
@@ -104,6 +106,9 @@
         if (user != null)
         {
             await Auth.SignInAsync(user);
+            var userLocations = await LocationService.GetLocationsByManagerAsync(user.Id);
+            LocationState.SetLocations(userLocations);
+
             Nav.NavigateTo("/dashboard");
         }
 

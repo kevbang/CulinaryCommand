@@ -5,6 +5,7 @@
 @inject AuthService Auth
 
 @inject ILocationService LocationService
+@inject LocationState LocationState
 
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
@@ -41,15 +42,14 @@
 
 <!-- Business Dropdown -->
 <div class="dropdown me-3">
-    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button"
-        id="businessMenu" data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;"
-        title="View and edit restaurants">
+    <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button" id="businessMenu"
+        data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;" title="View and edit restaurants">
 
         <div class="icon-box d-flex align-items-center justify-content-center me-2"
             style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
             <i class="bi bi-building fs-4" style="color:#688f72;"></i>
         </div>
-        <span>@(CurrentLocation?.Name ?? "Select Location")</span>
+        <span>@(LocationState.CurrentLocation?.Name ?? "Select Location")</span>
     </button>
 
     <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="businessMenu">
@@ -57,13 +57,12 @@
             <h6 class="dropdown-header">Restaurants</h6>
         </li>
 
-            @foreach (Location location in ManagedLocations ?? Enumerable.Empty<Location>())
-            {
+        @foreach (Location location in LocationState.ManagedLocations ?? Enumerable.Empty<Location>())
+        {
             <li>
                 <div
-                    class="dropdown-item d-flex justify-content-between align-items-center @(currentRestaurant == location ? "active" : "")">
-                    <span class="flex-grow-1" style="cursor: pointer;"
-                        @onclick="() => ChangeLocation(location)">
+                    class="dropdown-item d-flex justify-content-between align-items-center @(LocationState.CurrentLocation == location ? "active" : "")">
+                    <span class="flex-grow-1" style="cursor: pointer;" @onclick="() => LocationState.SetCurrentLocation(location)">
                         @location.Name
                     </span>
                     <button class="btn btn-link p-0 ms-2 edit-btn" title="Edit @location.Name"
@@ -78,9 +77,7 @@
 
 @code {
     private List<string> Locations = new();
-    private List<Location> ManagedLocations { get; set; } = new();
-    private Location? CurrentLocation;
-    private Location? currentRestaurant;
+    @* private List<Location> ManagedLocations { get; set; } = new(); *@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -90,13 +87,13 @@
             await Auth.InitializeFromJsAsync();
 
             // load their locations once UserId is known
-            if (Auth.UserId.HasValue)
+            @* if (Auth.UserId.HasValue)
             {
-                ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
-            }
+                ManagedLocations = LocationState.ManagedLocations;
+            } *@
 
             // restore CurrentLocation
-            if (Auth.CurrentLocation == null)
+            @* if (LocationState.CurrentLocation == null)
             {
                 var locName = await JS.InvokeAsync<string>("localStorage.getItem", "cc_location");
                 if (!string.IsNullOrEmpty(locName))
@@ -106,8 +103,8 @@
             }
             else
             {
-                CurrentLocation = Auth.CurrentLocation;
-            }
+                CurrentLocation = LocationState.CurrentLocation;
+            } *@
 
             StateHasChanged();
         }
@@ -118,44 +115,37 @@
     {
 
 
-        // Load from Auth (or localStorage if needed)
-        @* await Auth.InitializeFromJsAsync(); *@
-        @* CurrentLocation = Auth.CurrentLocation; *@
+    // Load from Auth (or localStorage if needed)
+    @* await Auth.InitializeFromJsAsync(); *@
+    @* CurrentLocation = Auth.CurrentLocation; *@
 
-        // For now, just mock multiple locations if needed
-        @* Locations = Auth.Locations ?? new List<string> { CurrentLocation ?? "Main Location" }; *@
+    // For now, just mock multiple locations if needed
+    @* Locations = Auth.Locations ?? new List<string> { CurrentLocation ?? "Main Location" }; *@
 
-        if (Auth.UserId.HasValue)
-        {
-            ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
-        }
-        else
-        {
-            ManagedLocations = new List<Location>();
-        }
+    if (Auth.UserId.HasValue)
+    {
+    ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
+    }
+    else
+    {
+    ManagedLocations = new List<Location>();
+    }
     }
     */
 
-    private async Task ChangeLocation(Location newLoc)
+    @* private async Task ChangeLocation(Location newLoc)
     {
         CurrentLocation = newLoc;
-        Auth.UpdateLocation(newLoc);
+        LocationState.SetCurrentLocation(newLoc);
         await JS.InvokeVoidAsync("localStorage.setItem", "cc_location", newLoc?.Name ?? "");
         NavigationManager.NavigateTo($"/dashboard", forceLoad: true);
         Auth.NotifyStateChanged();
-    }
+    } *@
 
     private void EditRestaurant(Location restaurant)
     {
         Console.WriteLine($"Editing {restaurant.Name}");
         NavigationManager.NavigateTo($"/settings/restaurants?restaurant={restaurant.Id}", forceLoad: false);
-    }
-
-    private void ChangeRestaurant(Location restaurant)
-    {
-        Console.WriteLine($"Editing restaurant {restaurant.Name}");
-        currentRestaurant = restaurant;
-        NavigationManager.NavigateTo($"/dashboard", forceLoad: false);
     }
 }
 

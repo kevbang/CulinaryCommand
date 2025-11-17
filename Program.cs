@@ -26,6 +26,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<LocationState>();
+
+
 
 // for manager state info (using it to store restaurants right now, no interaction with the backend yet)
 builder.Services.AddScoped<ManagerSessionManager>();
@@ -40,13 +43,13 @@ using (var scope = app.Services.CreateScope())
     database.Database.Migrate();
 }
 
-    // Configure the HTTP request pipeline.
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseExceptionHandler("/Error", createScopeForErrors: true);
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
-    }
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
 
 // Temporarily disable HTTPS redirect for development
 //app.UseHttpsRedirection();

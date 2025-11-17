@@ -6,13 +6,11 @@ namespace CulinaryCommand.Services
     public class AuthService
     {
         private readonly IJSRuntime _js;
-        private readonly ILocationService _locationService;
         private bool _hydrated;
 
         public AuthService(IJSRuntime js, ILocationService locationService) 
         {
             _js = js;
-            _locationService = locationService;
         }
 
         public bool IsSignedIn { get; private set; }
@@ -23,13 +21,7 @@ namespace CulinaryCommand.Services
         public string? Company { get; private set; }
         public string? CompanyCode { get; private set; }
 
-        // list of locations this user MANAGES
-        public ICollection<Location>? ManagedLocations { get; set; }
-
-        // list of locations this user WORKS at
-        public ICollection<Location> Locations { get; set; }
-        //
-        public Location CurrentLocation { get; set; }
+        
 
         public event Action? OnAuthStateChanged;
         private void Raise() => OnAuthStateChanged?.Invoke();
@@ -49,12 +41,6 @@ namespace CulinaryCommand.Services
                 CompanyCode = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_companyCode");
 
                 IsSignedIn = !string.IsNullOrEmpty(UserEmail);
-
-                if (IsSignedIn && UserId != null)
-                {
-                    ManagedLocations = await _locationService.GetLocationsByManagerAsync(UserId.Value);
-                    CurrentLocation = ManagedLocations?.FirstOrDefault();
-                }
             }
             catch
             {
@@ -78,7 +64,6 @@ namespace CulinaryCommand.Services
             CompanyCode = user.Company?.CompanyCode;
             // still need to implement the user methods in LocationService
             // Locations = user.Locations?.Select(l => l.Name).ToList();
-            ManagedLocations = await _locationService.GetLocationsByManagerAsync(user.Id);
             IsSignedIn = true;
 
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_userId", UserId?.ToString() ?? "");
@@ -95,7 +80,6 @@ namespace CulinaryCommand.Services
             CurrentUser = null;
             UserEmail = UserRole = Company = CompanyCode = null;
             UserId = null;
-            ManagedLocations = null;
             IsSignedIn = false;
 
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_userId");
@@ -119,10 +103,5 @@ namespace CulinaryCommand.Services
             return User != null ? true : false;
         }
 
-        public void UpdateLocation(Location loc)
-        {
-            CurrentLocation = loc;
-            NotifyStateChanged();
-        }
     }
 }

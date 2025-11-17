@@ -5,11 +5,13 @@
 
     <ul>
         <li>View your active tasks and prep items</li>
-        <li>Check your assigned location: @Auth.CurrentLocation</li>
+        <li>Check your assigned location: @LocationState.CurrentLocation</li>
         <li>Submit updates to your manager</li>
     </ul>
 </div>
 
 @code {
     [Inject] private CulinaryCommand.Services.AuthService Auth { get; set; } = default!;
+        [Inject] private CulinaryCommand.Services.LocationState LocationState { get; set; } = default!;
+
 }

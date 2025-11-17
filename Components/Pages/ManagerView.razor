@@ -1,7 +1,14 @@
 @rendermode InteractiveServer
 <div class="manager-dashboard">
     <h2 class="mb-4 text-primary">Manager Dashboard</h2>
-    <p>Welcome, Manager of @Auth.CurrentLocation.Name (@Auth.CompanyCode)</p>
+    @if (LocationState.CurrentLocation is null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <p>Welcome, Manager of @LocationState.CurrentLocation.Name (@Auth.CompanyCode)</p>
+    }
 
     <ul>
         <li>View and assign employee tasks</li>
@@ -49,4 +56,6 @@
 
 @code {
     [Inject] private CulinaryCommand.Services.AuthService Auth { get; set; } = default!;
+        [Inject] private CulinaryCommand.Services.LocationState LocationState { get; set; } = default!;
+
 }
