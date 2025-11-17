@@ -30,10 +30,6 @@ builder.Services.AddScoped<LocationState>();
 
 
 
-// for manager state info (using it to store restaurants right now, no interaction with the backend yet)
-builder.Services.AddScoped<ManagerSessionManager>();
-
-
 var app = builder.Build();
 
 // Apply pending EF core migrations at startup

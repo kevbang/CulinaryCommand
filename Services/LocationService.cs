@@ -1,6 +1,9 @@
+using System.Text.Json;
 using CulinaryCommand.Data;
 using CulinaryCommand.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
+
 
 namespace CulinaryCommand.Services
 {
@@ -24,16 +27,23 @@ namespace CulinaryCommand.Services
         Task<List<User>> GetManagersForLocationAsync(int locationId);
 
         Task<List<Location>> GetLocationsByManagerAsync(int? managerId);
+
+        Task LoadAndPersistLocationsAsync(int userId);
+
     }
 
     public class LocationService : ILocationService
     {
         private readonly AppDbContext _context;
+        private LocationState _locationState;
+        private readonly IJSRuntime _js;
 
-        public LocationService(AppDbContext context, LocationState locationState)
+
+        public LocationService(AppDbContext context, LocationState locationState, IJSRuntime js)
         {
             _context = context;
-
+            _locationState = locationState;
+            _js = js;
         }
 
         // -------------------- CRUD --------------------
@@ -139,6 +149,19 @@ namespace CulinaryCommand.Services
             return await _context.Locations
             .Where(l => l.Managers.Any(m => m.Id == managerId))
             .ToListAsync();
+        }
+
+        public async Task LoadAndPersistLocationsAsync(int userId)
+        {
+            // 1. Get from DB
+            var locations = await GetLocationsByManagerAsync(userId);
+
+            // 2. Push into LocationState (in-memory)
+            _locationState.SetLocations(locations);
+
+            // 3. Save into localStorage
+            var json = JsonSerializer.Serialize(locations);
+            await _js.InvokeVoidAsync("localStorage.setItem", "cc_locations", json);
         }
     }
 }

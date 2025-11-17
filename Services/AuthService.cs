@@ -8,7 +8,7 @@ namespace CulinaryCommand.Services
         private readonly IJSRuntime _js;
         private bool _hydrated;
 
-        public AuthService(IJSRuntime js, ILocationService locationService) 
+        public AuthService(IJSRuntime js) 
         {
             _js = js;
         }
@@ -62,6 +62,7 @@ namespace CulinaryCommand.Services
             UserRole = user.Role;
             Company = user.Company?.Name;
             CompanyCode = user.Company?.CompanyCode;
+            
             // still need to implement the user methods in LocationService
             // Locations = user.Locations?.Select(l => l.Name).ToList();
             IsSignedIn = true;
@@ -94,7 +95,7 @@ namespace CulinaryCommand.Services
 
         public async Task<string?> GetUser()
         {
-            return await _js.InvokeAsync<string?>("localStorage.getItem", "cc_email");
+            return await _js.InvokeAsync<string?>("localStorage.getItem", "cc_userId");
         }
 
         public async Task<bool> IsUserSignedIn()

@@ -1,6 +1,8 @@
-@page "/settings/{Tab?}"                    // Redirect to /settings/profile
+@page "/settings/{Tab?}" // Redirect to /settings/profile
 @inject NavigationManager NavigationManager
-@inject ManagerSessionManager SessionManager
+@inject AuthService Auth
+@inject ILocationService LocationService
+@using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Models
 @using System.Security.Cryptography
 @rendermode InteractiveServer
@@ -160,10 +162,11 @@
                             <label for="currentPassword" class="form-label">Current Password</label>
                             <div class="password-input-container">
 
-                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.CurrentPassword" 
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.CurrentPassword"
                                     placeholder="Enter current password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
 
                                     <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
@@ -174,10 +177,11 @@
                             <label for="newPassword" class="form-label">New Password</label>
                             <div class="password-input-container">
 
-                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.NewPassword" 
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.NewPassword"
                                     placeholder="Enter new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showNewPassword = !showNewPassword)">
                                     <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -189,10 +193,11 @@
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">Confirm New Password</label>
                             <div class="password-input-container">
-                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.ConfirmPassword" 
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.ConfirmPassword"
                                     placeholder="Confirm new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
                                     <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -446,86 +451,88 @@
             <!-- Restaurants Tab -->
             @if (ActiveTab == "restaurants")
             {
-                
+
                 <div class="tab-pane active">
-                @if (!RestaurantId.HasValue) {
+                    @if (!RestaurantId.HasValue)
+                    {
                         <h4 class="mb-4">
                             Manage Restaurants
                         </h4>
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        @if (SessionManager.Restaurants is { Count: > 0 })
-                        {
-                            <div class="row g-3">
-                            @foreach (RestaurantModel r in SessionManager.Restaurants)
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            @if (managedLocations?.Count > 0)
                             {
-                                <div class="col-md-6 col-lg-4">
-                                    <div class="card shadow-sm border-0 h-100 d-flex flex-column">
-                                        <div class="card-body d-flex flex-column">
-                                            <div>
-                                                <h5 class="card-title">@r.Name</h5>
-                                                <p class="card-text text-muted mb-2">@r.CuisineType</p>
-                                                <small class="text-muted d-block mb-3">@r.Address</small>
-                                            </div>
+                                <div class="row g-3">
+                                    @foreach (Location r in managedLocations)
+                                    {
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="card shadow-sm border-0 h-100 d-flex flex-column">
+                                                <div class="card-body d-flex flex-column">
+                                                    <div>
+                                                        <h5 class="card-title">@r.Name</h5>
+                                                        <p class="card-text text-muted mb-2">@r.Address</p>
+                                                        <small class="text-muted d-block mb-3">@r.State</small>
+                                                    </div>
 
-                                            <!-- Spacer pushes button group to bottom -->
-                                            <div class="mt-auto">
-                                                <div class="d-flex justify-content-between">
-                                                    <button class="btn btn-outline-primary btn-sm"
-                                                            @onclick="() => EditRestaurant(r)">
-                                                        <i class="fas fa-edit me-1"></i>Edit
-                                                    </button>
+                                                    <!-- Spacer pushes button group to bottom -->
+                                                    <div class="mt-auto">
+                                                        <div class="d-flex justify-content-between">
+                                                            <button class="btn btn-outline-primary btn-sm"
+                                                                @onclick="() => EditLocation(r)">
+                                                                <i class="fas fa-edit me-1"></i>Edit
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
+                                    }
+                                </div>
                             }
                         </div>
-                        }
-                    </div>
-                }
-                else {
+                    }
+                    else
+                    {
 
 
-                    <h4 class="mb-4">
-                        Restaurant Information
-                    </h4>
+                        <h4 class="mb-4">
+                            Location Information
+                        </h4>
 
-                    <EditForm Model="@restaurantModel" OnValidSubmit="@HandleRestaurantSubmit">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="restaurantName" class="form-label">Restaurant Name</label>
-                                <InputText id="restaurantName" class="form-control" @bind-Value="restaurantModel.Name"
-                                    placeholder="Enter restaurant name" />
+                        <EditForm Model="@locationModel" OnValidSubmit="@HandleLocationSubmit">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="restaurantName" class="form-label">Restaurant Name</label>
+                                    <InputText id="restaurantName" class="form-control" @bind-Value="currentLocation.Name"
+                                        placeholder="Enter restaurant name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="city" class="form-label">City</label>
+                                    <InputText id="city" class="form-control" @bind-Value="currentLocation.City"
+                                        placeholder="Enter a city" />
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="cuisineType" class="form-label">Cuisine Type</label>
-                                <InputText id="cuisineType" class="form-control" @bind-Value="restaurantModel.CuisineType"
-                                    placeholder="Italian, Mexican, etc." />
-                            </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="address" class="form-label">Address</label>
-                            <InputText id="address" class="form-control" @bind-Value="restaurantModel.Address"
-                                placeholder="123 Main Street" />
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="phone" class="form-label">Phone</label>
-                                <InputText id="phone" class="form-control" @bind-Value="restaurantModel.Phone"
-                                    placeholder="(555) 123-4567" />
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <InputText id="address" class="form-control" @bind-Value="currentLocation.Address"
+                                    placeholder="123 Main Street" />
                             </div>
-                            <div class="col-md-6">
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="state" class="form-label">State</label>
+                                    <InputText id="state" class="form-control" @bind-Value="currentLocation.State"
+                                        placeholder="Enter a state" />
+                                </div>
+                                @* <div class="col-md-6">
                                 <label for="email" class="form-label">Email</label>
                                 <InputText id="email" type="email" class="form-control" @bind-Value="restaurantModel.Email"
                                     placeholder="contact@restaurant.com" />
+                            </div> *@
                             </div>
-                        </div>
 
-                        <div class="mb-3">
+                            @* <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
                             <InputTextArea id="description" class="form-control" @bind-Value="restaurantModel.Description"
                                 placeholder="Short description or notes about the restaurant" rows="3" />
@@ -537,12 +544,12 @@
                                 <InputText id="website" class="form-control" @bind-Value="restaurantModel.Website"
                                     placeholder="https://example.com" />
                             </div>
-                        </div>
+                        </div> *@
 
-                        <button type="submit" class="btn btn-success settings-btn">
-                            <i class="bi bi-save me-2"></i>Save Changes
-                        </button>
-                    </EditForm>
+                            <button type="submit" class="btn btn-success settings-btn">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </EditForm>
                     }
                 </div>
             }
@@ -553,9 +560,11 @@
 @code {
     [Parameter]
     public string? Tab { get; set; }
-    
+
     [SupplyParameterFromQuery(Name = "restaurant")]
     public int? RestaurantId { get; set; }
+    private Location currentLocation { get; set; } = new();
+    private List<Location> managedLocations { get; set; } = new();
 
     private string ActiveTab => Tab?.ToLower() ?? "profile";
 
@@ -567,19 +576,27 @@
     private SecurityModel securityModel = new();
     private NotificationModel notificationModel = new();
     private PreferencesModel preferencesModel = new();
-    private RestaurantModel restaurantModel = new();
+    private LocationModel locationModel = new();
 
-    protected override void OnParametersSet()
+    private bool _initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Load the specific restaurant when RestaurantId is provided
-        if (RestaurantId.HasValue && ActiveTab == "restaurants")
+        if (firstRender)
         {
-            LoadRestaurant(RestaurantId.Value);
-        }
-        
-        StateHasChanged();
+            await PopulateLocations();
 
+            if (RestaurantId.HasValue && ActiveTab == "restaurants")
+            {
+                await LoadRestaurant(RestaurantId.Value);
+            }
+
+            _initialized = true;
+
+            StateHasChanged();
+        }
     }
+
 
     protected override void OnInitialized()
     {
@@ -621,6 +638,22 @@
             ShowTooltips = true,
             ItemsPerPage = "25"
         };
+
+
+    }
+
+    private async Task PopulateLocations()
+    {
+        var userIdString = await Auth.GetUser();
+        if (int.TryParse(userIdString, out int signedInUserId))
+        {
+            managedLocations = await LocationService.GetLocationsByManagerAsync(signedInUserId);
+        }
+        else
+        {
+            managedLocations = new List<Location>();
+            Console.WriteLine($"Failed to parse signed-in user id: '{userIdString}'");
+        }
     }
 
     private void NavigateToTab(string tab)
@@ -662,11 +695,12 @@
         // TODO: Add actual preferences update logic here
     }
 
-    private void HandleRestaurantSubmit()
+    private void HandleLocationSubmit()
     {
-        Console.WriteLine($"Restaurant updated: {restaurantModel.Name} ({restaurantModel.CuisineType})");
+        Console.WriteLine($"Location updated: {locationModel.Name}");
         NavigationManager.NavigateTo("/settings/restaurants");
         // TODO: Add actual database update logic or API call
+        LocationService.
     }
 
     private void ExportData()
@@ -693,35 +727,34 @@
         // TODO: Add account deletion logic here
     }
 
-    private void LoadRestaurant(int restaurantId)
+    private async Task LoadRestaurant(int restaurantId)
     {
         // TODO: Load from database based on restaurantId
         // For now, using SessionManager as example
-        var restaurant = SessionManager.Restaurants?.FirstOrDefault(r => r.Id == restaurantId);
-        
-        if (restaurant != null)
+        currentLocation = await LocationService.GetLocationByIdAsync(restaurantId);
+        if (currentLocation != null)
         {
-            restaurantModel = new RestaurantModel
+            locationModel = new LocationModel
             {
-                Id = restaurant.Id,
-                Name = restaurant.Name,
-                CuisineType = restaurant.CuisineType,
-                Address = restaurant.Address,
-                Phone = restaurant.Phone,
-                Email = restaurant.Email,
-                Description = restaurant.Description,
-                Website = restaurant.Website
+                Id = currentLocation.Id,
+                Name = currentLocation.Name,
+                Address = currentLocation.Address,
+                City = currentLocation.City,
+                State = currentLocation.State,
+                ZipCode = currentLocation.ZipCode,
+                MarginEdgeKey = currentLocation.MarginEdgeKey
             };
         }
         else
         {
             // Restaurant not found, initialize empty model
-            restaurantModel = new RestaurantModel();
+            locationModel = new LocationModel();
         }
     }
 
-    private void EditRestaurant(RestaurantModel restaurant) {
-        NavigationManager.NavigateTo($"/settings/restaurants?restaurant={restaurant.Id}");
+    private void EditLocation(Location location)
+    {
+        NavigationManager.NavigateTo($"/settings/restaurants?restaurant={location.Id}");
 
     }
 

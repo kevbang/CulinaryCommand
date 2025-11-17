@@ -44,18 +44,21 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_hydrated)
-        {
-            // Load from localStorage
-            UserEmail = await JS.InvokeAsync<string>("localStorage.getItem", "cc_email") ?? "Guest";
-            UserRole = await JS.InvokeAsync<string>("localStorage.getItem", "cc_role") ?? "";
-            Company = await JS.InvokeAsync<string>("localStorage.getItem", "cc_company") ?? "";
+        if (firstRender) {
 
-            // Subscribe to AuthService changes
-            Auth.OnAuthStateChanged += Refresh;
+            if (!_hydrated)
+            {
+                // Load from localStorage
+                UserEmail = await JS.InvokeAsync<string>("localStorage.getItem", "cc_email") ?? "Guest";
+                UserRole = await JS.InvokeAsync<string>("localStorage.getItem", "cc_role") ?? "";
+                Company = await JS.InvokeAsync<string>("localStorage.getItem", "cc_company") ?? "";
 
-            _hydrated = true;
-            StateHasChanged();
+                // Subscribe to AuthService changes
+                Auth.OnAuthStateChanged += Refresh;
+
+                _hydrated = true;
+                StateHasChanged();
+            }
         }
     }
 
@@ -64,10 +67,6 @@
     private async Task Logout()
     {
         await Auth.LogoutAsync();
-
-        await JS.InvokeVoidAsync("localStorage.removeItem", "cc_email");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "cc_role");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "cc_company");
 
         Nav.NavigateTo("/signin", forceLoad: true);
     }
