@@ -10,14 +10,20 @@ namespace CulinaryCommand.Data
     {
         public AppDbContext CreateDbContext(string[] args)
         {
-            var conn = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
-                      ?? "Server=127.0.0.1;Port=3306;Database=culinary_local;Uid=root;Pwd=localpass;SslMode=None;";
+            // force EF to load the correct appsettings.json
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory()) // this is key
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile("appsettings.Development.json", optional: true)
+                .Build();
 
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36)))
-                .Options;
+            var conn = configuration.GetConnectionString("DefaultConnection");
 
-            return new AppDbContext(options);
+            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+            optionsBuilder.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36)),
+                mySqlOptions => mySqlOptions.EnableRetryOnFailure());
+
+            return new AppDbContext(optionsBuilder.Options);
         }
     }
 }

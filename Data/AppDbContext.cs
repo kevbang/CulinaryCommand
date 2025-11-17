@@ -14,6 +14,11 @@ namespace CulinaryCommand.Data
         public DbSet<User> Users => Set<User>();
         public DbSet<WorkTask> Tasks => Set<WorkTask>();
         public DbSet<Company> Companies => Set<Company>();
+        public DbSet<Ingredient> Ingredients => Set<Ingredient>();
+        public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
+        public DbSet<Recipe> Recipes => Set<Recipe>();
+        public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
+        public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

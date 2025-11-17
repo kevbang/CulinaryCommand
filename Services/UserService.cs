@@ -71,7 +71,7 @@ namespace CulinaryCommand.Services
             {
                 return null;
             }
-            return VerifyPassword(password, user.Password) ? user : null;
+            return VerifyPassword(password, HashPassword(user.Password)) ? user : null;
         }
 
 

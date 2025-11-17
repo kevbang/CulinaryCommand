@@ -9,28 +9,29 @@ namespace CulinaryCommand.Data.Entities
         public int Id { get; set; }
 
         [Required, MaxLength(256)]
-        public string? Name { get; set; }
+        public string Name { get; set; }
 
         [Required, MaxLength(256)]
-        public string? Address { get; set; }
+        public string Address { get; set; }
 
         [Required, MaxLength(256)]
-        public string? City { get; set; }
+        public string City { get; set; }
 
         [Required, MaxLength(256)]
-        public string? State { get; set; }
+        public string State { get; set; }
 
         [Required, MaxLength(256)]
-        public string? ZipCode { get; set; }
+        public string ZipCode { get; set; }
 
         [Required, MaxLength(124)]
-        public string? MarginEdgeKey { get; set; }
+        public string MarginEdgeKey { get; set; }
 
         public int CompanyId { get; set; }
-        public Company Company { get; set; }
+        public Company? Company { get; set; }
 
-        // Relationships
         public ICollection<User> Users { get; set; } = new List<User>();
+        public ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
     }
+
 }
 

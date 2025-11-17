@@ -1,0 +1,93 @@
+@* @page "/ingredients"
+@inject AppDbContext Db
+
+<h3>Ingredients</h3>
+
+<button class="btn btn-primary" @onclick="StartAdd">Add Ingredient</button>
+
+@if (editing)
+{
+    <EditForm Model="model" OnValidSubmit="Save">
+        <InputText @bind-Value="model.Name" placeholder="Name" class="form-control" />
+        <InputText @bind-Value="model.Category" placeholder="Category" class="form-control mt-2" />
+        <InputText @bind-Value="model.DefaultUnit" placeholder="Default Unit" class="form-control mt-2" />
+
+        <button class="btn btn-success mt-3">Save</button>
+    </EditForm>
+}
+
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Default Unit</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in ingredients)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Category</td>
+                <td>@item.DefaultUnit</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" @onclick="() => Edit(item)">Edit</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    List<Ingredient> ingredients = new();
+    IngredientViewModel model = new();
+    bool editing = false;
+
+    protected override void OnInitialized()
+    {
+        ingredients = Db.Ingredients.ToList();
+    }
+
+    void StartAdd()
+    {
+        editing = true;
+        model = new IngredientViewModel();
+    }
+
+    void Edit(Ingredient ing)
+    {
+        editing = true;
+        model = new IngredientViewModel {
+            IngredientId = ing.IngredientId,
+            Name = ing.Name,
+            Category = ing.Category,
+            DefaultUnit = ing.DefaultUnit
+        };
+    }
+
+    async Task Save()
+    {
+        if (model.IngredientId == 0)
+        {
+            Db.Ingredients.Add(new Ingredient
+            {
+                Name = model.Name,
+                Category = model.Category,
+                DefaultUnit = model.DefaultUnit
+            });
+        }
+        else
+        {
+            var entity = Db.Ingredients.Find(model.IngredientId);
+            entity.Name = model.Name;
+            entity.Category = model.Category;
+            entity.DefaultUnit = model.DefaultUnit;
+        }
+
+        await Db.SaveChangesAsync();
+        ingredients = Db.Ingredients.ToList();
+        editing = false;
+    }
+} *@

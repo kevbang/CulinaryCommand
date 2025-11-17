@@ -1,0 +1,68 @@
+@using CulinaryCommand.Data.Entities
+@inject IngredientService Ingredients
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@rendermode InteractiveServer
+
+<h3 class="mb-3">Ingredients</h3>
+
+<button class="btn btn-success mb-3" @onclick="AddNew">
+    <i class="bi bi-plus-circle"></i> Add New Ingredient
+</button>
+
+@if (items == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Default Unit</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var i in items)
+            {
+                <tr>
+                    <td>@i.Name</td>
+                    <td>@i.Category</td>
+                    <td>@i.DefaultUnit</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => Edit(i.IngredientId)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-danger" @onclick="() => Delete(i.IngredientId)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<Ingredient>? items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Ingredients.GetAllAsync();
+    }
+
+    void AddNew() => Nav.NavigateTo("/ingredients/create");
+    void Edit(int id) => Nav.NavigateTo($"/ingredients/edit/{id}");
+
+    async Task Delete(int id)
+    {
+        if (await Js.InvokeAsync<bool>("confirm", $"Delete ingredient #{id}?"))
+        {
+            await Ingredients.DeleteAsync(id);
+            items = await Ingredients.GetAllAsync();
+        }
+    }
+}

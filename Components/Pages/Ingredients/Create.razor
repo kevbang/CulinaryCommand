@@ -1,0 +1,19 @@
+@page "/ingredients/create"
+@using CulinaryCommand.Data.Entities
+@inject NavigationManager Nav
+@inject IngredientService Ingredients
+@rendermode InteractiveServer
+
+<h3>Create Ingredient</h3>
+
+<IngredientForm Model="model" FormTitle="Create Ingredient" OnValidSubmit="Save" />
+
+@code {
+    private Ingredient model = new();
+
+    private async Task Save()
+    {
+        await Ingredients.CreateAsync(model);
+        Nav.NavigateTo("/ingredients");
+    }
+}

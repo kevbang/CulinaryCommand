@@ -4,6 +4,7 @@ using CulinaryCommand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251117160613_AddRecipesSchema")]
+    partial class AddRecipesSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -109,7 +112,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasKey("IngredientId");
 
-                    b.ToTable("Ingredients");
+                    b.ToTable("Ingredient");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
@@ -180,7 +183,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasKey("UnitId");
 
-                    b.ToTable("MeasurementUnits");
+                    b.ToTable("MeasurementUnit");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Recipe", b =>
@@ -224,7 +227,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasIndex("LocationId");
 
-                    b.ToTable("Recipes");
+                    b.ToTable("Recipe");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeIngredient", b =>
@@ -262,7 +265,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasIndex("UnitId");
 
-                    b.ToTable("RecipeIngredients");
+                    b.ToTable("RecipeIngredient");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeStep", b =>
@@ -287,7 +290,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeSteps");
+                    b.ToTable("RecipeStep");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>

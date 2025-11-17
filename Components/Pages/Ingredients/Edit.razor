@@ -1,0 +1,33 @@
+@page "/ingredients/edit/{id:int}"
+@using CulinaryCommand.Data.Entities
+@inject NavigationManager Nav
+@inject IngredientService Ingredients
+@rendermode InteractiveServer
+
+<h3>Edit Ingredient</h3>
+
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <IngredientForm Model="model" FormTitle="Edit Ingredient" OnValidSubmit="Save" />
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private Ingredient? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = await Ingredients.GetByIdAsync(id);
+    }
+
+    private async Task Save()
+    {
+        await Ingredients.UpdateAsync(model);
+        Nav.NavigateTo("/ingredients");
+    }
+}
