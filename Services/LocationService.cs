@@ -11,7 +11,7 @@ namespace CulinaryCommand.Services
     {
         Task<List<Location>> GetAllLocationsAsync();
         Task<Location?> GetLocationByIdAsync(int id);
-        Task<Location?> CreateLocationAsync(Location location);
+        Task<Location?> CreateLocationAsync(Location location, int managerId);
         Task<bool> UpdateLocationAsync(Location location);
         Task<bool> DeleteLocationAsync(int id);
 
@@ -63,10 +63,15 @@ namespace CulinaryCommand.Services
                 .FirstOrDefaultAsync(l => l.Id == id);
         }
 
-        public async Task<Location?> CreateLocationAsync(Location location)
+        public async Task<Location?> CreateLocationAsync(Location location, int managerId)
         {
+            // Create the location
             _context.Locations.Add(location);
             await _context.SaveChangesAsync();
+
+            //Add manager to many-to-many link
+            await AddManagerToLocationAsync(location.Id, managerId);
+
             return location;
         }
 

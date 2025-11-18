@@ -154,7 +154,7 @@
     private void EditRestaurant(Location restaurant)
     {
         Console.WriteLine($"Editing {restaurant.Name}");
-        NavigationManager.NavigateTo($"/settings/restaurants?restaurant={restaurant.Id}", forceLoad: false);
+        NavigationManager.NavigateTo($"/settings/restaurants/{restaurant.Id}", forceLoad: false);
     }
 
     private void AddRestaurant() {

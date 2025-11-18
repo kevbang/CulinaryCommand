@@ -1,4 +1,4 @@
-@page "/settings/{Tab?}/{specifier?}" // Redirect to /settings/profile
+@page "/settings/{Tab?}/{Specifier?}" // Redirect to /settings/profile
 @inject NavigationManager NavigationManager
 @inject AuthService Auth
 @inject ILocationService LocationService
@@ -454,7 +454,7 @@
 
                 <div class="tab-pane active">
 
-                    @if (!RestaurantId.HasValue)
+                    @if (Specifier == null)
                     {
                         <h4 class="mb-4">
                             Manage Locations
@@ -491,8 +491,9 @@
 
                                     }
                                     <div class="col-md-6 col-lg-4">
-                                        <button class="btn btn-secondary btn-sm">
-                                            <i class="fas fa-edit me-1"></i>Add location
+                                        <button class="btn btn-secondary btn-sm" 
+                                        @onclick="() => AddLocation()">
+                                            <i class="bi bi-square-plus me-1"></i>Add location
                                         </button>
                                     </div>
                                 </div>
@@ -504,8 +505,9 @@
                                         You don’t manage any restaurant locations yet.
                                     </div>
                                     <div class="mx-3">
-                                        <button class="btn btn-secondary btn-sm">
-                                            <i class="fas fa-edit me-1"></i>Add location
+                                        <button class="btn btn-secondary btn-sm" 
+                                        @onclick="() => AddLocation()">
+                                            <i class="bi bi-square-plus me-1"></i>Add location
                                         </button>
                                     </div>
                                 </div>
@@ -513,8 +515,45 @@
                             
                         </div>
                     }
-                    else if (true) {
-                        
+                    else if (Specifier == "add") {
+                        @*add the add menu here later*@
+                        <EditForm Model="@locationModel" OnValidSubmit="@HandleLocationCreate">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="restaurantName" class="form-label">Restaurant Name</label>
+                                    <InputText id="restaurantName" class="form-control" @bind-Value="locationModel.Name"
+                                        placeholder="Enter restaurant name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="address" class="form-label">Address</label>
+                                    <InputText id="address" class="form-control" @bind-Value="locationModel.Address"
+                                        placeholder="Enter an address" />
+                                </div>
+                            </div>
+
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="city" class="form-label">City</label>
+                                    <InputText id="city" class="form-control" @bind-Value="locationModel.City"
+                                        placeholder="Enter an city" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="state" class="form-label">State</label>
+                                    <InputText id="state" class="form-control" @bind-Value="locationModel.State"
+                                        placeholder="Enter a state" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="zipcode" class="form-label">Postal Code</label>
+                                    <InputText id="zipcode" class="form-control" @bind-Value="locationModel.ZipCode"
+                                        placeholder="Enter a postal code" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success settings-btn">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </EditForm>
                     }
                     else
                     {
@@ -570,10 +609,11 @@
 @code {
     [Parameter]
     public string? Tab { get; set; }
-    public string? specifier { get; set; }
+    [Parameter]
+    public string? Specifier { get; set; }
 
-    [SupplyParameterFromQuery(Name = "restaurant")]
-    public int? RestaurantId { get; set; }
+    @* [SupplyParameterFromQuery(Name = "restaurant")] *@
+    @* public int? RestaurantId { get; set; } *@
     private Location currentLocation { get; set; } = new();
     private List<Location> managedLocations { get; set; } = new();
     private bool _addingLocation {get; set;} = false;
@@ -599,9 +639,11 @@
         {
             await PopulateLocations();
 
-            if (RestaurantId.HasValue && ActiveTab == "restaurants")
+            if (Specifier != null && ActiveTab == "restaurants")
             {
-                await LoadRestaurant(RestaurantId.Value);
+                if (Specifier != "add") {
+                    await LoadRestaurant(int.Parse(Specifier));
+                }
             }
 
             _initialized = true;
@@ -617,10 +659,14 @@
         {
             NavigationManager.NavigateTo("/settings/profile");
         }
-
-        if (string.IsNullOrEmpty(Tab2)) {
-            NavigationManager.NavigateTo(/)
+        else if (string.IsNullOrEmpty(Specifier))
+        {
+            NavigationManager.NavigateTo($"/settings/{Tab}");
         }
+
+        @* if (string.IsNullOrEmpty(Tab2)) {
+            NavigationManager.NavigateTo("")
+        } *@
 
         // Initialize with default/current user data
         profileModel = new ProfileModel
@@ -719,14 +765,26 @@
         @* LocationService. *@
     }
 
-    private async Task HandleLocationCreate(Location location) {
-        await LocationService.CreateLocationAsync(location);
-        
-        _addingLocation = false;
+    private async Task HandleLocationCreate() {
+
+        if (Auth.UserId != null) {
+            Location newLocation = new Location
+            {
+                Name = locationModel.Name,
+                Address = locationModel.Address,
+                City = locationModel.City,
+                State = locationModel.State,
+                ZipCode = locationModel.ZipCode,   
+                CompanyId = int.TryParse(Auth.CompanyCode, out var cid) ? cid : 1,
+                MarginEdgeKey = "me_key" // probably should make this nullable in the DB
+            };
+                await LocationService.CreateLocationAsync(newLocation, Auth.UserId.Value);
+            NavigationManager.NavigateTo("/settings/restaurants");
+        }
+
     }
     private void AddLocation() {
-        _addingLocation = true;
-        NavigationManager.NavigateTo("/settings/restaurants/add")
+        NavigationManager.NavigateTo("/settings/restaurants/add");
 
     }
 
@@ -754,11 +812,11 @@
         // TODO: Add account deletion logic here
     }
 
-    private async Task LoadRestaurant(int restaurantId)
+    private async Task LoadRestaurant(int locationId)
     {
         // TODO: Load from database based on restaurantId
         // For now, using SessionManager as example
-        currentLocation = await LocationService.GetLocationByIdAsync(restaurantId);
+        currentLocation = await LocationService.GetLocationByIdAsync(locationId);
         Console.WriteLine("loading restaurant : " + currentLocation.Name);
         if (currentLocation != null)
         {
@@ -783,7 +841,7 @@
     private async Task EditLocation(Location location)
     {
         await LoadRestaurant(location.Id);
-        NavigationManager.NavigateTo($"/settings/restaurants?restaurant={location.Id}");
+        NavigationManager.NavigateTo($"/settings/restaurants/{location.Id}");
 
     }
 
