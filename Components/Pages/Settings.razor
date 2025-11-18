@@ -774,9 +774,7 @@
                 Address = locationModel.Address,
                 City = locationModel.City,
                 State = locationModel.State,
-                ZipCode = locationModel.ZipCode,   
-                CompanyId = int.TryParse(Auth.CompanyCode, out var cid) ? cid : 1,
-                MarginEdgeKey = "me_key" // probably should make this nullable in the DB
+                ZipCode = locationModel.ZipCode,
             };
                 await LocationService.CreateLocationAsync(newLocation, Auth.UserId.Value);
             NavigationManager.NavigateTo("/settings/restaurants");

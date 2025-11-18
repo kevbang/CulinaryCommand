@@ -21,15 +21,15 @@ namespace CulinaryCommand.Data
         public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
 
 
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
-            {
-                base.OnModelCreating(modelBuilder);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
 
-                modelBuilder.Entity<User>()
-                    .HasOne(u => u.Company)
-                    .WithMany(c => c.Employees)
-                    .HasForeignKey(u => u.CompanyId)
-                    .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Company)
+                .WithMany(c => c.Employees)
+                .HasForeignKey(u => u.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Location>()
                 .HasOne(l => l.Company)
@@ -51,6 +51,6 @@ namespace CulinaryCommand.Data
                 .WithMany(l => l.Managers)
                 .UsingEntity(j => j.ToTable("LocationManagers")); 
                                             // table of users (managers) who MANAGE locations
-            }
+        }
     }  
 }

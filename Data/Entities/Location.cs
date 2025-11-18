@@ -23,10 +23,11 @@ namespace CulinaryCommand.Data.Entities
         [Required, MaxLength(256)]
         public string ZipCode { get; set; }
 
-        [Required, MaxLength(124)]
-        public string MarginEdgeKey { get; set; }
+        // marginEdgeKey should be nullable, not every location will have one
+        public string? MarginEdgeKey { get; set; }
 
-        public int CompanyId { get; set; }
+        // keep company nullable until we add a way to create companies
+        public int? CompanyId { get; set; }
         public Company? Company { get; set; }
 
         /* list of users that WORK at this location
