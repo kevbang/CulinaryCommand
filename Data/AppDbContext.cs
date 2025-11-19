@@ -38,10 +38,19 @@ namespace CulinaryCommand.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // 🔹 Many-to-many relationship: User <-> Location
+            // users WORKING at locations
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Locations)
                 .WithMany(l => l.Users)
                 .UsingEntity(j => j.ToTable("UserLocations"));
+                                            // table of users who WORK at locations
+
+            // many-to-many managers managing locations    
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.ManagedLocations)
+                .WithMany(l => l.Managers)
+                .UsingEntity(j => j.ToTable("LocationManagers")); 
+                                            // table of users (managers) who MANAGE locations
         }
     }  
 }

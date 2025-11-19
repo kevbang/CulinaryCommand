@@ -20,10 +20,11 @@ namespace CulinaryCommand.Data.Entities
         public string? Password { get; set; }
 
         [Required, MaxLength(128)]
-        public string? Role { get; set; } 
+        public string? Role { get; set; }
 
-        [Required, MaxLength(128)]
-        public string? Location { get; set; }
+        //delete this in the future, shouldn't be needed
+        // [Required, MaxLength(128)]
+        // public string? Location { get; set; }
 
         public int? CompanyId { get; set; }
 
@@ -32,6 +33,11 @@ namespace CulinaryCommand.Data.Entities
         // Navigation property for UserStation experience
         public string? StationsWorked { get; set; }
 
+        // list of locations this user MANAGES
+        // each of these locations should have the user as a manager, too
+        public ICollection<Location> ManagedLocations { get; set; } = new List<Location>();
+
+        // list of locations this user WORKS at
         public ICollection<Location> Locations { get; set; } = new List<Location>();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

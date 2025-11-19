@@ -40,9 +40,7 @@ namespace CulinaryCommand.Services
                 Password = HashPassword(password),
                 Role = Roles.Manager.ToString(),
                 Phone = "",
-                Location = "TEMP", // TODO: remove or update login logic later
-                // this was added because logins were not allowed without it
-                // Location is a NOT NULL value in the migration i think -ryan
+                ManagedLocations = new List<Location>(), // list of locations
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -71,7 +69,8 @@ namespace CulinaryCommand.Services
             {
                 return null;
             }
-            return VerifyPassword(password, HashPassword(user.Password)) ? user : null;
+            // pass in input password and hashed version stored in the database
+            return VerifyPassword(password, user.Password) ? user : null;
         }
 
 
@@ -86,6 +85,7 @@ namespace CulinaryCommand.Services
         // verifying if the password hashes match
         private bool VerifyPassword(string password, string hashedPassword)
         {
+            // determine the hashed value of the password input by the user
             var hashOfInput = HashPassword(password);
 
             Console.WriteLine("INPUT HASH:     " + hashOfInput);

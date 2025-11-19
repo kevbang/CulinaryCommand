@@ -1,7 +1,11 @@
 @page "/dashboard"
 @rendermode InteractiveServer
+
+@using CulinaryCommand.Components.Custom
+
 @inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager Nav
+
 
 @if (!_ready)
 {
@@ -16,17 +20,17 @@ else if (!Auth.IsSignedIn)
 else
 {
     <div class="container mt-4">
-        @if (Auth.UserRole == "Admin") 
-        { 
-            <AdminView /> 
+        @if (Auth.UserRole == "Admin")
+        {
+            <AdminView />
         }
-        else if (Auth.UserRole == "Manager") 
-        { 
-            <ManagerView /> 
+        else if (Auth.UserRole == "Manager")
+        {
+            <ManagerView />
         }
-        else 
-        { 
-            <EmployeeView /> 
+        else
+        {
+            <EmployeeView />
         }
     </div>
 }
@@ -36,15 +40,15 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await Auth.InitializeFromJsAsync();   // safe here (interactive)
-            _ready = true;
-            StateHasChanged();
-        }
+
+        await Auth.InitializeFromJsAsync(); // safe here (interactive)
+        _ready = true;
+        StateHasChanged();
+
     }
 
-    private void NavigateToSignIn(){
+    private void NavigateToSignIn()
+    {
         Nav.NavigateTo("/signin");
     }
 }

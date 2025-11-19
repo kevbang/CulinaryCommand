@@ -4,6 +4,7 @@ using CulinaryCommand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251114223115_AddManagerLocationRelationship")]
+    partial class AddManagerLocationRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,34 +87,6 @@ namespace CulinaryCommand.Migrations
                     b.ToTable("Companies");
                 });
 
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Ingredient", b =>
-                {
-                    b.Property<int>("IngredientId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IngredientId"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("DefaultUnit")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.HasKey("IngredientId");
-
-                    b.ToTable("Ingredients");
-                });
-
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
                 {
                     b.Property<int>("Id")
@@ -130,11 +105,13 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<int?>("CompanyId")
+                    b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
                     b.Property<string>("MarginEdgeKey")
-                        .HasColumnType("longtext");
+                        .IsRequired()
+                        .HasMaxLength(124)
+                        .HasColumnType("varchar(124)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -156,136 +133,6 @@ namespace CulinaryCommand.Migrations
                     b.HasIndex("CompanyId");
 
                     b.ToTable("Locations");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.MeasurementUnit", b =>
-                {
-                    b.Property<int>("UnitId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UnitId"));
-
-                    b.Property<string>("Abbreviation")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.HasKey("UnitId");
-
-                    b.ToTable("MeasurementUnits");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Recipe", b =>
-                {
-                    b.Property<int>("RecipeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RecipeId"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("LocationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RecipeType")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<decimal?>("YieldAmount")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<string>("YieldUnit")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.HasKey("RecipeId");
-
-                    b.HasIndex("LocationId");
-
-                    b.ToTable("Recipes");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeIngredient", b =>
-                {
-                    b.Property<int>("RecipeIngredientId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RecipeIngredientId"));
-
-                    b.Property<int>("IngredientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PrepNote")
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<int>("RecipeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UnitId")
-                        .HasColumnType("int");
-
-                    b.HasKey("RecipeIngredientId");
-
-                    b.HasIndex("IngredientId");
-
-                    b.HasIndex("RecipeId");
-
-                    b.HasIndex("UnitId");
-
-                    b.ToTable("RecipeIngredients");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeStep", b =>
-                {
-                    b.Property<int>("StepId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("StepId"));
-
-                    b.Property<string>("Instructions")
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<int>("RecipeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StepNumber")
-                        .HasColumnType("int");
-
-                    b.HasKey("StepId");
-
-                    b.HasIndex("RecipeId");
-
-                    b.ToTable("RecipeSteps");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>
@@ -420,58 +267,10 @@ namespace CulinaryCommand.Migrations
                     b.HasOne("CulinaryCommand.Data.Entities.Company", "Company")
                         .WithMany("Locations")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Company");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Recipe", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Location", "Location")
-                        .WithMany("Recipes")
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeIngredient", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Ingredient", "Ingredient")
-                        .WithMany("RecipeIngredients")
-                        .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CulinaryCommand.Data.Entities.Recipe", "Recipe")
-                        .WithMany("RecipeIngredients")
-                        .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CulinaryCommand.Data.Entities.MeasurementUnit", "Unit")
-                        .WithMany("RecipeIngredients")
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ingredient");
-
-                    b.Navigation("Recipe");
-
-                    b.Navigation("Unit");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.RecipeStep", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Recipe", "Recipe")
-                        .WithMany("Steps")
-                        .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Recipe");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>
@@ -528,28 +327,6 @@ namespace CulinaryCommand.Migrations
                     b.Navigation("Employees");
 
                     b.Navigation("Locations");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Ingredient", b =>
-                {
-                    b.Navigation("RecipeIngredients");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
-                {
-                    b.Navigation("Recipes");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.MeasurementUnit", b =>
-                {
-                    b.Navigation("RecipeIngredients");
-                });
-
-            modelBuilder.Entity("CulinaryCommand.Data.Entities.Recipe", b =>
-                {
-                    b.Navigation("RecipeIngredients");
-
-                    b.Navigation("Steps");
                 });
 #pragma warning restore 612, 618
         }

@@ -49,6 +49,11 @@ builder.Services.AddScoped<RecipeService>();
 builder.Services.AddScoped<UnitService>();
 builder.Services.AddScoped<IngredientService>();
 
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<LocationState>();
+
+
+
 var app = builder.Build();
 
 // Apply pending EF core migrations at startup
@@ -58,13 +63,13 @@ using (var scope = app.Services.CreateScope())
     database.Database.Migrate();
 }
 
-    // Configure the HTTP request pipeline.
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseExceptionHandler("/Error", createScopeForErrors: true);
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
-    }
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
 
 // Temporarily disable HTTPS redirect for development
 //app.UseHttpsRedirection();

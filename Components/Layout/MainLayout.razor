@@ -1,8 +1,12 @@
-﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+@inherits LayoutComponentBase
+@using CulinaryCommand.Models
+@using CulinaryCommand.Services
 @inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager Nav
-@using CulinaryCommand.Services
 @using System.Threading.Tasks
+
 
 <div class="page">
   <div class="sidebar"><NavMenu /></div>
@@ -18,4 +22,5 @@
     </article>
   </main>
 </div>
+
 

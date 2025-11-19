@@ -1,6 +1,11 @@
-@page "/settings"
+@page "/settings/{Tab?}/{Specifier?}" // Redirect to /settings/profile
+@inject NavigationManager NavigationManager
+@inject AuthService Auth
+@inject ILocationService LocationService
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Models
+@using System.Security.Cryptography
 @rendermode InteractiveServer
-
 
 <PageTitle>Settings - Culinary Command</PageTitle>
 
@@ -14,38 +19,33 @@
         <!-- Navigation Tabs -->
         <ul class="nav nav-tabs settings-tabs mb-4" id="settingsTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "profile" ? "active" : "")" 
-                        @onclick="@(() => SetActiveTab("profile"))" 
-                        type="button">
+                <button class="nav-link @(ActiveTab == "profile" ? "active" : "")"
+                    @onclick="@(() => NavigateToTab("profile"))" type="button">
                     <i class="fas fa-user me-2"></i>Profile
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "security" ? "active" : "")" 
-                        @onclick="@(() => SetActiveTab("security"))" 
-                        type="button">
+                <button class="nav-link @(ActiveTab == "security" ? "active" : "")"
+                    @onclick="@(() => NavigateToTab("security"))" type="button">
                     <i class="fas fa-lock me-2"></i>Security
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "notifications" ? "active" : "")" 
-                        @onclick="@(() => SetActiveTab("notifications"))" 
-                        type="button">
+                <button class="nav-link @(ActiveTab == "notifications" ? "active" : "")"
+                    @onclick="@(() => NavigateToTab("notifications"))" type="button">
                     <i class="fas fa-bell me-2"></i>Notifications
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "preferences" ? "active" : "")" 
-                        @onclick="@(() => SetActiveTab("preferences"))" 
-                        type="button">
+                <button class="nav-link @(ActiveTab == "preferences" ? "active" : "")"
+                    @onclick="@(() => NavigateToTab("preferences"))" type="button">
                     <i class="fas fa-cog me-2"></i>Preferences
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "restaurants" ? "active" : "")" 
-                        @onclick="@(() => SetActiveTab("restaurants"))" 
-                        type="button">
-                    <i class="fas fa-user me-2"></i>Restaurants
+                <button class="nav-link @(ActiveTab == "locations" ? "active" : "")"
+                    @onclick="@(() => NavigateToTab("locations"))" type="button">
+                    <i class="bi bi-fork-knife me-2"></i>Locations
                 </button>
             </li>
         </ul>
@@ -53,33 +53,37 @@
         <!-- Tab Content -->
         <div class="tab-content">
             <!-- Profile Tab -->
-            @if (activeTab == "profile")
+            @if (ActiveTab == "profile")
             {
                 <div class="tab-pane active">
                     <h4 class="mb-4">
                         <i class="fas fa-user me-2"></i>Profile Information
                     </h4>
-                    
+
                     <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="firstName" class="form-label">First Name</label>
-                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" placeholder="Enter your first name" />
+                                <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName"
+                                    placeholder="Enter your first name" />
                             </div>
                             <div class="col-md-6">
                                 <label for="lastName" class="form-label">Last Name</label>
-                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" placeholder="Enter your last name" />
+                                <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName"
+                                    placeholder="Enter your last name" />
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
-                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email" placeholder="Enter your email" />
+                            <InputText id="email" type="email" class="form-control" @bind-Value="profileModel.Email"
+                                placeholder="Enter your email" />
                         </div>
 
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone" placeholder="Enter your phone number" />
+                            <InputText id="phone" type="tel" class="form-control" @bind-Value="profileModel.Phone"
+                                placeholder="Enter your phone number" />
                         </div>
 
                         <div class="mb-3">
@@ -102,7 +106,7 @@
                         <p class="text-muted mb-4">
                             These actions are permanent and cannot be undone. Please proceed with caution.
                         </p>
-                        
+
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="danger-action-card">
@@ -146,21 +150,24 @@
             }
 
             <!-- Security Tab -->
-            @if (activeTab == "security")
+            @if (ActiveTab == "security")
             {
                 <div class="tab-pane active">
                     <h4 class="mb-4">
                         <i class="fas fa-lock me-2"></i>Security Settings
                     </h4>
-                    
+
                     <EditForm Model="@securityModel" OnValidSubmit="@HandleSecuritySubmit">
                         <div class="mb-3">
                             <label for="currentPassword" class="form-label">Current Password</label>
                             <div class="password-input-container">
-                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.CurrentPassword" 
+
+                                <InputText id="currentPassword" type="@(showCurrentPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.CurrentPassword"
                                     placeholder="Enter current password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showCurrentPassword = !showCurrentPassword)">
+
                                     <i class="fas @(showCurrentPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -169,10 +176,12 @@
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">New Password</label>
                             <div class="password-input-container">
-                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.NewPassword" 
+
+                                <InputText id="newPassword" type="@(showNewPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.NewPassword"
                                     placeholder="Enter new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showNewPassword = !showNewPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showNewPassword = !showNewPassword)">
                                     <i class="fas @(showNewPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -184,10 +193,11 @@
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">Confirm New Password</label>
                             <div class="password-input-container">
-                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")" 
-                                    class="form-control" @bind-Value="securityModel.ConfirmPassword" 
+                                <InputText id="confirmPassword" type="@(showConfirmPassword ? "text" : "password")"
+                                    class="form-control" @bind-Value="securityModel.ConfirmPassword"
                                     placeholder="Confirm new password" />
-                                <button type="button" class="password-toggle-btn" @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
+                                <button type="button" class="password-toggle-btn"
+                                    @onclick="@(() => showConfirmPassword = !showConfirmPassword)">
                                     <i class="fas @(showConfirmPassword ? "fa-eye-slash" : "fa-eye")"></i>
                                 </button>
                             </div>
@@ -196,7 +206,8 @@
                         <div class="security-section mb-4">
                             <h5 class="mb-3">Two-Factor Authentication</h5>
                             <div class="form-check">
-                                <InputCheckbox id="twoFactor" class="form-check-input" @bind-Value="securityModel.EnableTwoFactor" />
+                                <InputCheckbox id="twoFactor" class="form-check-input"
+                                    @bind-Value="securityModel.EnableTwoFactor" />
                                 <label class="form-check-label" for="twoFactor">
                                     Enable Two-Factor Authentication
                                 </label>
@@ -212,45 +223,51 @@
             }
 
             <!-- Notifications Tab -->
-            @if (activeTab == "notifications")
+            @if (ActiveTab == "notifications")
             {
                 <div class="tab-pane active">
                     <h4 class="mb-4">
                         <i class="fas fa-bell me-2"></i>Notification Preferences
                     </h4>
-                    
+
                     <EditForm Model="@notificationModel" OnValidSubmit="@HandleNotificationSubmit">
                         <div class="notification-section mb-4">
                             <h5 class="mb-3">
                                 <i class="fas fa-envelope me-2"></i>Email Notifications
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="taskNotifications" class="form-check-input" @bind-Value="notificationModel.TaskNotifications" />
+                                    <InputCheckbox id="taskNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.TaskNotifications" />
                                     <label class="form-check-label" for="taskNotifications">
                                         <strong>Task assignments and updates</strong>
-                                        <br><small class="text-muted">Receive emails when tasks are assigned to you or updated</small>
+                                        <br><small class="text-muted">Receive emails when tasks are assigned to you or
+                                            updated</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="scheduleNotifications" class="form-check-input" @bind-Value="notificationModel.ScheduleNotifications" />
+                                    <InputCheckbox id="scheduleNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.ScheduleNotifications" />
                                     <label class="form-check-label" for="scheduleNotifications">
                                         <strong>Schedule changes and reminders</strong>
-                                        <br><small class="text-muted">Get notified about shift changes and upcoming schedules</small>
+                                        <br><small class="text-muted">Get notified about shift changes and upcoming
+                                            schedules</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="systemNotifications" class="form-check-input" @bind-Value="notificationModel.SystemNotifications" />
+                                    <InputCheckbox id="systemNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.SystemNotifications" />
                                     <label class="form-check-label" for="systemNotifications">
                                         <strong>System announcements</strong>
-                                        <br><small class="text-muted">Important updates and maintenance notifications</small>
+                                        <br><small class="text-muted">Important updates and maintenance
+                                            notifications</small>
                                     </label>
                                 </div>
                             </div>
@@ -263,7 +280,8 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="pushNotifications" class="form-check-input" @bind-Value="notificationModel.PushNotifications" />
+                                    <InputCheckbox id="pushNotifications" class="form-check-input"
+                                        @bind-Value="notificationModel.PushNotifications" />
                                     <label class="form-check-label" for="pushNotifications">
                                         <strong>Enable push notifications</strong>
                                         <br><small class="text-muted">Receive real-time notifications on your device</small>
@@ -273,10 +291,12 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="urgentOnly" class="form-check-input" @bind-Value="notificationModel.UrgentOnly" />
+                                    <InputCheckbox id="urgentOnly" class="form-check-input"
+                                        @bind-Value="notificationModel.UrgentOnly" />
                                     <label class="form-check-label" for="urgentOnly">
                                         <strong>Only urgent notifications</strong>
-                                        <br><small class="text-muted">Limit push notifications to critical alerts only</small>
+                                        <br><small class="text-muted">Limit push notifications to critical alerts
+                                            only</small>
                                     </label>
                                 </div>
                             </div>
@@ -286,15 +306,17 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-clock me-2"></i>Notification Timing
                             </h5>
-                            
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="quietHoursStart" class="form-label">Quiet Hours Start</label>
-                                    <InputText id="quietHoursStart" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursStart" />
+                                    <InputText id="quietHoursStart" type="time" class="form-control"
+                                        @bind-Value="notificationModel.QuietHoursStart" />
                                 </div>
                                 <div class="col-md-6">
                                     <label for="quietHoursEnd" class="form-label">Quiet Hours End</label>
-                                    <InputText id="quietHoursEnd" type="time" class="form-control" @bind-Value="notificationModel.QuietHoursEnd" />
+                                    <InputText id="quietHoursEnd" type="time" class="form-control"
+                                        @bind-Value="notificationModel.QuietHoursEnd" />
                                 </div>
                             </div>
                             <small class="form-text text-muted">
@@ -308,19 +330,19 @@
             }
 
             <!-- Preferences Tab -->
-            @if (activeTab == "preferences")
+            @if (ActiveTab == "preferences")
             {
                 <div class="tab-pane active">
                     <h4 class="mb-4">
                         <i class="fas fa-cog me-2"></i>User Preferences
                     </h4>
-                    
+
                     <EditForm Model="@preferencesModel" OnValidSubmit="@HandlePreferencesSubmit">
                         <div class="preferences-section mb-4">
                             <h5 class="mb-3">
                                 <i class="fas fa-palette me-2"></i>Appearance
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <label for="theme" class="form-label">Theme</label>
                                 <select id="theme" class="form-control" @bind="preferencesModel.Theme">
@@ -333,10 +355,12 @@
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="compactMode" class="form-check-input" @bind-Value="preferencesModel.CompactMode" />
+                                    <InputCheckbox id="compactMode" class="form-check-input"
+                                        @bind-Value="preferencesModel.CompactMode" />
                                     <label class="form-check-label" for="compactMode">
                                         <strong>Compact mode</strong>
-                                        <br><small class="text-muted">Use a more condensed layout to fit more content</small>
+                                        <br><small class="text-muted">Use a more condensed layout to fit more
+                                            content</small>
                                     </label>
                                 </div>
                             </div>
@@ -346,7 +370,7 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-globe me-2"></i>Localization
                             </h5>
-                            
+
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="language" class="form-label">Language</label>
@@ -382,23 +406,27 @@
                             <h5 class="mb-3">
                                 <i class="fas fa-sliders-h me-2"></i>Behavior
                             </h5>
-                            
+
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="autoSave" class="form-check-input" @bind-Value="preferencesModel.AutoSave" />
+                                    <InputCheckbox id="autoSave" class="form-check-input"
+                                        @bind-Value="preferencesModel.AutoSave" />
                                     <label class="form-check-label" for="autoSave">
                                         <strong>Auto-save changes</strong>
-                                        <br><small class="text-muted">Automatically save form changes without manual confirmation</small>
+                                        <br><small class="text-muted">Automatically save form changes without manual
+                                            confirmation</small>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <InputCheckbox id="showTooltips" class="form-check-input" @bind-Value="preferencesModel.ShowTooltips" />
+                                    <InputCheckbox id="showTooltips" class="form-check-input"
+                                        @bind-Value="preferencesModel.ShowTooltips" />
                                     <label class="form-check-label" for="showTooltips">
                                         <strong>Show helpful tooltips</strong>
-                                        <br><small class="text-muted">Display additional information when hovering over elements</small>
+                                        <br><small class="text-muted">Display additional information when hovering over
+                                            elements</small>
                                     </label>
                                 </div>
                             </div>
@@ -420,69 +448,181 @@
                 </div>
             }
 
-            @if (activeTab == "restaurants")
+            <!-- Locations Tab -->
+            @if (ActiveTab == "locations")
             {
+
                 <div class="tab-pane active">
-                    <h4 class="mb-4">
-                        <i class="fas fa-utensils me-2"></i>Restaurant Information
-                    </h4>
 
-                    <EditForm Model="@restaurantModel" OnValidSubmit="@HandleRestaurantSubmit">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="restaurantName" class="form-label">Restaurant Name</label>
-                                <InputText id="restaurantName" class="form-control" @bind-Value="restaurantModel.Name" placeholder="Enter restaurant name" />
-                            </div>
-                            <div class="col-md-6">
-                                <label for="cuisineType" class="form-label">Cuisine Type</label>
-                                <InputText id="cuisineType" class="form-control" @bind-Value="restaurantModel.CuisineType" placeholder="Italian, Mexican, etc." />
-                            </div>
+                    @if (Specifier == null)
+                    {
+                        <h4 class="mb-4">
+                            Manage Locations
+                        </h4>
+
+                        @* LOCAITON CARD LIST PAGE *@
+                        <div class="mb-4">
+                            @if (managedLocations?.Count > 0)
+                            {
+                                <div class="row g-3">
+                                    @foreach (Location r in managedLocations)
+                                    {
+                                        <div class="col-sm-12 col-md-6 col-lg-4 col-xl-3">
+                                            <div class="card shadow-sm border-0 h-100 d-flex flex-column">
+                                                <div class="card-body d-flex flex-column">
+                                                    <div>
+                                                        <h5 class="card-title">@r.Name</h5>
+                                                        <p class="card-text text-muted mb-2">@r.Address</p>
+                                                        <small class="text-muted d-block mb-3">@r.State</small>
+                                                    </div>
+
+                                                    <!-- Spacer pushes button group to bottom -->
+                                                    <div class="mt-auto">
+                                                        <div class="d-flex justify-content-between">
+                                                            <button class="btn btn-outline-primary btn-sm"
+                                                                @onclick="() => EditLocation(r)">
+                                                                <i class="fas fa-edit me-1"></i>Edit
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    }
+                                    <div class="col-sm-12 col-md-6 col-lg-4 col-xl-3">
+                                        <button class="btn btn-secondary btn-sm" @onclick="() => AddLocation()">
+                                            <i class="bi bi-square-plus me-1"></i>Add location
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="alert alert-info">
+                                        You don’t manage any locations yet.
+                                    </div>
+                                    <div class="mx-3">
+                                        <button class="btn btn-secondary btn-sm" @onclick="() => AddLocation()">
+                                            <i class="bi bi-square-plus me-1"></i>Add location
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+
                         </div>
+                    }
+                    @* LOCATION ADD FORM *@
+                    else if (Specifier == "add")
+                    {
+                        <h4 class="mb-4">
+                            Create Location
+                        </h4>
 
-                        <div class="mb-3">  
-                            <label for="address" class="form-label">Address</label>
-                            <InputText id="address" class="form-control" @bind-Value="restaurantModel.Address" placeholder="123 Main Street" />
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="phone" class="form-label">Phone</label>
-                                <InputText id="phone" class="form-control" @bind-Value="restaurantModel.Phone" placeholder="(555) 123-4567" />
+                        <EditForm Model="@locationModel" OnValidSubmit="@HandleLocationCreate">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="locationName" class="form-label">Location Name</label>
+                                    <InputText id="locationName" class="form-control" @bind-Value="locationModel.Name"
+                                        placeholder="Enter location name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="address" class="form-label">Address</label>
+                                    <InputText id="address" class="form-control" @bind-Value="locationModel.Address"
+                                        placeholder="Enter an address" />
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="email" class="form-label">Email</label>
-                                <InputText id="email" type="email" class="form-control" @bind-Value="restaurantModel.Email" placeholder="contact@restaurant.com" />
+
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="city" class="form-label">City</label>
+                                    <InputText id="city" class="form-control" @bind-Value="locationModel.City"
+                                        placeholder="Enter an city" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="state" class="form-label">State</label>
+                                    <InputText id="state" class="form-control" @bind-Value="locationModel.State"
+                                        placeholder="Enter a state" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="zipcode" class="form-label">Postal Code</label>
+                                    <InputText id="zipcode" class="form-control" @bind-Value="locationModel.ZipCode"
+                                        placeholder="Enter a postal code" />
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <InputTextArea id="description" class="form-control" @bind-Value="restaurantModel.Description" placeholder="Short description or notes about the restaurant" rows="3" />
-                        </div>
+                            <button type="submit" class="btn btn-success settings-btn">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <h4 class="mb-4">
+                            Location Information
+                        </h4>
 
-                        <div class="row mb-3">
-                            
-                            <div class="col-md-6">
-                                <label for="website" class="form-label">Website</label>
-                                <InputText id="website" class="form-control" @bind-Value="restaurantModel.Website" placeholder="https://example.com" />
+                        @* LOCAITON EDIT FORM *@
+                        <EditForm Model="@locationModel" OnValidSubmit="@HandleLocationSubmit">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="locationName" class="form-label">Location Name</label>
+                                    <InputText id="locationName" class="form-control" @bind-Value="currentLocation.Name"
+                                        placeholder="Enter location name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="address" class="form-label">Address</label>
+                                    <InputText id="address" class="form-control" @bind-Value="currentLocation.Address"
+                                        placeholder="Enter an address" />
+                                </div>
                             </div>
-                        </div>
 
-                        <button type="submit" class="btn btn-success settings-btn">
-                            <i class="fas fa-save me-2"></i>Save Changes
-                        </button>
-                    </EditForm>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="city" class="form-label">City</label>
+                                    <InputText id="city" class="form-control" @bind-Value="currentLocation.City"
+                                        placeholder="Enter an city" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="state" class="form-label">State</label>
+                                    <InputText id="state" class="form-control" @bind-Value="currentLocation.State"
+                                        placeholder="Enter a state" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="zipcode" class="form-label">Postal Code</label>
+                                    <InputText id="zipcode" class="form-control" @bind-Value="currentLocation.ZipCode"
+                                        placeholder="Enter a postal code" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success settings-btn">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </EditForm>
+                    }
                 </div>
             }
-
         </div>
-
-        
     </div>
 </div>
 
 @code {
-    private string activeTab = "profile";
+    [Parameter]
+    public string? Tab { get; set; }
+    [Parameter]
+    public string? Specifier { get; set; }
+
+    @* [SupplyParameterFromQuery(Name = "restaurant")] *@
+    @* public int? RestaurantId { get; set; } *@
+    private Location currentLocation { get; set; } = new();
+    private List<Location> managedLocations { get; set; } = new();
+    private bool _addingLocation { get; set; } = false;
+
+    private string ActiveTab => Tab?.ToLower() ?? "profile";
+
     private bool showCurrentPassword = false;
     private bool showNewPassword = false;
     private bool showConfirmPassword = false;
@@ -491,11 +631,44 @@
     private SecurityModel securityModel = new();
     private NotificationModel notificationModel = new();
     private PreferencesModel preferencesModel = new();
+    private LocationModel locationModel = new();
 
-    private RestaurantModel restaurantModel = new();
+    private bool _initialized = false;
 
-    protected override void OnInitialized()
+    private bool _hydratedFromLocalStorage = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            
+
+            if (Specifier != null && ActiveTab == "locations")
+            {
+                if (Specifier != "add")
+                {
+                    await LoadRestaurant(int.Parse(Specifier));
+                }
+            }
+
+            _ = PopulateLocations();
+
+            _initialized = true;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Tab))
+        {
+            NavigationManager.NavigateTo("/settings/profile");
+        }
+
+        // put locations into localStorage
+        if (Auth.UserId != null){
+            await LocationService.LoadAndPersistLocationsAsync(Auth.UserId.Value);
+        }
+
         // Initialize with default/current user data
         profileModel = new ProfileModel
         {
@@ -529,18 +702,60 @@
             ItemsPerPage = "25"
         };
 
-        
+
     }
 
-    private void SetActiveTab(string tab)
+    private async Task LoadRestaurant(int locationId)
     {
-        activeTab = tab;
+        // TODO: Load from database based on locationId
+        // For now, using SessionManager as example
+        currentLocation = await LocationService.GetLocationByIdAsync(locationId);
+        Console.WriteLine("loading location : " + currentLocation.Name);
+        if (currentLocation != null)
+        {
+            locationModel = new LocationModel
+            {
+                Id = currentLocation.Id,
+                Name = currentLocation.Name,
+                Address = currentLocation.Address,
+                City = currentLocation.City,
+                State = currentLocation.State,
+                ZipCode = currentLocation.ZipCode,
+                MarginEdgeKey = currentLocation.MarginEdgeKey
+            };
+        }
+        else
+        {
+            // Location not found, initialize empty model
+            locationModel = new LocationModel();
+        }
+    }
+
+    private async Task PopulateLocations()
+    {
+        var userIdString = await Auth.GetUser();
+        if (int.TryParse(userIdString, out int signedInUserId))
+        {
+            managedLocations = await LocationService.GetLocationsByManagerAsync(signedInUserId);
+        }
+        else
+        {
+            managedLocations = new List<Location>();
+            Console.WriteLine($"Failed to parse signed-in user id: '{userIdString}'");
+        }
+        StateHasChanged();
+    }
+
+    private void NavigateToTab(string tab)
+    {
+        NavigationManager.NavigateTo($"/settings/{tab}", forceLoad: false);
+        StateHasChanged();
     }
 
     private void HandleProfileSubmit()
     {
         Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
-        // Add actual profile update logic here
+        // TODO: Add actual profile update logic here
     }
 
     private void HandleSecuritySubmit()
@@ -551,7 +766,7 @@
             return;
         }
         Console.WriteLine("Security settings updated");
-        // Add actual security update logic here
+        // TODO: Add actual security update logic here
     }
 
     private void HandleNotificationSubmit()
@@ -559,7 +774,7 @@
         Console.WriteLine("Notification settings updated");
         Console.WriteLine($"Task Notifications: {notificationModel.TaskNotifications}");
         Console.WriteLine($"Push Notifications: {notificationModel.PushNotifications}");
-        // Add actual notification update logic here
+        // TODO: Add actual notification update logic here
     }
 
     private void HandlePreferencesSubmit()
@@ -567,63 +782,74 @@
         Console.WriteLine("Preferences updated");
         Console.WriteLine($"Theme: {preferencesModel.Theme}");
         Console.WriteLine($"Language: {preferencesModel.Language}");
-        // Add actual preferences update logic here
+        // TODO: Add actual preferences update logic here
     }
 
-    private void HandleRestaurantSubmit()
-{
-    Console.WriteLine($"Restaurant updated: {restaurantModel.Name} ({restaurantModel.CuisineType})");
-    // TODO: Add actual database update logic or API call
-}
-
-    private class RestaurantModel
+    private async Task HandleLocationSubmit()
     {
-        public string Name { get; set; } = string.Empty;
-        public string CuisineType { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public int Rating { get; set; } = 5;
-        public string Website { get; set; } = string.Empty;
+        Console.WriteLine($"Location updated: {locationModel.Name}");
+        NavigationManager.NavigateTo("/settings/locations");
+        // TODO: Add actual database update logic or API call
+        @* LocationService. *@
+    }
+
+    private async Task HandleLocationCreate()
+    {
+
+        if (Auth.UserId != null)
+        {
+            Location newLocation = new Location
+            {
+                Name = locationModel.Name,
+                Address = locationModel.Address,
+                City = locationModel.City,
+                State = locationModel.State,
+                ZipCode = locationModel.ZipCode,
+            };
+            await LocationService.CreateLocationAsync(newLocation, Auth.UserId.Value);
+            NavigationManager.NavigateTo("/settings/locations");
+        }
+    }
+
+    private void AddLocation()
+    {
+        NavigationManager.NavigateTo("/settings/locations/add");
+
+        locationModel = new LocationModel();
     }
 
     private void ExportData()
     {
         Console.WriteLine("Exporting user data...");
-        // Add data export logic here
-        // This would typically generate a downloadable file with user data
+        // TODO: Add data export logic here
     }
 
     private void ResetSettings()
     {
         Console.WriteLine("Resetting all settings to defaults...");
-        // Add logic to reset all settings to default values
-        // This would typically show a confirmation dialog first
+        // TODO: Add logic to reset all settings to default values
     }
 
     private void DeactivateAccount()
     {
         Console.WriteLine("Account deactivation requested...");
-        // Add account deactivation logic here
-        // This would typically show a confirmation dialog and require password
+        // TODO: Add account deactivation logic here
     }
 
     private void DeleteAccount()
     {
         Console.WriteLine("Account deletion requested...");
-        // Add account deletion logic here
-        // This would typically require multiple confirmations and password verification
+        // TODO: Add account deletion logic here
     }
 
-    private class ProfileModel
+    private async Task EditLocation(Location location)
     {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Role { get; set; } = "Manager";
+        await LoadRestaurant(location.Id);
+        NavigationManager.NavigateTo($"/settings/locations/{location.Id}");
+
     }
+
+
 
     private class SecurityModel
     {
@@ -631,17 +857,6 @@
         public string NewPassword { get; set; } = string.Empty;
         public string ConfirmPassword { get; set; } = string.Empty;
         public bool EnableTwoFactor { get; set; } = false;
-    }
-
-    private class NotificationModel
-    {
-        public bool TaskNotifications { get; set; } = true;
-        public bool ScheduleNotifications { get; set; } = true;
-        public bool SystemNotifications { get; set; } = false;
-        public bool PushNotifications { get; set; } = true;
-        public bool UrgentOnly { get; set; } = false;
-        public string QuietHoursStart { get; set; } = "22:00";
-        public string QuietHoursEnd { get; set; } = "08:00";
     }
 
     private class PreferencesModel
