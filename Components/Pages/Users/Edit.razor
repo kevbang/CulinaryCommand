@@ -1,0 +1,33 @@
+@page "/users/edit/{id:int}"
+@using CulinaryCommand.Data.Entities
+@inject IUserService UserService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<h3>Edit User</h3>
+
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <UserForm Model="model" FormTitle="Edit User" OnValidSubmit="Save" />
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+    private User? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = await UserService.GetUserByIdAsync(id);
+    }
+
+    private async Task Save(User u)
+    {
+        await UserService.UpdateUserAsync(u);
+        await UserService.AssignLocationsAsync(u.Id, u.UserLocations.Select(x => x.LocationId).ToList());
+        Nav.NavigateTo("/users");
+    }
+}

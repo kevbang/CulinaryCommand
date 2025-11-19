@@ -4,6 +4,7 @@ using CulinaryCommand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251118143819_AddUserLocationJoin")]
+    partial class AddUserLocationJoin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,11 +133,13 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<int?>("CompanyId")
+                    b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
                     b.Property<string>("MarginEdgeKey")
-                        .HasColumnType("longtext");
+                        .IsRequired()
+                        .HasMaxLength(124)
+                        .HasColumnType("varchar(124)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -400,45 +405,13 @@ namespace CulinaryCommand.Migrations
                     b.ToTable("Tasks");
                 });
 
-<<<<<<< HEAD
-            modelBuilder.Entity("LocationUser", b =>
-                {
-                    b.Property<int>("LocationsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UsersId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LocationsId", "UsersId");
-
-                    b.HasIndex("UsersId");
-
-                    b.ToTable("UserLocations", (string)null);
-                });
-
-            modelBuilder.Entity("LocationUser1", b =>
-                {
-                    b.Property<int>("ManagedLocationsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ManagersId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ManagedLocationsId", "ManagersId");
-
-                    b.HasIndex("ManagersId");
-
-                    b.ToTable("LocationManagers", (string)null);
-                });
-
-=======
->>>>>>> preserve/broken-signup-logic
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
                 {
                     b.HasOne("CulinaryCommand.Data.Entities.Company", "Company")
                         .WithMany("Locations")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Company");
                 });
@@ -530,39 +503,6 @@ namespace CulinaryCommand.Migrations
                     b.Navigation("User");
                 });
 
-<<<<<<< HEAD
-            modelBuilder.Entity("LocationUser", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Location", null)
-                        .WithMany()
-                        .HasForeignKey("LocationsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CulinaryCommand.Data.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UsersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("LocationUser1", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Location", null)
-                        .WithMany()
-                        .HasForeignKey("ManagedLocationsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CulinaryCommand.Data.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("ManagersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-=======
->>>>>>> preserve/broken-signup-logic
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Company", b =>
                 {
                     b.Navigation("Employees");

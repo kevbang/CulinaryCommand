@@ -1,0 +1,20 @@
+@page "/users/create"
+@using CulinaryCommand.Data.Entities
+@inject IUserService UserService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<h3>Create User</h3>
+
+<UserForm Model="model" FormTitle="Create User" OnValidSubmit="Save" />
+
+@code {
+    private User model = new();
+
+    private async Task Save(User u)
+    {
+        await UserService.CreateUserAsync(u);
+        await UserService.AssignLocationsAsync(u.Id, u.UserLocations.Select(x => x.LocationId).ToList());
+        Nav.NavigateTo("/users");
+    }
+}

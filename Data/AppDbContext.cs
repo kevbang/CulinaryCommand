@@ -19,6 +19,8 @@ namespace CulinaryCommand.Data
         public DbSet<Recipe> Recipes => Set<Recipe>();
         public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
         public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
+        public DbSet<UserLocation> UserLocations => Set<UserLocation>();
+        public DbSet<ManagerLocation> ManagerLocations => Set<ManagerLocation>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,20 +39,34 @@ namespace CulinaryCommand.Data
                 .HasForeignKey(l => l.CompanyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 🔹 Many-to-many relationship: User <-> Location
-            // users WORKING at locations
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Locations)
-                .WithMany(l => l.Users)
-                .UsingEntity(j => j.ToTable("UserLocations"));
-                                            // table of users who WORK at locations
+            // Explicit join: Employees
+            modelBuilder.Entity<UserLocation>()
+                .HasKey(ul => new { ul.UserId, ul.LocationId });
 
-            // many-to-many managers managing locations    
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.ManagedLocations)
-                .WithMany(l => l.Managers)
-                .UsingEntity(j => j.ToTable("LocationManagers")); 
-                                            // table of users (managers) who MANAGE locations
+            modelBuilder.Entity<UserLocation>()
+                .HasOne(ul => ul.User)
+                .WithMany(u => u.UserLocations)
+                .HasForeignKey(ul => ul.UserId);
+
+            modelBuilder.Entity<UserLocation>()
+                .HasOne(ul => ul.Location)
+                .WithMany(l => l.UserLocations)
+                .HasForeignKey(ul => ul.LocationId);
+
+
+            // Explicit join: Managers 
+            modelBuilder.Entity<ManagerLocation>()
+                .HasKey(ml => new { ml.UserId, ml.LocationId });
+
+            modelBuilder.Entity<ManagerLocation>()
+                .HasOne(ml => ml.User)
+                .WithMany(u => u.ManagerLocations)
+                .HasForeignKey(ml => ml.UserId);
+
+            modelBuilder.Entity<ManagerLocation>()
+                .HasOne(ml => ml.Location)
+                .WithMany(l => l.ManagerLocations)
+                .HasForeignKey(ml => ml.LocationId);
         }
-    }  
+    }
 }

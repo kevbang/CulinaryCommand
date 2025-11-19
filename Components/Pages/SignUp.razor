@@ -2,6 +2,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components
 @using CulinaryCommand.Services
+@using CulinaryCommand.Data.Entities
 @inject IUserService UserService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -153,20 +154,21 @@
                 return;
             }
 
-            // continue to create user
-            var user = await UserService.CreateUserAsync(
-                signUpModel.FullName,
-                signUpModel.Email,
-                signUpModel.Password,
-                signUpModel.Role
-            );
+            User userToCreate = new User();
+            userToCreate.Name = signUpModel.FullName;
+            userToCreate.Email = signUpModel.Email;
+            userToCreate.Password = signUpModel.Password;
+            userToCreate.Role = signUpModel.Role;
 
-            if (user == null)
+            // continue to create user
+            User? user = await UserService.CreateUserAsync(userToCreate);
+
+            @* if (true)
             {
-                errorMessage = "A user with this email already exists.";
+                errorMessage = "Sign up logic is different, check it. A user with this email already exists.";
                 isSubmitting = false;
                 return;
-            }
+            } *@
 
             // User created successfully - navigate immediately
             Navigation.NavigateTo("/signin", forceLoad: true);

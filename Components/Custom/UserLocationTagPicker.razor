@@ -1,0 +1,116 @@
+@using CulinaryCommand.Data.Entities
+@inject ILocationService LocationService
+@rendermode InteractiveServer
+
+<div class="tag-picker">
+    <div class="tags-container">
+        @if (AssignedLocations != null)
+        {
+            foreach (var loc in AssignedLocations)
+            {
+                <span class="tag-item">
+                    @loc.Name
+                    <button class="remove-btn" @onclick="() => RemoveLocation(loc.Id)">✕</button>
+                </span>
+            }
+        }
+
+        <span class="tag-add" @onclick="ToggleMenu">+ Add</span>
+    </div>
+
+    @if (IsMenuOpen)
+    {
+        <div class="popover-menu">
+            <div class="popover-header">Add Location</div>
+            <div class="popover-body">
+                @foreach (var loc in UnassignedLocations)
+                {
+                    <div class="popover-item" @onclick="() => AddLocation(loc.Id)">
+                        @loc.Name
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+
+    [Parameter]
+    public List<int> AssignedIds { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<List<int>> OnChanged { get; set; }
+
+    private List<Location> AllLocations = new();
+    private List<Location> AssignedLocations = new();
+    private List<Location> UnassignedLocations = new();
+
+    private bool IsMenuOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllLocations = await LocationService.GetAllLocationsAsync();
+        RefreshLists();
+    }
+
+    private void RefreshLists()
+    {
+        AssignedLocations = AllLocations.Where(l => AssignedIds.Contains(l.Id)).ToList();
+        UnassignedLocations = AllLocations.Where(l => !AssignedIds.Contains(l.Id)).ToList();
+        StateHasChanged();
+    }
+
+    private async Task AddLocation(int id)
+    {
+        if (!AssignedIds.Contains(id))
+        {
+            AssignedIds.Add(id);
+            RefreshLists();
+            await OnChanged.InvokeAsync(AssignedIds);
+        }
+        IsMenuOpen = false;
+    }
+
+    private async Task RemoveLocation(int id)
+    {
+        if (AssignedIds.Contains(id))
+        {
+            AssignedIds.Remove(id);
+            RefreshLists();
+            await OnChanged.InvokeAsync(AssignedIds);
+        }
+    }
+
+    private void ToggleMenu()
+    {
+        IsMenuOpen = !IsMenuOpen;
+    }
+}
+
+<style>
+    .tag-picker { position: relative; display: inline-block; }
+    .tags-container { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-item { background: #e3e3e3; padding: 5px 10px; border-radius: 12px; display: flex; align-items: center; }
+    .remove-btn { margin-left: 6px; border: none; background: transparent; cursor: pointer; }
+    .tag-add { cursor: pointer; color: #007bff; }
+
+    .popover-menu {
+        position: absolute;
+        top: 36px;
+        left: 0;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        width: 220px;
+        z-index: 1000;
+    }
+
+    .popover-header { padding: 8px; font-weight: bold; border-bottom: 1px solid #ddd; }
+    .popover-body { max-height: 200px; overflow-y: auto; }
+    .popover-item { padding: 8px; cursor: pointer; }
+    .popover-item:hover { background: #f0f0f0; }
+</style>

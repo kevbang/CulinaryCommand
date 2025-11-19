@@ -1,0 +1,65 @@
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Components.Custom
+@inject IUserService UserService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h4>@FormTitle</h4>
+    </div>
+
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input class="form-control" @bind="Model.Name" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input class="form-control" @bind="Model.Email" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" @bind="Model.Role">
+                <option value="Employee">Employee</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Assigned Locations</label>
+            <UserLocationTagPicker AssignedIds="AssignedLocationIds" UserId="Model.Id" OnChanged="OnLocationChanged" />
+        </div>
+
+        <button class="btn btn-success" @onclick="Save">Save</button>
+        <button class="btn btn-outline-secondary ms-2" @onclick="Cancel">Cancel</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public User Model { get; set; } = new();
+    [Parameter] public string FormTitle { get; set; } = "Edit User";
+    [Parameter] public EventCallback<User> OnValidSubmit { get; set; }
+
+    public List<int> AssignedLocationIds { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        AssignedLocationIds = Model.UserLocations.Select(x => x.LocationId).ToList();
+    }
+
+    async Task OnLocationChanged(List<int> ids)
+    {
+        AssignedLocationIds = ids;
+    }
+
+    async Task Save()
+    {
+        await OnValidSubmit.InvokeAsync(Model);
+    }
+
+    void Cancel() => Nav.NavigateTo("/users");
+}

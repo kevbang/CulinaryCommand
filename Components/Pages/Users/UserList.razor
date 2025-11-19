@@ -1,0 +1,58 @@
+@using CulinaryCommand.Data.Entities
+@inject IUserService Users
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+<h3 class="mb-3">Users</h3>
+<button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
+
+@if (_users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Locations</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in _users)
+            {
+                <tr>
+                    <td>@u.Name</td>
+                    <td>@u.Email</td>
+                    <td>@u.Role</td>
+                    <td>@string.Join(", ", u.UserLocations.Select(x => x.Location.Name))</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => Edit(u.Id)">Edit</button>
+                        <button class="btn btn-danger" @onclick="() => Delete(u.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<User>? _users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await Users.GetAllUsersAsync();
+    }
+
+    void CreateUser() => Nav.NavigateTo("/users/create");
+    void Edit(int id) => Nav.NavigateTo($"/users/edit/{id}");
+
+    async Task Delete(int id)
+    {
+        await Users.DeleteUserAsync(id);
+        _users = await Users.GetAllUsersAsync();
+    }
+}

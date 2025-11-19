@@ -12,13 +12,13 @@ namespace CulinaryCommand.Data.Entities
         public string? Name { get; set; } = string.Empty;
 
         [Required, MaxLength(128)]
-        public String? Station { get; set; } = string.Empty;
+        public string? Station { get; set; } = string.Empty;
 
         [Required]
-        public String? Status { get; set; }
+        public string? Status { get; set; }
 
         [Required]
-        public String? Assigner { get; set; }
+        public string? Assigner { get; set; }
 
         [Required]
         public DateTime? Date { get; set; }

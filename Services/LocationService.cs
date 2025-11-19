@@ -9,6 +9,7 @@ namespace CulinaryCommand.Services
 {
     public interface ILocationService
     {
+
         Task<List<Location>> GetAllLocationsAsync();
         Task<Location?> GetLocationByIdAsync(int id);
         Task<Location?> CreateLocationAsync(Location location, int managerId);
@@ -35,6 +36,7 @@ namespace CulinaryCommand.Services
     public class LocationService : ILocationService
     {
         private readonly AppDbContext _context;
+
         private LocationState _locationState;
         private readonly IJSRuntime _js;
 
@@ -80,6 +82,7 @@ namespace CulinaryCommand.Services
             var existing = await _context.Locations.FindAsync(location.Id);
             if (existing == null) return false;
 
+
             existing.Name = location.Name;
             existing.Address = location.Address;
             existing.City = location.City;
@@ -87,6 +90,7 @@ namespace CulinaryCommand.Services
             existing.ZipCode = location.ZipCode;
             existing.MarginEdgeKey = location.MarginEdgeKey;
             existing.CompanyId = location.CompanyId;
+
 
             _context.Locations.Update(existing);
             await _context.SaveChangesAsync();
@@ -107,15 +111,27 @@ namespace CulinaryCommand.Services
         public async Task<bool> AddManagerToLocationAsync(int locationId, int managerId)
         {
             var location = await _context.Locations
-                .Include(l => l.Managers)
+                .Include(l => l.ManagerLocations)
                 .FirstOrDefaultAsync(l => l.Id == locationId);
+
             var manager = await _context.Users.FindAsync(managerId);
 
             if (location == null || manager == null) return false;
 
-            if (!location.Managers.Contains(manager))
+            // Check if the manager is already linked
+            bool alreadyExists = location.ManagerLocations
+                .Any(ml => ml.UserId == managerId);
+
+            if (!alreadyExists)
             {
-                location.Managers.Add(manager);
+                var managerLocation = new ManagerLocation
+                {
+                    UserId = managerId,
+                    LocationId = locationId,
+                    // DateJoined = DateTime.UtcNow
+                };
+
+                _context.ManagerLocations.Add(managerLocation);
                 await _context.SaveChangesAsync();
             }
 
@@ -124,21 +140,17 @@ namespace CulinaryCommand.Services
 
         public async Task<bool> RemoveManagerFromLocationAsync(int locationId, int managerId)
         {
-            var location = await _context.Locations
-                .Include(l => l.Managers)
-                .FirstOrDefaultAsync(l => l.Id == locationId);
-            var manager = await _context.Users.FindAsync(managerId);
+            var managerLocation = await _context.ManagerLocations
+                .FirstOrDefaultAsync(ml => ml.LocationId == locationId && ml.UserId == managerId);
 
-            if (location == null || manager == null) return false;
+            if (managerLocation == null) return false;
 
-            if (location.Managers.Contains(manager))
-            {
-                location.Managers.Remove(manager);
-                await _context.SaveChangesAsync();
-            }
+            _context.ManagerLocations.Remove(managerLocation);
+            await _context.SaveChangesAsync();
 
             return true;
         }
+
 
         public async Task<List<User>> GetManagersForLocationAsync(int locationId)
         {
@@ -177,3 +189,4 @@ namespace CulinaryCommand.Services
         }
     }
 }
+
