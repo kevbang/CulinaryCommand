@@ -1,58 +1,55 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace CulinaryCommand.Data.Entities
 {
-    public class Company
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public class Location
+        {
+                [Key]
+                public int Id { get; set; }
 
-        [Required]
-        [MaxLength(256)]
-        public string Name { get; set; } = string.Empty;
+                [Required, MaxLength(256)]
+                public string Name { get; set; }
 
-        // A unique short code used to link employees/locations easily
-        [Required]
-        [MaxLength(50)]
-        public string CompanyCode { get; set; } = string.Empty;
+                [Required, MaxLength(256)]
+                public string Address { get; set; }
 
-        // Optional details for internal reference
-        [MaxLength(256)]
-        public string? Address { get; set; }
+                [Required, MaxLength(256)]
+                public string City { get; set; }
 
-        [MaxLength(128)]
-        public string? City { get; set; }
+                [Required, MaxLength(256)]
+                public string State { get; set; }
 
-        [MaxLength(64)]
-        public string? State { get; set; }
+                [Required, MaxLength(256)]
+                public string ZipCode { get; set; }
 
-        [MaxLength(32)]
-        public string? ZipCode { get; set; }
+                // marginEdgeKey should be nullable, not every location will have one
+                public string? MarginEdgeKey { get; set; }
 
-        // For contact/admin info
-        [MaxLength(128)]
-        public string? Phone { get; set; }
+                // keep company nullable until we add a way to create companies
+                public int? CompanyId { get; set; }
+                public Company? Company { get; set; }
 
-        [MaxLength(128)]
-        public string? Email { get; set; }
+                public ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
 
-        // Optional descriptive or legal details
-        public string? Description { get; set; }
-        public string? LLCName { get; set; }
-        public string? TaxId { get; set; }
+                // join table combining employees and locations
+                [JsonIgnore]
+                public ICollection<UserLocation> UserLocations { get; set; } = new List<UserLocation>();
 
-        // Audit
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+                // join table combining managers and locations
+                [JsonIgnore]
+                public ICollection<ManagerLocation> ManagerLocations { get; set; } = new List<ManagerLocation>();
 
-        // Navigation properties
-        public ICollection<Location>? Locations { get; set; }
-        public ICollection<User>? Employees { get; set; }
-    }
+                [NotMapped]
+                [JsonIgnore]
+                // so you can still call Location.Managers and get the list
+                public IEnumerable<User> Managers => ManagerLocations.Select(ml => ml.User);
+
+                [NotMapped]
+                [JsonIgnore]
+                public IEnumerable<User> Employees => UserLocations.Select(ul => ul.User);
+
+        }
+
 }

@@ -1,0 +1,178 @@
+@using CulinaryCommand.Services
+@inject AuthService Auth
+@inject IUserService UserService
+
+<div class="tab-pane active">
+    <h4 class="mb-4">
+        <i class="fas fa-user me-2"></i>Profile Information
+    </h4>
+
+    <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="firstName" class="form-label">First Name</label>
+                <InputText id="firstName" class="form-control"
+                           @bind-Value="profileModel.FirstName"
+                           placeholder="Enter your first name" />
+            </div>
+            <div class="col-md-6">
+                <label for="lastName" class="form-label">Last Name</label>
+                <InputText id="lastName" class="form-control"
+                           @bind-Value="profileModel.LastName"
+                           placeholder="Enter your last name" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Email Address</label>
+            <InputText id="email" type="email" class="form-control"
+                       @bind-Value="profileModel.Email"
+                       placeholder="Enter your email" />
+        </div>
+
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone Number</label>
+            <InputText id="phone" type="tel" class="form-control"
+                       @bind-Value="profileModel.Phone"
+                       placeholder="Enter your phone number" />
+        </div>
+
+        <div class="mb-3">
+            <label for="role" class="form-label">Current Role</label>
+            <select id="role" class="form-control" @bind="profileModel.Role">
+                <option value="Manager">Manager</option>
+                <option value="Cook">Cook</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
+    </EditForm>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone mt-5">
+        <h5 class="text-danger mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+        </h5>
+        <p class="text-muted mb-4">
+            These actions are permanent and cannot be undone. Please proceed with caution.
+        </p>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="danger-action-card">
+                    <h6 class="mb-2">Export Your Data</h6>
+                    <p class="text-muted small mb-3">Download a copy of all your account data</p>
+                    <button class="btn btn-outline-info w-100" @onclick="ExportData">
+                        <i class="fas fa-download me-2"></i>Export Data
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="danger-action-card">
+                    <h6 class="mb-2">Reset All Settings</h6>
+                    <p class="text-muted small mb-3">Restore all settings to default values</p>
+                    <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
+                        <i class="fas fa-undo me-2"></i>Reset Settings
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="danger-action-card">
+                    <h6 class="mb-2">Deactivate Account</h6>
+                    <p class="text-muted small mb-3">Temporarily disable your account access</p>
+                    <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
+                        <i class="fas fa-user-slash me-2"></i>Deactivate
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="danger-action-card">
+                    <h6 class="mb-2">Delete Account</h6>
+                    <p class="text-muted small mb-3">Permanently delete your account and all data</p>
+                    <button class="btn btn-danger w-100" @onclick="DeleteAccount">
+                        <i class="fas fa-trash me-2"></i>Delete Forever
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ProfileModel profileModel = new();
+
+    protected override void OnInitialized()
+    {
+        if (Auth.CurrentUser is not null)
+        {
+            var user = Auth.CurrentUser;
+
+            // Split name into first/last for UI convenience:
+            var parts = (user.Name ?? "").Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var first = parts.Length > 0 ? parts[0] : "";
+            var last  = parts.Length > 1 ? parts[1] : "";
+
+            profileModel = new ProfileModel
+            {
+                FirstName = first,
+                LastName  = last,
+                Email     = user.Email,
+                Phone     = user.Phone,
+                Role      = user.Role
+            };
+        }
+        else
+        {
+            Console.WriteLine("SettingsProfile: AuthService has no CurrentUser loaded.");
+        }
+    }
+
+    private async Task HandleProfileSubmit()
+    {
+        Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
+        // TODO: Persist to backend
+        if (Auth.UserId is null)
+    {
+        Console.WriteLine("Cannot update profile: no signed-in user.");
+        return;
+    }
+
+    await UserService.UpdateUserProfileAsync(
+        Auth.UserId.Value,
+        profileModel.FirstName ?? "",
+        profileModel.LastName ?? "",
+        profileModel.Email ?? "",
+        profileModel.Phone ?? "",
+        profileModel.Role ?? ""
+    );
+
+    // Refresh AuthService's CurrentUser so UI updates:
+    if (Auth.CurrentUser != null)
+    {
+        Auth.CurrentUser.Name  = $"{profileModel.FirstName} {profileModel.LastName}".Trim();
+        Auth.CurrentUser.Email = profileModel.Email;
+        Auth.CurrentUser.Phone = profileModel.Phone;
+        Auth.CurrentUser.Role  = profileModel.Role;
+
+        Auth.NotifyStateChanged();
+    }
+
+    Console.WriteLine("Profile saved!");
+    }
+
+    private void ExportData() => Console.WriteLine("Exporting user data...");
+    private void ResetSettings() => Console.WriteLine("Resetting all settings to defaults...");
+    private void DeactivateAccount() => Console.WriteLine("Account deactivation requested...");
+    private void DeleteAccount() => Console.WriteLine("Account deletion requested...");
+
+    private class ProfileModel
+    {
+        public int? userId {get; set;}
+        public string? FirstName { get; set; }
+        public string? LastName  { get; set; }
+        public string? Email     { get; set; }
+        public string? Phone     { get; set; }
+        public string? Role      { get; set; }
+    }
+}

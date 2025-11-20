@@ -19,6 +19,7 @@ namespace CulinaryCommand.Services
         Task<List<User>> GetUsersForLocationAsync(int locationId, int? companyId = null);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> ValidateCredentialsAsync(string email, string password);
+        Task UpdateUserProfileAsync(int userId, string firstName, string lastName, string email, string phone, string role);
     }
 
     public class UserService : IUserService
@@ -59,6 +60,21 @@ namespace CulinaryCommand.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public async Task UpdateUserProfileAsync(int userId, string firstName, string lastName, string email, string phone, string role)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new Exception("User not found.");
+
+            user.Name = $"{firstName} {lastName}".Trim();
+            user.Email = email;
+            user.Phone = phone;
+            user.Role = role;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<User?> GetUserByIdAsync(int id)

@@ -1,9 +1,9 @@
 using System.Text.Json;
 using CulinaryCommand.Data;
 using CulinaryCommand.Data.Entities;
+using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
-
 
 namespace CulinaryCommand.Services
 {
@@ -40,6 +40,8 @@ namespace CulinaryCommand.Services
         private LocationState _locationState;
         private readonly IJSRuntime _js;
 
+        private readonly AuthService _auth;
+
 
         public LocationService(AppDbContext context, LocationState locationState, IJSRuntime js)
         {
@@ -67,14 +69,35 @@ namespace CulinaryCommand.Services
                 .FirstOrDefaultAsync(l => l.Id == id);
         }
 
-        public async Task<Location?> CreateLocationAsync(Location location, int managerId)
+        public async Task<Location?> CreateLocationAsync(Location location, int creatorUserId)
         {
+            // Load the user so we know their company
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == creatorUserId);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            // Tie the location to the user's company
+            if (user.CompanyId.HasValue)
+            {
+                location.CompanyId = user.CompanyId.Value;
+            }
+
             // Create the location
             _context.Locations.Add(location);
             await _context.SaveChangesAsync();
 
-            //Add manager to many-to-many link
-            await AddManagerToLocationAsync(location.Id, managerId);
+            // Ensure the creator is assigned to this location as an employee
+            var link = new UserLocation
+            {
+                UserId = creatorUserId,
+                LocationId = location.Id
+            };
+            _context.UserLocations.Add(link);
+            await _context.SaveChangesAsync();
 
             return location;
         }
@@ -175,22 +198,51 @@ namespace CulinaryCommand.Services
 
         public async Task LoadAndPersistLocationsAsync(int userId)
         {
-            // 1. Get from DB
-            var locations = await GetLocationsByManagerAsync(userId);
+            var locations = await GetAccessibleLocationsForUserAsync(userId);
 
-            // 2. Push into LocationState (in-memory)
-            _locationState.SetLocations(locations);
+            var locationIds = locations.Select(l => l.Id).ToList();
+            var activeLocationId = locationIds.FirstOrDefault();
+            var activeLocationName = locations.FirstOrDefault()?.Name ?? "";
 
-            // 3. Save into localStorage
+            // Store full list for LocationSelector
             var json = JsonSerializer.Serialize(locations);
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_locations", json);
 
-            Location? currentLocation = _locationState.CurrentLocation;
-            if (currentLocation != null)
-            {
-                await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", currentLocation.Id);
+            // Use AuthService helper to sync ids + active location
+            await _auth.UpdateLocationsAsync(locationIds, activeLocationId, activeLocationName);
+        }
 
+        public async Task<List<Location>> GetAccessibleLocationsForUserAsync(int userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.Company)
+                .Include(u => u.UserLocations)
+                    .ThenInclude(ul => ul.Location)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return new List<Location>();
+
+            // If they don’t even have a company, they see nothing
+            if (!user.CompanyId.HasValue)
+                return new List<Location>();
+
+            // Admins: all locations for their company
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return await _context.Locations
+                    .Where(l => l.CompanyId == user.CompanyId)
+                    .OrderBy(l => l.Name)
+                    .ToListAsync();
             }
+
+            // Regular employees: only locations they are assigned to
+            return user.UserLocations
+                .Where(ul => ul.Location.CompanyId == user.CompanyId)
+                .Select(ul => ul.Location)
+                .Distinct()
+                .OrderBy(l => l.Name)
+                .ToList();
         }
     }
 }

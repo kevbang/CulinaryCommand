@@ -458,7 +458,7 @@ namespace CulinaryCommand.Migrations
                     b.HasOne("CulinaryCommand.Data.Entities.Ingredient", "Ingredient")
                         .WithMany("RecipeIngredients")
                         .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("CulinaryCommand.Data.Entities.Recipe", "Recipe")
@@ -470,7 +470,7 @@ namespace CulinaryCommand.Migrations
                     b.HasOne("CulinaryCommand.Data.Entities.MeasurementUnit", "Unit")
                         .WithMany("RecipeIngredients")
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Ingredient");

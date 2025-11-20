@@ -9,7 +9,7 @@ namespace CulinaryCommand.Services
         private readonly IJSRuntime _js;
         private bool _hydrated;
 
-        public AuthService(IJSRuntime js) 
+        public AuthService(IJSRuntime js)
         {
             _js = js;
         }
@@ -157,7 +157,7 @@ namespace CulinaryCommand.Services
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_companyCode");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_companyId");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_locationIds");
-            
+
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_location");
             Raise();
@@ -184,6 +184,30 @@ namespace CulinaryCommand.Services
         {
             this.ActiveLocationId = newLocId;
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", newLocId.ToString());
+        }
+        
+        public async Task UpdateLocationsAsync(List<int> locationIds, int? activeLocationId, string? activeLocationName)
+        {
+            LocationIds = locationIds;
+            ActiveLocationId = activeLocationId;
+            Location = activeLocationName;
+
+            await _js.InvokeVoidAsync(
+                "localStorage.setItem",
+                "cc_locationIds",
+                JsonSerializer.Serialize(locationIds ?? new List<int>()));
+
+            await _js.InvokeVoidAsync(
+                "localStorage.setItem",
+                "cc_activeLocationId",
+                activeLocationId?.ToString() ?? "");
+
+            await _js.InvokeVoidAsync(
+                "localStorage.setItem",
+                "cc_location",
+                activeLocationName ?? "");
+
+            Raise();
         }
 
     }
