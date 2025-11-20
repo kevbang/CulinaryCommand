@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251117165808_UpdateRecipes")]
-    partial class UpdateRecipes
+    [Migration("20251119210900_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,13 +133,11 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<int>("CompanyId")
+                    b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
                     b.Property<string>("MarginEdgeKey")
-                        .IsRequired()
-                        .HasMaxLength(124)
-                        .HasColumnType("varchar(124)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -163,6 +161,21 @@ namespace CulinaryCommand.Migrations
                     b.ToTable("Locations");
                 });
 
+            modelBuilder.Entity("CulinaryCommand.Data.Entities.ManagerLocation", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "LocationId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("ManagerLocations");
+                });
+
             modelBuilder.Entity("CulinaryCommand.Data.Entities.MeasurementUnit", b =>
                 {
                     b.Property<int>("UnitId")
@@ -176,7 +189,7 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
-                    b.Property<string>("UnitName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
@@ -312,11 +325,6 @@ namespace CulinaryCommand.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -348,6 +356,21 @@ namespace CulinaryCommand.Migrations
                     b.HasIndex("CompanyId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("CulinaryCommand.Data.Entities.UserLocation", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "LocationId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("UserLocations");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.WorkTask", b =>
@@ -395,30 +418,33 @@ namespace CulinaryCommand.Migrations
                     b.ToTable("Tasks");
                 });
 
-            modelBuilder.Entity("LocationUser", b =>
-                {
-                    b.Property<int>("LocationsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UsersId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LocationsId", "UsersId");
-
-                    b.HasIndex("UsersId");
-
-                    b.ToTable("UserLocations", (string)null);
-                });
-
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
                 {
                     b.HasOne("CulinaryCommand.Data.Entities.Company", "Company")
                         .WithMany("Locations")
                         .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("CulinaryCommand.Data.Entities.ManagerLocation", b =>
+                {
+                    b.HasOne("CulinaryCommand.Data.Entities.Location", "Location")
+                        .WithMany("ManagerLocations")
+                        .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Company");
+                    b.HasOne("CulinaryCommand.Data.Entities.User", "User")
+                        .WithMany("ManagerLocations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Recipe", b =>
@@ -480,6 +506,25 @@ namespace CulinaryCommand.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("CulinaryCommand.Data.Entities.UserLocation", b =>
+                {
+                    b.HasOne("CulinaryCommand.Data.Entities.Location", "Location")
+                        .WithMany("UserLocations")
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CulinaryCommand.Data.Entities.User", "User")
+                        .WithMany("UserLocations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CulinaryCommand.Data.Entities.WorkTask", b =>
                 {
                     b.HasOne("CulinaryCommand.Data.Entities.User", "User")
@@ -487,21 +532,6 @@ namespace CulinaryCommand.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LocationUser", b =>
-                {
-                    b.HasOne("CulinaryCommand.Data.Entities.Location", null)
-                        .WithMany()
-                        .HasForeignKey("LocationsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CulinaryCommand.Data.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UsersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Company", b =>
@@ -518,7 +548,11 @@ namespace CulinaryCommand.Migrations
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.Location", b =>
                 {
+                    b.Navigation("ManagerLocations");
+
                     b.Navigation("Recipes");
+
+                    b.Navigation("UserLocations");
                 });
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.MeasurementUnit", b =>
@@ -531,6 +565,13 @@ namespace CulinaryCommand.Migrations
                     b.Navigation("RecipeIngredients");
 
                     b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("CulinaryCommand.Data.Entities.User", b =>
+                {
+                    b.Navigation("ManagerLocations");
+
+                    b.Navigation("UserLocations");
                 });
 #pragma warning restore 612, 618
         }

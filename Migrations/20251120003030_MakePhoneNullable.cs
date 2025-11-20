@@ -5,19 +5,19 @@
 namespace CulinaryCommand.Migrations
 {
     /// <inheritdoc />
-    public partial class MakeMarginEdgeKeyNullableAgain : Migration
+    public partial class MakePhoneNullable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
-                name: "MarginEdgeKey",
-                table: "Locations",
+                name: "Phone",
+                table: "Users",
                 type: "longtext",
                 nullable: true,
                 oldClrType: typeof(string),
-                oldType: "varchar(124)",
-                oldMaxLength: 124)
+                oldType: "varchar(12)",
+                oldMaxLength: 12)
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .OldAnnotation("MySql:CharSet", "utf8mb4");
         }
@@ -26,17 +26,17 @@ namespace CulinaryCommand.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.UpdateData(
-                table: "Locations",
-                keyColumn: "MarginEdgeKey",
+                table: "Users",
+                keyColumn: "Phone",
                 keyValue: null,
-                column: "MarginEdgeKey",
+                column: "Phone",
                 value: "");
 
             migrationBuilder.AlterColumn<string>(
-                name: "MarginEdgeKey",
-                table: "Locations",
-                type: "varchar(124)",
-                maxLength: 124,
+                name: "Phone",
+                table: "Users",
+                type: "varchar(12)",
+                maxLength: 12,
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "longtext",

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace CulinaryCommand.Data.Entities
 {
@@ -30,20 +31,23 @@ namespace CulinaryCommand.Data.Entities
                 public int? CompanyId { get; set; }
                 public Company? Company { get; set; }
 
+                public ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
+
                 // join table combining employees and locations
+                [JsonIgnore]
                 public ICollection<UserLocation> UserLocations { get; set; } = new List<UserLocation>();
 
                 // join table combining managers and locations
+                [JsonIgnore]
                 public ICollection<ManagerLocation> ManagerLocations { get; set; } = new List<ManagerLocation>();
 
-
-                public ICollection<Recipe> Recipes { get; set; } = new List<Recipe>();
-
                 [NotMapped]
+                [JsonIgnore]
                 // so you can still call Location.Managers and get the list
                 public IEnumerable<User> Managers => ManagerLocations.Select(ml => ml.User);
 
                 [NotMapped]
+                [JsonIgnore]
                 public IEnumerable<User> Employees => UserLocations.Select(ul => ul.User);
 
         }

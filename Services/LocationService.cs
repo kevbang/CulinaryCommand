@@ -53,7 +53,8 @@ namespace CulinaryCommand.Services
         {
             return await _context.Locations
                 .Include(l => l.Company)
-                .Include(l => l.Managers)
+                .Include(l => l.ManagerLocations)
+                    .ThenInclude(ml => ml.User)
                 .ToListAsync();
         }
 
@@ -61,7 +62,8 @@ namespace CulinaryCommand.Services
         {
             return await _context.Locations
                 .Include(l => l.Company)
-                .Include(l => l.Managers)
+                .Include(l => l.ManagerLocations)
+                    .ThenInclude(ml => ml.User)
                 .FirstOrDefaultAsync(l => l.Id == id);
         }
 
@@ -155,7 +157,8 @@ namespace CulinaryCommand.Services
         public async Task<List<User>> GetManagersForLocationAsync(int locationId)
         {
             var location = await _context.Locations
-                .Include(l => l.Managers)
+                .Include(l => l.ManagerLocations)
+                    .ThenInclude(ml => ml.User)
                 .FirstOrDefaultAsync(l => l.Id == locationId);
 
             return location?.Managers.ToList() ?? new List<User>();
@@ -164,7 +167,9 @@ namespace CulinaryCommand.Services
         public async Task<List<Location>> GetLocationsByManagerAsync(int? managerId)
         {
             return await _context.Locations
-            .Where(l => l.Managers.Any(m => m.Id == managerId))
+            .Where(l => l.ManagerLocations.Any(ml => ml.UserId == managerId))
+            .Include(l => l.ManagerLocations)
+                .ThenInclude(ml => ml.User)
             .ToListAsync();
         }
 
@@ -183,7 +188,7 @@ namespace CulinaryCommand.Services
             Location? currentLocation = _locationState.CurrentLocation;
             if (currentLocation != null)
             {
-                await _js.InvokeVoidAsync("localStorage.setItem", "cc_currentLocation", currentLocation.Id);
+                await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", currentLocation.Id);
 
             }
         }

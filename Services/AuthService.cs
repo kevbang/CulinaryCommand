@@ -157,6 +157,7 @@ namespace CulinaryCommand.Services
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_companyCode");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_companyId");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_locationIds");
+            
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
             await _js.InvokeVoidAsync("localStorage.removeItem", "cc_location");
             Raise();

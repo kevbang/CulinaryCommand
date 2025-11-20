@@ -77,7 +77,7 @@
 
     private async Task LoadLocationFromLocalStorage()
     {
-        string? idStr = await JS.InvokeAsync<string?>("localStorage.getItem", "cc_currentLocation");
+        string? idStr = await JS.InvokeAsync<string?>("localStorage.getItem", "cc_activeLocationId");
 
         if (int.TryParse(idStr, out int id) && id > 0)
         {
@@ -109,7 +109,7 @@
         else
         {
             // Location removed or permission revoked
-            await JS.InvokeVoidAsync("localStorage.removeItem", "cc_currentLocation");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
             LocationState.SetCurrentLocation(null!);
         }
 
