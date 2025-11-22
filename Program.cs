@@ -34,7 +34,7 @@ builder.Services.AddRazorComponents()
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(conn))
 {
-    throw new InvalidOperationException("Missing connection string 'Default'. Set ConnectionStrings__Default via environment or config.");
+    throw new InvalidOperationException("Missing connection string 'DefaultConnection'. Set ConnectionStrings__DefaultConnection via environment or config.");
 }
 
 builder.Services.AddDbContext<AppDbContext>(opt =>

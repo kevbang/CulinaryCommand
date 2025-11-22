@@ -100,7 +100,7 @@ jobs:
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
                   sudo mkdir -p /var/www/culinarycommand && \
-                  printf 'ASPNETCORE_ENVIRONMENT=Production\nConnectionStrings__DefaultConnection=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;\n' | \
+                  printf 'ASPNETCORE_ENVIRONMENT=Production\nASPNETCORE_URLS=http://0.0.0.0:5000\nConnectionStrings__DefaultConnection=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;\n' | \
                   sudo tee /var/www/culinarycommand/.env > /dev/null"
 
             - name: RDS port check (via peering)
