@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data;
 using CulinaryCommand.Components;
 using CulinaryCommand.Services;
+using System; // for Version, TimeSpan
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,31 +38,51 @@ if (string.IsNullOrWhiteSpace(conn))
     throw new InvalidOperationException("Missing connection string 'DefaultConnection'. Set ConnectionStrings__DefaultConnection via environment or config.");
 }
 
+// Mask password for logs (primarily for debugging in the Lightsail instance)
+string MaskPwd(string s)
+{
+    if (string.IsNullOrEmpty(s)) return s;
+    var parts = s.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    for (int i = 0; i < parts.Length; i++)
+    {
+        if (parts[i].StartsWith("Pwd=", StringComparison.OrdinalIgnoreCase))
+            parts[i] = "Pwd=****";
+    }
+    return string.Join(';', parts);
+}
+Console.WriteLine($"[Startup] Using MySQL connection: {MaskPwd(conn)}");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    // Use an explicit MySQL server version to avoid ServerVersion.AutoDetect opening a connection at design-time
-    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36))));
+    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36)), mySqlOpts =>
+    {
+        // Enable transient retry for RDS connectivity hiccups
+        mySqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+    }));
 
-// registers a service with ASP.NET Core's dependency injection (DI) container using the Scoped lifetime.
+// registers services with Scoped lifetime.
 builder.Services.AddScoped<IUserService, UserService>();
-
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<RecipeService>();
 builder.Services.AddScoped<UnitService>();
 builder.Services.AddScoped<IngredientService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
-
-builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<LocationState>();
-
-
 
 var app = builder.Build();
 
-// Apply pending EF core migrations at startup
+// Apply pending EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
 {
-    var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    database.Database.Migrate();
+    try
+    {
+        var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        database.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Migration failed: {ex.GetType().Name} - {ex.Message}");
+        // Optionally: keep running without schema update; remove this catch to fail hard instead
+    }
 }
 
 // Configure the HTTP request pipeline.
