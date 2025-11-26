@@ -80,7 +80,8 @@
 </div>
 
 @code {
-    protected override async Task OnInitializedAsync()
+
+    protected override void OnInitialized()
     {
         Auth.OnAuthStateChanged += StateHasChanged;
     }

@@ -1,0 +1,158 @@
+@page "/adminsignup"
+@using System.ComponentModel.DataAnnotations
+@using CulinaryCommand.Models
+@using Microsoft.AspNetCore.Components
+@using CulinaryCommand.Services
+@using CulinaryCommand.Data.Entities
+@inject IUserService UserService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Admin Sign Up - Culinary Command</PageTitle>
+
+<div class="signup-container">
+    <div class="signup-card">
+        <div class="text-center mb-4">
+            <h1 class="app-title">Culinary Command</h1>
+            <p class="signup-subtitle">Create a new account</p>
+        </div>
+
+        @*display error message if registering fails*@
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role ="alert">
+            @errorMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success" role="alert">
+                @successMessage
+            </div>
+        }
+
+        <EditForm Model="@Signup" OnValidSubmit="@HandleSubmit" FormName="SignUpForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <!-- COMPANY -->
+    <h4 class="mb-3">Resturant Information</h4>
+
+    <div class="mb-3">
+        <label class="form-label">Resturant Name</label>
+        <InputText class="form-control" @bind-Value="Signup.Company.Name" />
+        <ValidationMessage For="@(() => Signup.Company.Name)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Address</label>
+        <InputText class="form-control" @bind-Value="Signup.Company.Address" />
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label class="form-label">City</label>
+            <InputText class="form-control" @bind-Value="Signup.Company.City" />
+        </div>
+        <div class="col">
+            <label class="form-label">State</label>
+            <InputText class="form-control" @bind-Value="Signup.Company.State" />
+        </div>
+        <div class="col">
+            <label class="form-label">Zip</label>
+            <InputText class="form-control" @bind-Value="Signup.Company.ZipCode" />
+        </div>
+    </div>
+
+
+    <!-- ADMIN -->
+    <h4 class="mt-4 mb-3">Admin Account</h4>
+
+    <div class="row">
+        <div class="col">
+            <label class="form-label">First Name</label>
+            <InputText class="form-control" @bind-Value="FirstName" />
+        </div>
+        <div class="col">
+            <label class="form-label">Last Name</label>
+            <InputText class="form-control" @bind-Value="LastName" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText type="email" class="form-control" @bind-Value="Signup.Admin.Email" />
+        <ValidationMessage For="@(() => Signup.Admin.Email)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText type="password" class="form-control" @bind-Value="Signup.Admin.Password" />
+        <ValidationMessage For="@(() => Signup.Admin.Password)" />
+    </div>
+
+    <button type="submit" class="btn btn-success w-100 mt-3">
+        Create Account
+    </button>
+</EditForm>
+
+        <!-- Sign In Link -->
+        <div class="text-center mt-4">
+            <span class="text-muted">Already have an account? </span>
+            <a href="/signin" class="signin-link">Sign in</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool showPassword = false;
+    private bool showConfirmPassword = false;
+
+    //flag to track if form is being submitted
+    private bool isSubmitting = false;
+
+    // messages to display to the user
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    private FullSignupRequest Signup { get; set; } = new();
+    
+    private string FirstName { get; set; } = string.Empty;
+    private string LastName { get; set; } = string.Empty;
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = "";
+        successMessage = "";
+        isSubmitting = true;
+
+        try
+        {
+            // Combine first and last name
+            Signup.Admin.Name = $"{FirstName} {LastName}".Trim();
+            
+            // You will write this service method.
+            await UserService.CreateAdminWithCompanyAndLocationAsync(Signup);
+            Navigation.NavigateTo("/signin", true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
+    private void ToggleConfirmPasswordVisibility()
+    {
+        showConfirmPassword = !showConfirmPassword;
+    }
+
+}

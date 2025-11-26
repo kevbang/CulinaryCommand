@@ -37,6 +37,10 @@ logs/
 .terraform.lock.hcl
 
 
+# Copilot
+inventory/.copilot_instructions.md
+
+
 # ============================
 # Publish output
 # ============================

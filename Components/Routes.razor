@@ -6,7 +6,8 @@
 <Router AppAssembly="@typeof(Program).Assembly" PreferExactMatches="true">
     <Found Context="routeData">
         @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn)
-        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp))
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.AdminSignUp))
         {
             <RouteView RouteData="@routeData" />
         }
@@ -29,9 +30,9 @@
     {
         if (firstRender && !_initialized)
         {
-            // Don't re-hydrate if user is already on /signin or /signup
+            // Don't re-hydrate if user is already on /signin, /signup or /adminsignup
             var path = Nav.Uri.ToLower();
-            if (!path.Contains("/signin") && !path.Contains("/signup"))
+            if (!path.Contains("/signin") && !path.Contains("/signup") && !path.Contains("/adminsignup"))
             {
                 await Auth.InitializeFromJsAsync();
             }
