@@ -565,43 +565,51 @@
                         </h4>
 
                         @* LOCAITON EDIT FORM *@
-                        <EditForm Model="@currentLocation" OnValidSubmit="@HandleLocationSubmit">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="locationName" class="form-label">Location Name</label>
-                                    <InputText id="locationName" class="form-control" @bind-Value="currentLocation.Name"
-                                        placeholder="Enter location name" />
+                        if (!_isDeletingLocation) {
+                            <EditForm Model="@currentLocation" OnValidSubmit="@HandleLocationSubmit">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="locationName" class="form-label">Location Name</label>
+                                        <InputText id="locationName" class="form-control" @bind-Value="currentLocation.Name"
+                                            placeholder="Enter location name" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="address" class="form-label">Address</label>
+                                        <InputText id="address" class="form-control" @bind-Value="currentLocation.Address"
+                                            placeholder="Enter an address" />
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="address" class="form-label">Address</label>
-                                    <InputText id="address" class="form-control" @bind-Value="currentLocation.Address"
-                                        placeholder="Enter an address" />
-                                </div>
-                            </div>
 
 
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="city" class="form-label">City</label>
-                                    <InputText id="city" class="form-control" @bind-Value="currentLocation.City"
-                                        placeholder="Enter an city" />
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="city" class="form-label">City</label>
+                                        <InputText id="city" class="form-control" @bind-Value="currentLocation.City"
+                                            placeholder="Enter an city" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="state" class="form-label">State</label>
+                                        <InputText id="state" class="form-control" @bind-Value="currentLocation.State"
+                                            placeholder="Enter a state" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="zipcode" class="form-label">Postal Code</label>
+                                        <InputText id="zipcode" class="form-control" @bind-Value="currentLocation.ZipCode"
+                                            placeholder="Enter a postal code" />
+                                    </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="state" class="form-label">State</label>
-                                    <InputText id="state" class="form-control" @bind-Value="currentLocation.State"
-                                        placeholder="Enter a state" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="zipcode" class="form-label">Postal Code</label>
-                                    <InputText id="zipcode" class="form-control" @bind-Value="currentLocation.ZipCode"
-                                        placeholder="Enter a postal code" />
-                                </div>
-                            </div>
+                                <div class="flex-box justify-content-between">
+                                    <button type="submit" class="btn btn-success settings-btn">
+                                        <i class="bi bi-save me-2"></i>Save Changes
+                                    </button>
 
-                            <button type="submit" class="btn btn-success settings-btn">
-                                <i class="bi bi-save me-2"></i>Save Changes
-                            </button>
-                        </EditForm>
+                                    <button class="btn btn-danger settings-btn"
+                                    @onclick="@(() => HandleLocationDelete())">
+                                        <i class="bi bi-trash me-2"></i>Delete Location
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
                     }
                 </div>
             }
@@ -620,6 +628,7 @@
     private Location currentLocation { get; set; } = new();
     private List<Location> managedLocations { get; set; } = new();
     private bool _addingLocation { get; set; } = false;
+    private bool _isDeletingLocation { get; set; } = false;
 
     private string ActiveTab => Tab?.ToLower() ?? "profile";
 
@@ -805,12 +814,13 @@
         // TODO: Add actual preferences update logic here
     }
 
+    // update
     private async Task HandleLocationSubmit()
     {
         Console.WriteLine($"Location updated: {locationModel.Name}");
         Console.WriteLine($"Updating Location Id = {locationModel.Id}");
 
-        // TODO: Add actual database update logic or API call
+        // create location with updated attributes
         Location updatedLocation = new Location
         {
             Id = currentLocation.Id,
@@ -821,7 +831,7 @@
             ZipCode = currentLocation.ZipCode,
             CompanyId = Auth.CompanyId!.Value
         };
-        Console.WriteLine("Location comp: " + updatedLocation.CompanyId);
+        // update location with service
         await LocationService.UpdateLocationAsync(updatedLocation);
 
         // navigate after success
@@ -846,6 +856,18 @@
             NavigationManager.NavigateTo("/settings/locations");
         }
     }
+
+    private async Task HandleLocationDelete()
+    {
+        _isDeletingLocation = true; //to prevent re-render before fully deleted
+        Console.WriteLine($"Deleting Location Id = {currentLocation.Id}");
+
+        await LocationService.DeleteLocationAsync(currentLocation.Id);
+
+        _isDeletingLocation = false;
+        NavigationManager.NavigateTo("/settings/locations", forceLoad:true);
+    }
+
 
     private void AddLocation()
     {
