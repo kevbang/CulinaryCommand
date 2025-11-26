@@ -185,6 +185,14 @@ namespace CulinaryCommand.Services
             this.ActiveLocationId = newLocId;
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", newLocId.ToString());
         }
+        
+        public async Task WaitForHydrationAsync()
+        {
+            while (!IsSignedIn && !_hydrated)
+            {
+                await Task.Delay(50);
+            }
+        }
 
     }
 }

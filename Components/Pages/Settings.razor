@@ -651,7 +651,10 @@
                 }
             }
 
-            _ = PopulateLocations();
+            // Wait until Auth is hydrated
+            await Auth.WaitForHydrationAsync();
+
+            await PopulateLocations();
 
             _initialized = true;
         }
