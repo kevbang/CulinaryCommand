@@ -1,4 +1,4 @@
-@page "/signup"
+@page "/adminsignup"
 @using System.ComponentModel.DataAnnotations
 @using CulinaryCommand.Models
 @using Microsoft.AspNetCore.Components
@@ -8,7 +8,7 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Sign Up - Culinary Command</PageTitle>
+<PageTitle>Admin Sign Up - Culinary Command</PageTitle>
 
 <div class="signup-container">
     <div class="signup-card">
@@ -37,18 +37,12 @@
     <ValidationSummary />
 
     <!-- COMPANY -->
-    <h4 class="mb-3">Company Information</h4>
+    <h4 class="mb-3">Resturant Information</h4>
 
     <div class="mb-3">
-        <label class="form-label">Company Name</label>
+        <label class="form-label">Resturant Name</label>
         <InputText class="form-control" @bind-Value="Signup.Company.Name" />
         <ValidationMessage For="@(() => Signup.Company.Name)" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Company Code</label>
-        <InputText class="form-control" @bind-Value="Signup.Company.CompanyCode" />
-        <ValidationMessage For="@(() => Signup.Company.CompanyCode)" />
     </div>
 
     <div class="mb-3">
@@ -72,43 +66,18 @@
     </div>
 
 
-    <!-- LOCATION -->
-    <h4 class="mt-4 mb-3">Location Information</h4>
-
-    <div class="mb-3">
-        <label class="form-label">Location Name</label>
-        <InputText class="form-control" @bind-Value="Signup.Location.Name" />
-        <ValidationMessage For="@(() => Signup.Location.Name)" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Location Address</label>
-        <InputText class="form-control" @bind-Value="Signup.Location.Address" />
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <label class="form-label">City</label>
-            <InputText class="form-control" @bind-Value="Signup.Location.City" />
-        </div>
-        <div class="col">
-            <label class="form-label">State</label>
-            <InputText class="form-control" @bind-Value="Signup.Location.State" />
-        </div>
-        <div class="col">
-            <label class="form-label">Zip</label>
-            <InputText class="form-control" @bind-Value="Signup.Location.ZipCode" />
-        </div>
-    </div>
-
-
     <!-- ADMIN -->
     <h4 class="mt-4 mb-3">Admin Account</h4>
 
-    <div class="mb-3">
-        <label class="form-label">Full Name</label>
-        <InputText class="form-control" @bind-Value="Signup.Admin.Name" />
-        <ValidationMessage For="@(() => Signup.Admin.Name)" />
+    <div class="row">
+        <div class="col">
+            <label class="form-label">First Name</label>
+            <InputText class="form-control" @bind-Value="FirstName" />
+        </div>
+        <div class="col">
+            <label class="form-label">Last Name</label>
+            <InputText class="form-control" @bind-Value="LastName" />
+        </div>
     </div>
 
     <div class="mb-3">
@@ -148,6 +117,9 @@
     private string successMessage = string.Empty;
 
     private FullSignupRequest Signup { get; set; } = new();
+    
+    private string FirstName { get; set; } = string.Empty;
+    private string LastName { get; set; } = string.Empty;
 
     private async Task HandleSubmit()
     {
@@ -157,6 +129,9 @@
 
         try
         {
+            // Combine first and last name
+            Signup.Admin.Name = $"{FirstName} {LastName}".Trim();
+            
             // You will write this service method.
             await UserService.CreateAdminWithCompanyAndLocationAsync(Signup);
             Navigation.NavigateTo("/signin", true);
