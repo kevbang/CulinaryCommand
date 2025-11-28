@@ -16,13 +16,16 @@ namespace CulinaryCommand.Inventory.Entities
         public decimal StockQuantity { get; set; }
 
         // timestamp when the ingredient was created
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
         // optional timestamp when the ingredient was last updated
         public DateTime? UpdatedAt { get; set; }
 
         // the unit in which this ingredient's stock is tracked
         public Unit? Unit { get; set; }
+
+        // category for the ingredient (ex: "dairy", "baking")
+        public string Category { get; set; } = string.Empty;
     }
     
 }
