@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data;
 using CulinaryCommand.Components;
 using CulinaryCommand.Services;
+using CulinaryCommand.Inventory.Services;
+using CulinaryCommand.Inventory;
 using System; // for Version, TimeSpan
 
 var builder = WebApplication.CreateBuilder(args);

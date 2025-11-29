@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data.Entities;
+using CulinaryCommand.Inventory.Entities;
 
 namespace CulinaryCommand.Data
 {
@@ -14,18 +15,22 @@ namespace CulinaryCommand.Data
         public DbSet<User> Users => Set<User>();
         public DbSet<WorkTask> Tasks => Set<WorkTask>();
         public DbSet<Company> Companies => Set<Company>();
-        public DbSet<Ingredient> Ingredients => Set<Ingredient>();
+        public DbSet<CulinaryCommand.Inventory.Entities.Ingredient> Ingredients => Set<CulinaryCommand.Inventory.Entities.Ingredient>();
         public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
         public DbSet<Recipe> Recipes => Set<Recipe>();
         public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
         public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
         public DbSet<UserLocation> UserLocations => Set<UserLocation>();
         public DbSet<ManagerLocation> ManagerLocations => Set<ManagerLocation>();
+        public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+        public DbSet<CulinaryCommand.Inventory.Entities.Unit> Units => Set<CulinaryCommand.Inventory.Entities.Unit>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Company)
@@ -67,6 +72,7 @@ namespace CulinaryCommand.Data
                 .HasOne(ml => ml.Location)
                 .WithMany(l => l.ManagerLocations)
                 .HasForeignKey(ml => ml.LocationId);
+                
         }
     }
 }

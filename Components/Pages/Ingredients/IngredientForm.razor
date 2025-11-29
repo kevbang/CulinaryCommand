@@ -1,4 +1,5 @@
-@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Inventory.Entities
+@using CulinaryCommand.Inventory.Services
 @inject IngredientService Ingredients
 @inject UnitService Units
 @inject NavigationManager Nav;
@@ -23,11 +24,11 @@
 
         <div class="mb-3">
             <label class="form-label">Default Unit</label>
-            <select class="form-select" @bind="Model.DefaultUnit">
-                <option value="">-- Select Unit --</option>
+            <select class="form-select" @bind="Model.UnitId">
+                <option value="0">-- Select Unit --</option>
                 @foreach (var u in UnitsList)
                 {
-                    <option value="@u.Name">@u.Name (@u.Abbreviation)</option>
+                    <option value="@u.Id">@u.Name (@u.Abbreviation)</option>
                 }
             </select>
         </div>
@@ -42,7 +43,7 @@
     [Parameter] public string FormTitle { get; set; } = "Ingredient";
     [Parameter] public EventCallback OnValidSubmit { get; set; }
 
-    List<MeasurementUnit> UnitsList = new();
+    List<Unit> UnitsList = new();
 
     protected override async Task OnInitializedAsync()
     {

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using CulinaryCommand.Inventory.Entities;
 
 namespace CulinaryCommand.Data.Entities
 {
@@ -23,14 +24,14 @@ namespace CulinaryCommand.Data.Entities
 
         // Navigation
         public Recipe? Recipe { get; set; }
-        public Ingredient? Ingredient { get; set; }
-        public MeasurementUnit? Unit { get; set; }
+        public CulinaryCommand.Inventory.Entities.Ingredient? Ingredient { get; set; }
+        public Unit? Unit { get; set; }
 
         [NotMapped]
-        public List<Ingredient> AvailableIngredients { get; set; } = new();
+        public List<CulinaryCommand.Inventory.Entities.Ingredient> AvailableIngredients { get; set; } = new();
 
         [NotMapped]
-        public List<MeasurementUnit> AvailableUnits { get; set; } = new();
+        public List<Unit> AvailableUnits { get; set; } = new();
     }
 
 }
