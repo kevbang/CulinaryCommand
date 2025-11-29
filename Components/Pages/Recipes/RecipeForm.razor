@@ -1,4 +1,5 @@
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Inventory.Services
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject IngredientService Ingredients
@@ -68,7 +69,7 @@
                         <option value="">-- Select Ingredient --</option>
                         @foreach (var ing in item.AvailableIngredients)
                         {
-                            <option value="@ing.IngredientId">@ing.Name</option>
+                            <option value="@ing.Id">@ing.Name</option>
                         }
                     </select>
                 </div>
@@ -80,7 +81,7 @@
                         <option value="">-- Select Unit --</option>
                         @foreach (var unit in item.AvailableUnits)
                         {
-                            <option value="@unit.UnitId">@unit.Name</option>
+                            <option value="@unit.Id">@unit.Name</option>
                         }
                     </select>
                 </div>

@@ -1,4 +1,9 @@
-@* @page "/ingredients"
+@page "/ingredients"
+@using CulinaryCommand.Inventory.Entities
+@using CulinaryCommand.Inventory.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+@using Microsoft.EntityFrameworkCore
 @inject AppDbContext Db
 
 <h3>Ingredients</h3>
@@ -10,7 +15,15 @@
     <EditForm Model="model" OnValidSubmit="Save">
         <InputText @bind-Value="model.Name" placeholder="Name" class="form-control" />
         <InputText @bind-Value="model.Category" placeholder="Category" class="form-control mt-2" />
-        <InputText @bind-Value="model.DefaultUnit" placeholder="Default Unit" class="form-control mt-2" />
+
+        <label class="form-label mt-2">Default Unit</label>
+        <select class="form-select" @bind="model.DefaultUnitId">
+            <option value="">-- Select Unit --</option>
+            @foreach (var u in availableUnits)
+            {
+                <option value="@u.Id">@u.Name (@u.Abbreviation)</option>
+            }
+        </select>
 
         <button class="btn btn-success mt-3">Save</button>
     </EditForm>
@@ -31,7 +44,7 @@
             <tr>
                 <td>@item.Name</td>
                 <td>@item.Category</td>
-                <td>@item.DefaultUnit</td>
+                <td>@item.Unit?.Abbreviation</td>
                 <td>
                     <button class="btn btn-sm btn-secondary" @onclick="() => Edit(item)">Edit</button>
                 </td>
@@ -44,10 +57,14 @@
     List<Ingredient> ingredients = new();
     IngredientViewModel model = new();
     bool editing = false;
+    // list of available units for the unit dropdown
+    List<Unit> availableUnits = new();
 
     protected override void OnInitialized()
     {
-        ingredients = Db.Ingredients.ToList();
+        // Eager-load the Unit navigation so we can display Unit.Abbreviation in the UI
+        ingredients = Db.Ingredients.Include(i => i.Unit).OrderBy(i => i.Name).ToList();
+        availableUnits = Db.Units.OrderBy(u => u.Name).ToList();
     }
 
     void StartAdd()
@@ -60,10 +77,10 @@
     {
         editing = true;
         model = new IngredientViewModel {
-            IngredientId = ing.IngredientId,
+            IngredientId = ing.Id,
             Name = ing.Name,
             Category = ing.Category,
-            DefaultUnit = ing.DefaultUnit
+            DefaultUnitId = ing.UnitId
         };
     }
 
@@ -75,19 +92,22 @@
             {
                 Name = model.Name,
                 Category = model.Category,
-                DefaultUnit = model.DefaultUnit
+                UnitId = model.DefaultUnitId ?? 0
             });
         }
         else
         {
             var entity = Db.Ingredients.Find(model.IngredientId);
-            entity.Name = model.Name;
-            entity.Category = model.Category;
-            entity.DefaultUnit = model.DefaultUnit;
+            if (entity != null)
+            {
+                entity.Name = model.Name;
+                entity.Category = model.Category;
+                entity.UnitId = model.DefaultUnitId ?? entity.UnitId;
+            }
         }
 
         await Db.SaveChangesAsync();
-        ingredients = Db.Ingredients.ToList();
+        ingredients = Db.Ingredients.Include(i => i.Unit).OrderBy(i => i.Name).ToList();
         editing = false;
     }
-} *@
+}
