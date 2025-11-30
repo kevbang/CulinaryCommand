@@ -17,7 +17,7 @@ namespace CulinaryCommand.Inventory.Entities
         public int UnitId { get; set; }
 
         // when the transaction occurred 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset CreatedAt { get; set; }
 
         // simple reason for the transaction (ex: restock, usage, went bad)
         // can be replaced with an enum later if we want
