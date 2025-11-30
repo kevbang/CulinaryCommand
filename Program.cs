@@ -4,6 +4,7 @@ using CulinaryCommand.Components;
 using CulinaryCommand.Services;
 using CulinaryCommand.Inventory.Services;
 using CulinaryCommand.Inventory;
+using CulinaryCommand.Inventory.Services.Interfaces;
 using System; // for Version, TimeSpan
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,6 +70,7 @@ builder.Services.AddScoped<UnitService>();
 builder.Services.AddScoped<IngredientService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<LocationState>();
+builder.Services.AddScoped<IIngredientService, IngredientService>();
 
 var app = builder.Build();
 

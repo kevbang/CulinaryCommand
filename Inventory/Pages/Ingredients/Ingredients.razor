@@ -1,10 +1,10 @@
-@page "/ingredients"
+@* @page "/ingredients" *@
 @using CulinaryCommand.Inventory.Entities
 @using CulinaryCommand.Inventory.Models
+@using CulinaryCommand.Inventory.Services.Interfaces
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Linq
-@using Microsoft.EntityFrameworkCore
-@inject AppDbContext Db
+@inject IIngredientService IngredientService
 
 <h3>Ingredients</h3>
 
@@ -60,11 +60,19 @@
     // list of available units for the unit dropdown
     List<Unit> availableUnits = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Eager-load the Unit navigation so we can display Unit.Abbreviation in the UI
-        ingredients = Db.Ingredients.Include(i => i.Unit).OrderBy(i => i.Name).ToList();
-        availableUnits = Db.Units.OrderBy(u => u.Name).ToList();
+        var list = await IngredientService.GetAllAsync();
+        ingredients = list.ToList();
+
+        // build available units from the included Unit navigation
+        availableUnits = ingredients
+            .Where(i => i.Unit != null)
+            .Select(i => i.Unit!)
+            .GroupBy(u => u.Id)
+            .Select(g => g.First())
+            .OrderBy(u => u.Name)
+            .ToList();
     }
 
     void StartAdd()
@@ -88,7 +96,7 @@
     {
         if (model.IngredientId == 0)
         {
-            Db.Ingredients.Add(new Ingredient
+            await IngredientService.CreateAsync(new Ingredient
             {
                 Name = model.Name,
                 Category = model.Category,
@@ -97,17 +105,17 @@
         }
         else
         {
-            var entity = Db.Ingredients.Find(model.IngredientId);
-            if (entity != null)
+            await IngredientService.UpdateAsync(new Ingredient
             {
-                entity.Name = model.Name;
-                entity.Category = model.Category;
-                entity.UnitId = model.DefaultUnitId ?? entity.UnitId;
-            }
+                Id = model.IngredientId,
+                Name = model.Name,
+                Category = model.Category,
+                UnitId = model.DefaultUnitId ?? 0
+            });
         }
 
-        await Db.SaveChangesAsync();
-        ingredients = Db.Ingredients.Include(i => i.Unit).OrderBy(i => i.Name).ToList();
+        var refreshed = await IngredientService.GetAllAsync();
+        ingredients = refreshed.ToList();
         editing = false;
     }
 }
