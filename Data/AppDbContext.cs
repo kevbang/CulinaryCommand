@@ -13,7 +13,7 @@ namespace CulinaryCommand.Data
 
         public DbSet<Location> Locations => Set<Location>();
         public DbSet<User> Users => Set<User>();
-        public DbSet<WorkTask> Tasks => Set<WorkTask>();
+        public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<CulinaryCommand.Inventory.Entities.Ingredient> Ingredients => Set<CulinaryCommand.Inventory.Entities.Ingredient>();
         public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
@@ -23,8 +23,9 @@ namespace CulinaryCommand.Data
         public DbSet<UserLocation> UserLocations => Set<UserLocation>();
         public DbSet<ManagerLocation> ManagerLocations => Set<ManagerLocation>();
         public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
-        public DbSet<CulinaryCommand.Inventory.Entities.Unit> Units => Set<CulinaryCommand.Inventory.Entities.Unit>();
-
+        public DbSet<Unit> Units => Set<Unit>();
+        public DbSet<TaskAssignment> TaskAssignments => Set<TaskAssignment>();
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
