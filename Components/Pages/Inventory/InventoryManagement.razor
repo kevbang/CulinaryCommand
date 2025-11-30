@@ -1,0 +1,536 @@
+@page "/inventory-management"
+@rendermode InteractiveServer
+
+@using CulinaryCommand.Inventory.DTOs
+@using Microsoft.JSInterop
+@* @using CulinaryCommand.Inventory.Services *@
+@* @using CulinaryCommand.Services *@
+@* @inject IngredientService IngredientService *@
+@* @inject AuthService Auth *@
+@* @inject NavigationManager Nav *@
+
+<div class="inventory-container">
+    <div class="inventory-header">
+        <h1>Inventory</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" @onclick="ShowAddItemModal">
+                <i class="bi bi-plus-lg"></i> Add Item
+            </button>
+            @* <button class="btn btn-primary" @onclick="ExportInventory">
+                <i class="bi bi-download"></i> Export
+            </button> *@
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="tab-btn @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
+            All
+        </button>
+        <button class="tab-btn @(activeTab == "dry" ? "active" : "")" @onclick='() => SetActiveTab("dry")'>
+            Dry Items
+        </button>
+        <button class="tab-btn @(activeTab == "arriving" ? "active" : "")" @onclick='() => SetActiveTab("arriving")'>
+            Arriving Soon
+        </button>
+        <button class="tab-btn @(activeTab == "ordered" ? "active" : "")" @onclick='() => SetActiveTab("ordered")'>
+            Ordered
+        </button>
+        <button class="btn-filter-list" @onclick="ToggleFilterPanel">
+            <i class="bi bi-funnel"></i> Filter List
+        </button>
+    </div>
+
+    <!-- Advanced Filter Panel -->
+    @if (showFilterPanel)
+    {
+        <div class="filter-panel">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" class="form-control" @bind="searchTerm" @bind:event="oninput" placeholder="Search by name or SKU..." />
+                </div>
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select class="form-control" @bind="selectedCategory">
+                        <option value="">All Categories</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Stock Status</label>
+                    <select class="form-control" @bind="stockStatus">
+                        <option value="">All</option>
+                        <option value="low">Low Stock</option>
+                        <option value="out">Out of Stock</option>
+                        <option value="sufficient">Sufficient</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" @onclick="ClearFilters">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Inventory Table -->
+    <div class="inventory-table-container">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th @onclick='() => SortBy("name")'>
+                        Name <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("sku")'>
+                        SKU <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("currentQty")'>
+                        Current Qty <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("outOfStock")'>
+                        Out of Stock <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("lastOrder")'>
+                        Last Order <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("price")'>
+                        Price <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (isLoading)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else if (!filteredItems.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <p class="text-muted">No items found</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in filteredItems)
+                    {
+                        <tr class="@GetRowClass(item)">
+                            <td>
+                                <div class="item-name">
+                                    @item.Name
+                                    @if (item.IsLowStock)
+                                    {
+                                        <span class="badge bg-warning ms-2">Low</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>@item.SKU</td>
+                            <td>
+                                <div class="qty-control">
+                                    <button class="qty-btn" @onclick="() => DecrementQuantity(item)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <span class="qty-value">@item.CurrentQuantity @item.Unit</span>
+                                    <button class="qty-btn" @onclick="() => IncrementQuantity(item)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.OutOfStockDate.HasValue)
+                                {
+                                    <span class="@(IsDateCritical(item.OutOfStockDate.Value) ? "text-danger fw-bold" : "")">
+                                        @item.OutOfStockDate.Value.ToString("MM/dd/yy")
+                                        @if (IsDateCritical(item.OutOfStockDate.Value))
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.LastOrderDate.HasValue)
+                                {
+                                    @item.LastOrderDate.Value.ToString("MM/dd/yy")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>$@item.Price.ToString("F2")</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-action" @onclick="() => EditItem(item)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn-action" @onclick="() => OrderItem(item)" title="Order">
+                                        <i class="bi bi-cart-plus"></i>
+                                    </button>
+                                    <button class="btn-action text-danger" @onclick="() => DeleteItem(item)" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="inventory-stats">
+        <div class="stat-card">
+            <div class="stat-label">Total Items</div>
+            <div class="stat-value">@inventoryItems.Count</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Low Stock</div>
+            <div class="stat-value text-warning">@inventoryItems.Count(i => i.IsLowStock)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Out of Stock</div>
+            <div class="stat-value text-danger">@inventoryItems.Count(i => i.CurrentQuantity <= 0)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Value</div>
+            <div class="stat-value">$@inventoryItems.Sum(i => i.CurrentQuantity * i.Price).ToString("F2")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Item Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+    <div class="modal-dialog-custom">
+        <div class="modal-content-custom">
+            <div class="modal-header-custom">
+                <h3>@(editingItem == null ? "Add New Item" : "Edit Item")</h3>
+                <button class="btn-close-custom" @onclick="CloseModal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="form-group mb-3">
+                    <label>Item Name</label>
+                    <input type="text" class="form-control" @bind="modalItem.Name" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>SKU</label>
+                    <input type="text" class="form-control" @bind="modalItem.SKU" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Category</label>
+                    <select class="form-control" @bind="modalItem.Category">
+                        <option value="">Select Category</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Current Quantity</label>
+                            <input type="number" class="form-control" @bind="modalItem.CurrentQuantity" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Unit</label>
+                            <select class="form-control" @bind="modalItem.Unit">
+                                <option value="count">count</option>
+                                <option value="gallons">gallons</option>
+                                <option value="lbs">lbs</option>
+                                <option value="oz">oz</option>
+                                <option value="kg">kg</option>
+                                <option value="liters">liters</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Price</label>
+                            <input type="number" step="0.01" class="form-control" @bind="modalItem.Price" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Reorder Level</label>
+                            <input type="number" class="form-control" @bind="modalItem.ReorderLevel" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-success" @onclick="SaveItem">
+                    @(editingItem == null ? "Add Item" : "Save Changes")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<InventoryItemDTO> inventoryItems = new();
+    private List<InventoryItemDTO> filteredItems = new();
+    private bool isLoading = true;
+    private string activeTab = "all";
+    private bool showFilterPanel = false;
+    private string searchTerm = "";
+    private string selectedCategory = "";
+    private string stockStatus = "";
+    private string sortColumn = "";
+    private bool sortAscending = true;
+    
+    private List<string> categories = new() { "Produce", "Dairy", "Meat", "Dry Goods", "Beverages", "Condiments", "Spices" };
+    
+    private bool showModal = false;
+    private InventoryItemDTO modalItem = new();
+    private InventoryItemDTO? editingItem = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInventoryData();
+    }
+
+    private async Task LoadInventoryData()
+    {
+        isLoading = true;
+        
+        // Temporary mock data need to replace with actual service call
+        inventoryItems = new List<InventoryItemDTO>
+        {
+            new() { Id = 1, Name = "Tomatoes", SKU = "1234", CurrentQuantity = 56, Unit = "count", OutOfStockDate = new DateTime(2025, 11, 14), LastOrderDate = new DateTime(2025, 11, 10), Price = 3.00m, Category = "Produce", ReorderLevel = 20 },
+            new() { Id = 2, Name = "Garlic", SKU = "1421", CurrentQuantity = 1, Unit = "count", OutOfStockDate = new DateTime(2025, 11, 8), LastOrderDate = new DateTime(2025, 11, 1), Price = 2.00m, Category = "Produce", ReorderLevel = 10, IsLowStock = true },
+            new() { Id = 3, Name = "Ranch", SKU = "1634", CurrentQuantity = 4, Unit = "gallons", OutOfStockDate = new DateTime(2025, 11, 14), LastOrderDate = new DateTime(2025, 11, 10), Price = 3.00m, Category = "Condiments", ReorderLevel = 5 },
+            new() { Id = 4, Name = "Olive Oil", SKU = "2341", CurrentQuantity = 12, Unit = "gallons", OutOfStockDate = new DateTime(2025, 12, 5), LastOrderDate = new DateTime(2025, 11, 15), Price = 25.00m, Category = "Condiments", ReorderLevel = 8 },
+            new() { Id = 5, Name = "Chicken Breast", SKU = "3456", CurrentQuantity = 0, Unit = "lbs", OutOfStockDate = new DateTime(2025, 11, 28), LastOrderDate = new DateTime(2025, 11, 20), Price = 6.50m, Category = "Meat", ReorderLevel = 50 },
+            new() { Id = 6, Name = "Pasta", SKU = "4567", CurrentQuantity = 100, Unit = "lbs", OutOfStockDate = new DateTime(2026, 1, 15), LastOrderDate = new DateTime(2025, 11, 5), Price = 1.50m, Category = "Dry Goods", ReorderLevel = 30 },
+        };
+        
+        FilterItems();
+        isLoading = false;
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        FilterItems();
+    }
+
+    private void ToggleFilterPanel()
+    {
+        showFilterPanel = !showFilterPanel;
+    }
+
+    private void FilterItems()
+    {
+        filteredItems = inventoryItems.Where(item =>
+        {
+            // Tab filter
+            bool tabMatch = activeTab switch
+            {
+                "dry" => item.Category == "Dry Goods",
+                "arriving" => item.OutOfStockDate.HasValue && item.OutOfStockDate.Value <= DateTime.Now.AddDays(7) && item.OutOfStockDate.Value >= DateTime.Now,
+                "ordered" => item.LastOrderDate.HasValue && item.LastOrderDate.Value >= DateTime.Now.AddDays(-7),
+                _ => true
+            };
+
+            // Search filter
+            bool searchMatch = string.IsNullOrWhiteSpace(searchTerm) ||
+                item.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                item.SKU.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+
+            // Category filter
+            bool categoryMatch = string.IsNullOrWhiteSpace(selectedCategory) ||
+                item.Category == selectedCategory;
+
+            // Stock status filter
+            bool stockMatch = stockStatus switch
+            {
+                "low" => item.IsLowStock,
+                "out" => item.CurrentQuantity <= 0,
+                "sufficient" => !item.IsLowStock && item.CurrentQuantity > 0,
+                _ => true
+            };
+
+            return tabMatch && searchMatch && categoryMatch && stockMatch;
+        }).ToList();
+
+        ApplySorting();
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategory = "";
+        stockStatus = "";
+        FilterItems();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplySorting();
+    }
+
+    private void ApplySorting()
+    {
+        filteredItems = sortColumn switch
+        {
+            "name" => sortAscending ? filteredItems.OrderBy(i => i.Name).ToList() : filteredItems.OrderByDescending(i => i.Name).ToList(),
+            "sku" => sortAscending ? filteredItems.OrderBy(i => i.SKU).ToList() : filteredItems.OrderByDescending(i => i.SKU).ToList(),
+            "currentQty" => sortAscending ? filteredItems.OrderBy(i => i.CurrentQuantity).ToList() : filteredItems.OrderByDescending(i => i.CurrentQuantity).ToList(),
+            "outOfStock" => sortAscending ? filteredItems.OrderBy(i => i.OutOfStockDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.OutOfStockDate ?? DateTime.MinValue).ToList(),
+            "lastOrder" => sortAscending ? filteredItems.OrderBy(i => i.LastOrderDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.LastOrderDate ?? DateTime.MinValue).ToList(),
+            "price" => sortAscending ? filteredItems.OrderBy(i => i.Price).ToList() : filteredItems.OrderByDescending(i => i.Price).ToList(),
+            _ => filteredItems
+        };
+    }
+
+    private string GetRowClass(InventoryItemDTO item)
+    {
+        if (item.CurrentQuantity <= 0) return "row-out-of-stock";
+        if (item.IsLowStock) return "row-low-stock";
+        return "";
+    }
+
+    private bool IsDateCritical(DateTime date)
+    {
+        return date <= DateTime.Now.AddDays(3);
+    }
+
+    private async Task IncrementQuantity(InventoryItemDTO item)
+    {
+        item.CurrentQuantity++;
+        item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel;
+        // TODO
+         //Call service to update quantity
+        StateHasChanged();
+    }
+
+    private async Task DecrementQuantity(InventoryItemDTO item)
+    {
+        if (item.CurrentQuantity > 0)
+        {
+            item.CurrentQuantity--;
+            item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel;
+            // TODO 
+            // Call service to update quantity
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddItemModal()
+    {
+        editingItem = null;
+        modalItem = new InventoryItemDTO();
+        showModal = true;
+    }
+
+    private void EditItem(InventoryItemDTO item)
+    {
+        editingItem = item;
+        modalItem = new InventoryItemDTO
+        {
+            Id = item.Id,
+            Name = item.Name,
+            SKU = item.SKU,
+            Category = item.Category,
+            CurrentQuantity = item.CurrentQuantity,
+            Unit = item.Unit,
+            Price = item.Price,
+            ReorderLevel = item.ReorderLevel
+        };
+        showModal = true;
+    }
+
+    private async Task SaveItem()
+    {
+        if (editingItem != null)
+        {
+            // Update the existing item
+            editingItem.Name = modalItem.Name;
+            editingItem.SKU = modalItem.SKU;
+            editingItem.Category = modalItem.Category;
+            editingItem.CurrentQuantity = modalItem.CurrentQuantity;
+            editingItem.Unit = modalItem.Unit;
+            editingItem.Price = modalItem.Price;
+            editingItem.ReorderLevel = modalItem.ReorderLevel;
+            editingItem.IsLowStock = editingItem.CurrentQuantity <= editingItem.ReorderLevel;
+        }
+        else
+        {
+            // Adding a new item
+            modalItem.Id = inventoryItems.Max(i => i.Id) + 1;
+            modalItem.IsLowStock = modalItem.CurrentQuantity <= modalItem.ReorderLevel;
+            inventoryItems.Add(modalItem);
+        }
+        
+        CloseModal();
+        FilterItems();
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        modalItem = new();
+        editingItem = null;
+    }
+
+    private async Task OrderItem(InventoryItemDTO item)
+    {
+        //TODO
+        // Implement some  type of order functionality
+        Console.WriteLine($"Ordering {item.Name}");
+    }
+
+    private async Task DeleteItem(InventoryItemDTO item)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {item.Name}?"))
+        {
+            inventoryItems.Remove(item);
+            FilterItems();
+        }
+    }
+/*
+     // If needed immplement CSV/Excel export
+    private void ExportInventory()
+    {
+        Console.WriteLine("Exporting inventory...");
+    }
+*/
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+}
