@@ -71,6 +71,9 @@ builder.Services.AddScoped<IngredientService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<LocationState>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IUnitService, UnitService>();
+builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionService>();
+builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
 
 var app = builder.Build();
 

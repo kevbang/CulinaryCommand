@@ -3,11 +3,8 @@
 
 @using CulinaryCommand.Inventory.DTOs
 @using Microsoft.JSInterop
-@* @using CulinaryCommand.Inventory.Services *@
-@* @using CulinaryCommand.Services *@
-@* @inject IngredientService IngredientService *@
-@* @inject AuthService Auth *@
-@* @inject NavigationManager Nav *@
+@using CulinaryCommand.Inventory.Services.Interfaces
+@using System.Threading.Tasks
 
 <div class="inventory-container">
     <div class="inventory-header">
@@ -303,9 +300,9 @@
     private string stockStatus = "";
     private string sortColumn = "";
     private bool sortAscending = true;
-    
+
     private List<string> categories = new() { "Produce", "Dairy", "Meat", "Dry Goods", "Beverages", "Condiments", "Spices" };
-    
+
     private bool showModal = false;
     private InventoryItemDTO modalItem = new();
     private InventoryItemDTO? editingItem = null;
@@ -318,18 +315,18 @@
     private async Task LoadInventoryData()
     {
         isLoading = true;
-        
-        // Temporary mock data need to replace with actual service call
-        inventoryItems = new List<InventoryItemDTO>
+
+        // Load real data from the inventory service instead of static mock data
+        try
         {
-            new() { Id = 1, Name = "Tomatoes", SKU = "1234", CurrentQuantity = 56, Unit = "count", OutOfStockDate = new DateTime(2025, 11, 14), LastOrderDate = new DateTime(2025, 11, 10), Price = 3.00m, Category = "Produce", ReorderLevel = 20 },
-            new() { Id = 2, Name = "Garlic", SKU = "1421", CurrentQuantity = 1, Unit = "count", OutOfStockDate = new DateTime(2025, 11, 8), LastOrderDate = new DateTime(2025, 11, 1), Price = 2.00m, Category = "Produce", ReorderLevel = 10, IsLowStock = true },
-            new() { Id = 3, Name = "Ranch", SKU = "1634", CurrentQuantity = 4, Unit = "gallons", OutOfStockDate = new DateTime(2025, 11, 14), LastOrderDate = new DateTime(2025, 11, 10), Price = 3.00m, Category = "Condiments", ReorderLevel = 5 },
-            new() { Id = 4, Name = "Olive Oil", SKU = "2341", CurrentQuantity = 12, Unit = "gallons", OutOfStockDate = new DateTime(2025, 12, 5), LastOrderDate = new DateTime(2025, 11, 15), Price = 25.00m, Category = "Condiments", ReorderLevel = 8 },
-            new() { Id = 5, Name = "Chicken Breast", SKU = "3456", CurrentQuantity = 0, Unit = "lbs", OutOfStockDate = new DateTime(2025, 11, 28), LastOrderDate = new DateTime(2025, 11, 20), Price = 6.50m, Category = "Meat", ReorderLevel = 50 },
-            new() { Id = 6, Name = "Pasta", SKU = "4567", CurrentQuantity = 100, Unit = "lbs", OutOfStockDate = new DateTime(2026, 1, 15), LastOrderDate = new DateTime(2025, 11, 5), Price = 1.50m, Category = "Dry Goods", ReorderLevel = 30 },
-        };
-        
+            inventoryItems = await InventorySvc.GetAllItemsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to load inventory items: {ex}");
+            inventoryItems = new List<InventoryItemDTO>();
+        }
+
         FilterItems();
         isLoading = false;
     }
@@ -435,7 +432,7 @@
         item.CurrentQuantity++;
         item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel;
         // TODO
-         //Call service to update quantity
+        //Call service to update quantity
         StateHasChanged();
     }
 
@@ -477,28 +474,55 @@
 
     private async Task SaveItem()
     {
-        if (editingItem != null)
+        try
         {
-            // Update the existing item
-            editingItem.Name = modalItem.Name;
-            editingItem.SKU = modalItem.SKU;
-            editingItem.Category = modalItem.Category;
-            editingItem.CurrentQuantity = modalItem.CurrentQuantity;
-            editingItem.Unit = modalItem.Unit;
-            editingItem.Price = modalItem.Price;
-            editingItem.ReorderLevel = modalItem.ReorderLevel;
-            editingItem.IsLowStock = editingItem.CurrentQuantity <= editingItem.ReorderLevel;
+            if (editingItem != null)
+            {
+                // Persist changes via service
+                var updated = await InventorySvc.UpdateItemAsync(modalItem);
+                if (updated != null)
+                {
+                    var idx = inventoryItems.FindIndex(i => i.Id == updated.Id);
+                    if (idx >= 0)
+                        inventoryItems[idx] = updated;
+                    else
+                        inventoryItems.Add(updated);
+
+                    editingItem = inventoryItems.First(i => i.Id == updated.Id);
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Failed to update item.");
+                }
+            }
+            else
+            {
+                // Create new ingredient via service
+                var dto = new CreateIngredientDTO
+                {
+                    Name = modalItem.Name,
+                    SKU = string.IsNullOrWhiteSpace(modalItem.SKU) ? null : modalItem.SKU,
+                    CurrentQuantity = modalItem.CurrentQuantity,
+                    Price = modalItem.Price,
+                    Category = modalItem.Category,
+                    ReorderLevel = modalItem.ReorderLevel,
+                    UnitId = 1 // TODO: wire a real unit selector; use sensible default for now
+                };
+
+                var created = await InventorySvc.AddItemAsync(dto);
+                if (created != null)
+                {
+                    inventoryItems.Add(created);
+                }
+            }
+
+            CloseModal();
+            FilterItems();
         }
-        else
+        catch (Exception ex)
         {
-            // Adding a new item
-            modalItem.Id = inventoryItems.Max(i => i.Id) + 1;
-            modalItem.IsLowStock = modalItem.CurrentQuantity <= modalItem.ReorderLevel;
-            inventoryItems.Add(modalItem);
+            Console.Error.WriteLine($"Failed to save item: {ex}");
         }
-        
-        CloseModal();
-        FilterItems();
     }
 
     private void CloseModal()
@@ -517,10 +541,24 @@
 
     private async Task DeleteItem(InventoryItemDTO item)
     {
-        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {item.Name}?"))
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {item.Name}?"))
         {
-            inventoryItems.Remove(item);
-            FilterItems();
+            return;
+        }
+        try {
+            var success = await InventorySvc.DeleteItemAsync(item.Id);
+
+            if (success) {
+                inventoryItems.Remove(item);
+                FilterItems();
+            }
+            else {
+                await JSRuntime.InvokeVoidAsync("alert", $"Failed to delete {item.Name}.");
+            }
+        }
+        catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to delete item: {ex}");
+            await JSRuntime.InvokeVoidAsync("alert", "An error occurred while deleting the item.");
         }
     }
 /*
@@ -533,4 +571,7 @@
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
+
+    [Inject]
+    private IInventoryManagementService InventorySvc { get; set; } = default!;
 }

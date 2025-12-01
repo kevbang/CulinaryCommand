@@ -15,6 +15,9 @@ namespace CulinaryCommand.Inventory.Entities
         // how much is currently in inventory, stored in the ingredient's base unit
         public decimal StockQuantity { get; set; }
 
+        // reorder level used to determine if restocking is necessary
+        public decimal ReorderLevel { get; set; } = 0m;
+
         // timestamp when the ingredient was created
         public DateTime? CreatedAt { get; set; }
 
@@ -26,6 +29,15 @@ namespace CulinaryCommand.Inventory.Entities
 
         // category for the ingredient (ex: "dairy", "baking")
         public string Category { get; set; } = string.Empty;
+
+        // optional, used to store SKU for ingredient
+        public string? Sku { get; set; }
+
+        // optional, used to store price for ingredient
+        public decimal? Price { get; set; }
+
+        // optional, used to describe any details about the ingredient
+        public string? Notes { get; set; }
     }
     
 }

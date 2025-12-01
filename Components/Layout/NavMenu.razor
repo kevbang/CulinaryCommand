@@ -1,4 +1,6 @@
 ﻿@namespace CulinaryCommand.Components.Layout
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
 @using CulinaryCommand.Components.Custom
 @rendermode InteractiveServer
 @inject AuthService Auth
@@ -79,6 +81,11 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="ingredients">
                     <span class="bi bi-basket3 nav-icon"></span> Ingredients
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/inventory">
+                    <span class="bi bi-box-seam nav-icon"></span> Inventory
                 </NavLink>
             </div>
         }
