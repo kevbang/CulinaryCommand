@@ -1,0 +1,123 @@
+@page "/settings/{Tab?}/{Specifier?}"
+@using CulinaryCommand.Services
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Models
+@using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
+@inject NavigationManager NavigationManager
+@inject AuthService Auth
+@inject ILocationService LocationService
+@rendermode InteractiveServer
+
+<PageTitle>Settings - Culinary Command</PageTitle>
+
+<div class="settings-container">
+    <div class="settings-card">
+        <div class="text-center mb-4">
+            <h1 class="app-title">Settings</h1>
+            <p class="subtitle">Manage your account preferences</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs settings-tabs mb-4" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "profile" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("profile"))" type="button">
+                    <i class="fas fa-user me-2"></i>Profile
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "security" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("security"))" type="button">
+                    <i class="fas fa-lock me-2"></i>Security
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "notifications" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("notifications"))" type="button">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "preferences" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("preferences"))" type="button">
+                    <i class="fas fa-cog me-2"></i>Preferences
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "locations" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("locations"))" type="button">
+                    <i class="bi bi-fork-knife me-2"></i>Locations
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "company" ? "active" : "")"
+                        @onclick="@(() => NavigateToTab("company"))" type="button">
+                    <i class="fas fa-building me-2"></i>Company
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            @switch (ActiveTab)
+            {
+                case "profile":
+                    <SettingsProfile />
+                    break;
+
+                case "security":
+                    <SettingsSecurity />
+                    break;
+
+                case "notifications":
+                    <SettingsNotifications />
+                    break;
+
+                case "preferences":
+                    <SettingsPreferences />
+                    break;
+
+                case "locations":
+                    <SettingsLocations />
+                    break;
+                    
+                case "company":
+                    <SettingsCompany />
+                    break;
+
+                default:
+                    <SettingsProfile />
+                    break;
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Tab { get; set; }
+    [Parameter] public string? Specifier { get; set; }
+
+    private string ActiveTab => string.IsNullOrWhiteSpace(Tab)
+        ? "profile"
+        : Tab!.ToLowerInvariant();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Redirect bare /settings to /settings/profile
+        if (string.IsNullOrWhiteSpace(Tab))
+        {
+            NavigationManager.NavigateTo("/settings/profile", replace: true);
+        }
+
+        // Prime location info into localStorage when possible
+        if (Auth.UserId != null)
+        {
+            await LocationService.LoadAndPersistLocationsAsync(Auth.UserId.Value);
+        }
+    }
+
+    private void NavigateToTab(string tab)
+    {
+        NavigationManager.NavigateTo($"/settings/{tab}", forceLoad: false);
+    }
+}

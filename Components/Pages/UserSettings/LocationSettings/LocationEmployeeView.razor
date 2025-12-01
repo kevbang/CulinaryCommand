@@ -1,0 +1,22 @@
+@using CulinaryCommand.Data.Entities
+
+<div class="card shadow-sm p-3">
+
+    <h4>Your Location</h4>
+
+    @if (Location == null)
+    {
+        <div class="alert alert-warning">No assigned location.</div>
+    }
+    else
+    {
+        <h5>@Location.Name</h5>
+        <p class="mb-1">@Location.Address</p>
+        <p class="mb-1">@Location.City, @Location.State @Location.ZipCode</p>
+    }
+
+</div>
+
+@code {
+    [Parameter] public Location? Location { get; set; }
+}

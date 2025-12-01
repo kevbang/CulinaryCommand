@@ -1,0 +1,129 @@
+@using CulinaryCommand.Services
+@using CulinaryCommand.Data.Entities
+@inject AuthService Auth
+@inject ICompanyService CompanyService
+@inject AuthService Auth
+@rendermode InteractiveServer
+
+<div class="tab-pane active">
+    <h4 class="mb-4">
+        <i class="fas fa-building me-2"></i>Company Settings
+    </h4>
+
+    @if (companyModel is null)
+    {
+        <div class="alert alert-warning">
+            You do not belong to a company yet. Create one below.
+        </div>
+
+        <EditForm Model="@createCompanyModel" OnValidSubmit="@HandleCreateCompany">
+            <div class="mb-3">
+                <label class="form-label">Company Name</label>
+                <InputText class="form-control" @bind-Value="createCompanyModel.Name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Company Code</label>
+                <InputText class="form-control" @bind-Value="createCompanyModel.CompanyCode" />
+            </div>
+
+            <button class="btn btn-primary">Create Company</button>
+        </EditForm>
+
+        <hr class="my-4" />
+    }
+    else
+    {
+        <EditForm Model="@companyModel" OnValidSubmit="@HandleCompanySubmit">
+            <div class="mb-3">
+                <label class="form-label">Company Name</label>
+                <InputText class="form-control" @bind-Value="companyModel.Name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Company Code</label>
+                <InputText class="form-control" @bind-Value="companyModel.CompanyCode" />
+            </div>
+
+            <button class="btn btn-success">Update Company</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private CompanyModel? companyModel;
+    private CompanyModel createCompanyModel = new();
+
+    protected override void OnInitialized()
+    {
+        if (Auth.CurrentUser?.Company != null)
+        {
+            companyModel = new CompanyModel
+            {
+                Id = Auth.CurrentUser.Company.Id,
+                Name = Auth.CurrentUser.Company.Name,
+                CompanyCode = Auth.CurrentUser.Company.CompanyCode
+            };
+        }
+    }
+
+    private async Task HandleCompanySubmit()
+    {
+        if (companyModel is null || Auth.CurrentUser?.CompanyId is null)
+        return;
+
+        var updated = new Company
+        {
+            Id = companyModel.Id,
+            Name = companyModel.Name,
+            CompanyCode = companyModel.CompanyCode
+        };
+
+        await CompanyService.UpdateCompanyAsync(updated);
+
+        // reload updated company for the current user
+        var refreshedCompany = await CompanyService.GetCompanyByIdAsync(updated.Id);
+
+        if (Auth.CurrentUser != null)
+        {
+            Auth.CurrentUser.Company = refreshedCompany;
+            Auth.NotifyStateChanged();
+        }
+
+        Console.WriteLine("Company updated successfully.");
+    }
+
+    private async Task HandleCreateCompany()
+    {
+        var newCompany = new Company
+        {
+            Name = createCompanyModel.Name,
+            CompanyCode = createCompanyModel.CompanyCode
+        };
+
+        var created = await CompanyService.CreateCompanyAsync(newCompany);
+
+        if (Auth.CurrentUser != null)
+        {
+            Auth.CurrentUser.CompanyId = created.Id;
+            Auth.CurrentUser.Company = created;
+            Auth.NotifyStateChanged();
+        }
+
+        companyModel = new CompanyModel
+        {
+            Id = created.Id,
+            Name = created.Name,
+            CompanyCode = created.CompanyCode
+        };
+
+        Console.WriteLine("Company created successfully.");
+    }
+
+    private class CompanyModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? CompanyCode { get; set; }
+    }
+}

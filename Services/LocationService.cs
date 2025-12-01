@@ -76,8 +76,11 @@ namespace CulinaryCommand.Services
             _context.Locations.Add(location);
             await _context.SaveChangesAsync();
 
-            //Add manager to many-to-many link
+            //Add manager to many-to-many link with ManagerLocation
             await AddManagerToLocationAsync(location.Id, managerId);
+
+            //Add user to many-to-many link with UserLocation
+            await AddUserToLocationAsync(location.Id, managerId);
 
             return location;
         }
@@ -153,6 +156,25 @@ namespace CulinaryCommand.Services
             _context.ManagerLocations.Remove(managerLocation);
             await _context.SaveChangesAsync();
 
+            return true;
+        }
+
+        public async Task<bool> AddUserToLocationAsync(int locationId, int userId)
+        {
+            var existing = await _context.UserLocations
+                .FirstOrDefaultAsync(ul => ul.LocationId == locationId && ul.UserId == userId);
+
+            if (existing != null)
+                return true; // Already linked
+
+            var link = new UserLocation
+            {
+                UserId = userId,
+                LocationId = locationId
+            };
+
+            _context.UserLocations.Add(link);
+            await _context.SaveChangesAsync();
             return true;
         }
 

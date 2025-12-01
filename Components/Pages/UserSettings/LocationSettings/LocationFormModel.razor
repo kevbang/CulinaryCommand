@@ -1,0 +1,66 @@
+@using CulinaryCommand.Data.Entities
+
+@if (Show)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">@Title</h5>
+                    <button type="button" class="btn-close" @onclick="OnClose"></button>
+                </div>
+
+                <div class="modal-body">
+                    <EditForm Model="@Model" OnValidSubmit="Submit">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <InputText class="form-control" @bind-Value="Model.Name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <InputText class="form-control" @bind-Value="Model.Address" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">City</label>
+                            <InputText class="form-control" @bind-Value="Model.City" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">State</label>
+                            <InputText class="form-control" @bind-Value="Model.State" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Zip Code</label>
+                            <InputText class="form-control" @bind-Value="Model.ZipCode" />
+                        </div>
+                    </EditForm>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="OnClose">Cancel</button>
+                    <button class="btn btn-success" @onclick="Submit">Save</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public Location Model { get; set; } = new();
+    [Parameter] public EventCallback<Location> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Submit()
+    {
+        await OnSave.InvokeAsync(Model);
+    }
+}

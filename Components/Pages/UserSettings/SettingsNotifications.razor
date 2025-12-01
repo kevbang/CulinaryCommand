@@ -1,0 +1,153 @@
+@rendermode InteractiveServer
+<div class="tab-pane active">
+    <h4 class="mb-4">
+        <i class="fas fa-bell me-2"></i>Notification Preferences
+    </h4>
+
+    <EditForm Model="@notificationModel" OnValidSubmit="@HandleNotificationSubmit">
+        <div class="notification-section mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-envelope me-2"></i>Email Notifications
+            </h5>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="taskNotifications" class="form-check-input"
+                                   @bind-Value="notificationModel.TaskNotifications" />
+                    <label class="form-check-label" for="taskNotifications">
+                        <strong>Task assignments and updates</strong>
+                        <br />
+                        <small class="text-muted">
+                            Receive emails when tasks are assigned to you or updated
+                        </small>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="scheduleNotifications" class="form-check-input"
+                                   @bind-Value="notificationModel.ScheduleNotifications" />
+                    <label class="form-check-label" for="scheduleNotifications">
+                        <strong>Schedule changes and reminders</strong>
+                        <br />
+                        <small class="text-muted">
+                            Get notified about shift changes and upcoming schedules
+                        </small>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="systemNotifications" class="form-check-input"
+                                   @bind-Value="notificationModel.SystemNotifications" />
+                    <label class="form-check-label" for="systemNotifications">
+                        <strong>System announcements</strong>
+                        <br />
+                        <small class="text-muted">
+                            Important updates and maintenance notifications
+                        </small>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification-section mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-mobile-alt me-2"></i>Push Notifications
+            </h5>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="pushNotifications" class="form-check-input"
+                                   @bind-Value="notificationModel.PushNotifications" />
+                    <label class="form-check-label" for="pushNotifications">
+                        <strong>Enable push notifications</strong>
+                        <br />
+                        <small class="text-muted">
+                            Receive real-time notifications on your device
+                        </small>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <InputCheckbox id="urgentOnly" class="form-check-input"
+                                   @bind-Value="notificationModel.UrgentOnly" />
+                    <label class="form-check-label" for="urgentOnly">
+                        <strong>Only urgent notifications</strong>
+                        <br />
+                        <small class="text-muted">
+                            Limit push notifications to critical alerts only
+                        </small>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="notification-section mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-clock me-2"></i>Notification Timing
+            </h5>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="quietHoursStart" class="form-label">Quiet Hours Start</label>
+                    <InputText id="quietHoursStart" type="time" class="form-control"
+                               @bind-Value="notificationModel.QuietHoursStart" />
+                </div>
+                <div class="col-md-6">
+                    <label for="quietHoursEnd" class="form-label">Quiet Hours End</label>
+                    <InputText id="quietHoursEnd" type="time" class="form-control"
+                               @bind-Value="notificationModel.QuietHoursEnd" />
+                </div>
+            </div>
+            <small class="form-text text-muted">
+                During quiet hours, only urgent notifications will be sent
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-success settings-btn">
+            Update Notification Settings
+        </button>
+    </EditForm>
+</div>
+
+@code {
+    private NotificationModel notificationModel = new();
+
+    protected override void OnInitialized()
+    {
+        notificationModel = new NotificationModel
+        {
+            TaskNotifications      = true,
+            ScheduleNotifications  = true,
+            SystemNotifications    = false,
+            PushNotifications      = true,
+            UrgentOnly             = false,
+            QuietHoursStart        = "22:00",
+            QuietHoursEnd          = "08:00"
+        };
+    }
+
+    private void HandleNotificationSubmit()
+    {
+        Console.WriteLine("Notification settings updated");
+        Console.WriteLine($"Task Notifications: {notificationModel.TaskNotifications}");
+        Console.WriteLine($"Push Notifications: {notificationModel.PushNotifications}");
+        // TODO: Persist to backend
+    }
+
+    private class NotificationModel
+    {
+        public bool   TaskNotifications     { get; set; }
+        public bool   ScheduleNotifications { get; set; }
+        public bool   SystemNotifications   { get; set; }
+        public bool   PushNotifications     { get; set; }
+        public bool   UrgentOnly            { get; set; }
+        public string QuietHoursStart       { get; set; } = "22:00";
+        public string QuietHoursEnd         { get; set; } = "08:00";
+    }
+}

@@ -1,0 +1,82 @@
+@inject AuthService Auth
+@inject ILocationService LocationService
+@using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
+@using CulinaryCommand.Data.Entities
+@rendermode InteractiveServer
+
+<div>
+
+    @if (Auth.UserRole == "Admin")
+    {
+        <LocationAdminView 
+            Locations="locations"
+            OnCreate="Create"
+            OnEdit="Update"
+            OnDelete="Delete" />
+    }
+    else if (Auth.UserRole == "Manager")
+    {
+        <LocationManagerView 
+            Locations="locations"
+            OnEdit="Update" />
+    }
+    else
+    {
+        <LocationEmployeeView Location="employeeLocation" />
+    }
+
+</div>
+
+@code {
+    private List<Location> locations = new();
+    private Location? employeeLocation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Auth.UserRole == "Admin")
+        {
+            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId);
+        }
+        else if (Auth.UserRole == "Manager")
+        {
+            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
+        }
+        else
+        {
+            employeeLocation = (await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value)).FirstOrDefault();
+        }
+    }
+
+    private async Task Create(Location loc)
+    {
+        loc.CompanyId = Auth.CompanyId!.Value;
+        await LocationService.CreateLocationAsync(loc, Auth.UserId.Value);
+        await Refresh();
+    }
+
+    private async Task Update(Location loc)
+    {
+        await LocationService.UpdateLocationAsync(loc);
+        await Refresh();
+    }
+
+    private async Task Delete(int id)
+    {
+        await LocationService.DeleteLocationAsync(id);
+        await Refresh();
+    }
+
+    private async Task Refresh()
+    {
+        if (Auth.UserRole == "Admin")
+        {
+            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId);
+        }
+        else
+        {
+            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
+        }
+
+        StateHasChanged();
+    }
+}

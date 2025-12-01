@@ -14,6 +14,7 @@ namespace CulinaryCommand.Services
         Task<List<User>> GetAllUsersAsync();
         Task<List<User>> GetUsersByCompanyAsync(int companyId);
         Task UpdateUserAsync(User user);
+        Task UpdateUserProfileAsync(int userId, string firstName, string lastName, string email, string phone, string role);
         Task DeleteUserAsync(int id);
         Task AssignLocationsAsync(int userId, List<int> locationIds);
         Task<List<Location>> GetLocationsForUserAsync(int userId);
@@ -98,6 +99,21 @@ namespace CulinaryCommand.Services
             existing.Role = user.Role;
             existing.Phone = user.Phone;
             existing.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateUserProfileAsync(int userId, string firstName, string lastName, string email, string phone, string role)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new Exception("User not found.");
+
+            user.Name = $"{firstName} {lastName}".Trim();
+            user.Email = email;
+            user.Phone = phone;
+            user.Role = role;
+            user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
         }
