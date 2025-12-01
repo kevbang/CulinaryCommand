@@ -18,15 +18,12 @@ namespace CulinaryCommand.Data.Entities
         [Required, MaxLength(256)]
         public string? Email { get; set; }
 
-        [Required, MaxLength(256)]
+        [MaxLength(256)]
         public string? Password { get; set; }
 
         [Required, MaxLength(128)]
         public string? Role { get; set; }
 
-
-        //delete this in the future, shouldn't be needed
-        // [Required, MaxLength(128)]
         public int? CompanyId { get; set; }
 
         public Company? Company { get; set; }
@@ -34,7 +31,11 @@ namespace CulinaryCommand.Data.Entities
         // Navigation property for UserStation experience
         public string? StationsWorked { get; set; }
 
-
+        public string? InviteToken { get; set; }
+        public DateTime? InviteTokenExpires { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool IsActive { get; set; }
+        public int? CreatedByUserId { get; set; }
 
         // join entities
         [JsonIgnore]

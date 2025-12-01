@@ -1,5 +1,6 @@
 @using CulinaryCommand.Data.Entities
 @inject IUserService Users
+@inject AuthService Auth
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 <h3 class="mb-3">Users</h3>
@@ -42,9 +43,24 @@ else
 @code {
     List<User>? _users;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _users = await Users.GetAllUsersAsync();
+        if (firstRender)
+        {
+            // Wait for JS + hydration
+            await Auth.EnsureHydratedAsync();
+
+            if (!Auth.IsSignedIn)
+            {
+                Nav.NavigateTo("/signin", replace: true);
+                return;
+            }
+
+            // Now safe to load data
+            _users = await Users.GetAllUsersAsync();
+
+            StateHasChanged();
+        }
     }
 
     void CreateUser() => Nav.NavigateTo("/users/create");

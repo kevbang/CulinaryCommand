@@ -3,7 +3,7 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Models
 @using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
-@inject NavigationManager NavigationManager
+@inject NavigationManager Nav
 @inject AuthService Auth
 @inject ILocationService LocationService
 @rendermode InteractiveServer
@@ -101,23 +101,34 @@
         ? "profile"
         : Tab!.ToLowerInvariant();
 
-    protected override async Task OnInitializedAsync()
-    {
-        // Redirect bare /settings to /settings/profile
-        if (string.IsNullOrWhiteSpace(Tab))
-        {
-            NavigationManager.NavigateTo("/settings/profile", replace: true);
-        }
+    private bool _hydrating = false;
 
-        // Prime location info into localStorage when possible
-        if (Auth.UserId != null)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hydrating)
         {
-            await LocationService.LoadAndPersistLocationsAsync(Auth.UserId.Value);
+            _hydrating = true;
+
+            await Auth.EnsureHydratedAsync();
+
+            if (!Auth.IsSignedIn)
+            {
+                Nav.NavigateTo("/signin", replace: true);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Tab))
+                Nav.NavigateTo("/settings/profile", replace: true);
+
+            if (Auth.UserId != null)
+                await LocationService.LoadAndPersistLocationsAsync(Auth.UserId.Value);
+
+            StateHasChanged();
         }
     }
 
     private void NavigateToTab(string tab)
     {
-        NavigationManager.NavigateTo($"/settings/{tab}", forceLoad: false);
+        Nav.NavigateTo($"/settings/{tab}", forceLoad: false);
     }
 }

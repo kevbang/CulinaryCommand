@@ -1,82 +1,99 @@
 @inject AuthService Auth
 @inject ILocationService LocationService
+@inject NavigationManager Nav
 @using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
 @using CulinaryCommand.Data.Entities
 @rendermode InteractiveServer
 
 <div>
-
-    @if (Auth.UserRole == "Admin")
+    @if (!hydrated)
     {
-        <LocationAdminView 
-            Locations="locations"
-            OnCreate="Create"
-            OnEdit="Update"
-            OnDelete="Delete" />
-    }
-    else if (Auth.UserRole == "Manager")
-    {
-        <LocationManagerView 
-            Locations="locations"
-            OnEdit="Update" />
+        <p>Loading locations...</p>
     }
     else
     {
-        <LocationEmployeeView Location="employeeLocation" />
+        @if (Auth.UserRole == "Admin")
+        {
+            <LocationAdminView 
+                Locations="locations"
+                OnCreate="Create"
+                OnEdit="Update"
+                OnDelete="Delete" />
+        }
+        else if (Auth.UserRole == "Manager")
+        {
+            <LocationManagerView 
+                Locations="locations"
+                OnEdit="Update" />
+        }
+        else
+        {
+            <LocationEmployeeView Location="employeeLocation" />
+        }
     }
-
 </div>
 
 @code {
     private List<Location> locations = new();
     private Location? employeeLocation;
+    private bool hydrated = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // 1. Hydrate Auth first
+        await Auth.EnsureHydratedAsync();
+
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        // 2. Load location data AFTER hydration
+        await LoadLocations();
+
+        hydrated = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadLocations()
     {
         if (Auth.UserRole == "Admin")
         {
-            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId);
+            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId!.Value);
         }
         else if (Auth.UserRole == "Manager")
         {
-            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
+            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value);
         }
         else
         {
-            employeeLocation = (await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value)).FirstOrDefault();
+            employeeLocation = (await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value))
+                .FirstOrDefault();
         }
     }
 
     private async Task Create(Location loc)
     {
         loc.CompanyId = Auth.CompanyId!.Value;
-        await LocationService.CreateLocationAsync(loc, Auth.UserId.Value);
-        await Refresh();
+        await LocationService.CreateLocationAsync(loc, Auth.UserId!.Value);
+        await LoadLocations();
+        StateHasChanged();
     }
 
     private async Task Update(Location loc)
     {
         await LocationService.UpdateLocationAsync(loc);
-        await Refresh();
+        await LoadLocations();
+        StateHasChanged();
     }
 
     private async Task Delete(int id)
     {
         await LocationService.DeleteLocationAsync(id);
-        await Refresh();
-    }
-
-    private async Task Refresh()
-    {
-        if (Auth.UserRole == "Admin")
-        {
-            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId);
-        }
-        else
-        {
-            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId.Value);
-        }
-
+        await LoadLocations();
         StateHasChanged();
     }
 }

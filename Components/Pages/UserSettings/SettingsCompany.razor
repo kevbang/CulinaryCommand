@@ -1,8 +1,8 @@
 @using CulinaryCommand.Services
 @using CulinaryCommand.Data.Entities
 @inject AuthService Auth
+@inject NavigationManager Nav
 @inject ICompanyService CompanyService
-@inject AuthService Auth
 @rendermode InteractiveServer
 
 <div class="tab-pane active">
@@ -54,8 +54,20 @@
     private CompanyModel? companyModel;
     private CompanyModel createCompanyModel = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
+        // Wait for AuthService to hydrate
+        await Auth.EnsureHydratedAsync();
+
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        // Now safe to use Auth.CurrentUser
         if (Auth.CurrentUser?.Company != null)
         {
             companyModel = new CompanyModel
@@ -65,6 +77,8 @@
                 CompanyCode = Auth.CurrentUser.Company.CompanyCode
             };
         }
+
+        StateHasChanged(); // re-render now that the model is populated
     }
 
     private async Task HandleCompanySubmit()
@@ -87,7 +101,7 @@
         if (Auth.CurrentUser != null)
         {
             Auth.CurrentUser.Company = refreshedCompany;
-            Auth.NotifyStateChanged();
+            //Auth.NotifyStateChanged();
         }
 
         Console.WriteLine("Company updated successfully.");
@@ -107,7 +121,7 @@
         {
             Auth.CurrentUser.CompanyId = created.Id;
             Auth.CurrentUser.Company = created;
-            Auth.NotifyStateChanged();
+            //Auth.NotifyStateChanged();
         }
 
         companyModel = new CompanyModel

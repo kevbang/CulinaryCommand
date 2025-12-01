@@ -1,6 +1,7 @@
 @page "/users/edit/{id:int}"
 @using CulinaryCommand.Data.Entities
 @inject IUserService UserService
+@inject AuthService Auth
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 
@@ -21,6 +22,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Wait for hydration
+        await Auth.EnsureHydratedAsync();
+
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        // Safe to use Auth.UserId, Auth.UserRole, etc now
         model = await UserService.GetUserByIdAsync(id);
     }
 

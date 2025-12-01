@@ -41,7 +41,7 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
 
-        await Auth.InitializeFromJsAsync(); // safe here (interactive)
+        await Auth.EnsureHydratedAsync(); // safe here (interactive)
         _ready = true;
         StateHasChanged();
 

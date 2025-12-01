@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -12,5 +13,8 @@ namespace CulinaryCommand.Data.Entities
 
         public int LocationId { get; set; }
         public Location Location { get; set; }
+
+        [MaxLength(32)]
+        public string? Role { get; set; }
     }
 }

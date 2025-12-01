@@ -24,7 +24,7 @@
 </Router>
 
 @code {
-    private bool _initialized;
+    @* private bool _initialized;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -40,5 +40,5 @@
             _initialized = true;
             StateHasChanged();
         }
-    }
+    } *@
 }

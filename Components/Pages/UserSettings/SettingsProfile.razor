@@ -1,6 +1,8 @@
 @using CulinaryCommand.Services
 @inject AuthService Auth
 @inject IUserService UserService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
 
 <div class="tab-pane active">
     <h4 class="mb-4">
@@ -102,29 +104,36 @@
 @code {
     private ProfileModel profileModel = new();
 
-    protected override void OnInitialized()
+    private bool _startedHydration = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Auth.CurrentUser is not null)
+        if (firstRender && !_startedHydration)
         {
-            var user = Auth.CurrentUser;
+            _startedHydration = true;
 
-            // Split name into first/last for UI convenience:
-            var parts = (user.Name ?? "").Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var first = parts.Length > 0 ? parts[0] : "";
-            var last  = parts.Length > 1 ? parts[1] : "";
+            await Auth.EnsureHydratedAsync();
 
-            profileModel = new ProfileModel
+            if (!Auth.IsSignedIn)
             {
-                FirstName = first,
-                LastName  = last,
-                Email     = user.Email,
-                Phone     = user.Phone,
-                Role      = user.Role
-            };
-        }
-        else
-        {
-            Console.WriteLine("SettingsProfile: AuthService has no CurrentUser loaded.");
+                Nav.NavigateTo("/signin", replace: true);
+                return;
+            }
+
+            // Now safe to initialize UI model
+            if (Auth.CurrentUser != null)
+            {
+                var user = Auth.CurrentUser;
+
+                var parts = (user.Name ?? "").Split(' ', 2);
+                profileModel.FirstName = parts.Length > 0 ? parts[0] : "";
+                profileModel.LastName  = parts.Length > 1 ? parts[1] : "";
+                profileModel.Email     = user.Email;
+                profileModel.Phone     = user.Phone;
+                profileModel.Role      = user.Role;
+
+                StateHasChanged();
+            }
         }
     }
 
@@ -155,7 +164,7 @@
         Auth.CurrentUser.Phone = profileModel.Phone;
         Auth.CurrentUser.Role  = profileModel.Role;
 
-        Auth.NotifyStateChanged();
+        //Auth.NotifyStateChanged();
     }
 
     Console.WriteLine("Profile saved!");

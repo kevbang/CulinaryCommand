@@ -75,6 +75,7 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionService>();
 builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
+builder.Services.AddScoped<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 

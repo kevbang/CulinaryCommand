@@ -1,0 +1,96 @@
+@page "/account/setup"
+@using CulinaryCommand.Data.Entities
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Nav
+@inject IUserService UserService
+@inject AuthService Auth
+
+<h3>Set Your Password</h3>
+
+@if (invalid)
+{
+    <div class="alert alert-danger">Invalid or expired invite link.</div>
+}
+else if (success)
+{
+    <div class="alert alert-success">
+        Your account is now active! <a href="/signin">Sign In</a>
+    </div>
+}
+else
+{
+    <EditForm Model="@model" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+
+        <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <InputText class="form-control" @bind-Value="model.Password" type="password"/>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Confirm Password</label>
+            <InputText class="form-control" @bind-Value="model.ConfirmPassword" type="password"/>
+        </div>
+
+        <button class="btn btn-success">Activate Account</button>
+    </EditForm>
+}
+
+@code {
+    private string? token;
+    private bool invalid = false;
+    private bool success = false;
+
+    private PasswordModel model = new();
+
+    private User? invitedUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("token", out var t))
+        {
+            token = t!;
+            invitedUser = await UserService.GetUserByInviteTokenAsync(token);
+
+            if (invitedUser == null)
+            {
+                invalid = true;
+            }
+        }
+        else invalid = true;
+    }
+
+    private async Task Submit()
+    {
+        if (model.Password != model.ConfirmPassword)
+        {
+            invalid = true;
+            return;
+        }
+
+        bool ok = await UserService.ActivateUserAsync(token!, model.Password);
+
+        if (!ok)
+        {
+            invalid = true;
+            return;
+        }
+
+        if (invitedUser != null){
+            // Auto-login after activation
+            await Auth.SignInAsync(invitedUser);
+
+            Nav.NavigateTo("/dashboard");
+        }
+        else {
+            Nav.NavigateTo("/signIn", forceLoad: true);
+        }
+    }
+
+    public class PasswordModel
+    {
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

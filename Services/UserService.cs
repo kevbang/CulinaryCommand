@@ -22,16 +22,25 @@ namespace CulinaryCommand.Services
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> ValidateCredentialsAsync(string email, string password);
         Task<User> CreateAdminWithCompanyAndLocationAsync(FullSignupRequest req);
+        Task<User> CreateInvitedUserForLocationAsync(CreateUserForLocationRequest request, int companyId, int createdByUserId);
+
+        // Email Feat
+        Task SendInviteEmailAsync(User user);
+        Task<User?> GetUserByInviteTokenAsync(string token);
+        Task<bool> ActivateUserAsync(string token, string password);
     }
 
     public class UserService : IUserService
     {
         private readonly PasswordHasher<User> _passwordHasher = new();
         private readonly AppDbContext _context;
+        private readonly IEmailSender _emailSender;
 
-        public UserService(AppDbContext context)
+
+        public UserService(AppDbContext context, IEmailSender emailSender)
         {
             _context = context;
+            _emailSender = emailSender;
         }
 
         public async Task<User> CreateUserAsync(User user)
@@ -40,24 +49,24 @@ namespace CulinaryCommand.Services
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new Exception("Email already exists.");
 
-// <<<<<<< HEAD
-//             // If the user doesn't already exist, create a new one:
-//             var user = new User
-//             {
-//                 Name = name,
-//                 Email = email,
-//                 Password = HashPassword(password),
-//                 Role = Roles.Manager.ToString(),
-//                 Phone = "",
-//                 ManagedLocations = new List<Location>(), // list of locations
-//                 CreatedAt = DateTime.UtcNow,
-//                 UpdatedAt = DateTime.UtcNow
-//             };
-// =======
+            // <<<<<<< HEAD
+            //             // If the user doesn't already exist, create a new one:
+            //             var user = new User
+            //             {
+            //                 Name = name,
+            //                 Email = email,
+            //                 Password = HashPassword(password),
+            //                 Role = Roles.Manager.ToString(),
+            //                 Phone = "",
+            //                 ManagedLocations = new List<Location>(), // list of locations
+            //                 CreatedAt = DateTime.UtcNow,
+            //                 UpdatedAt = DateTime.UtcNow
+            //             };
+            // =======
             user.Password = HashPassword(user.Password!);
             user.CreatedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-// >>>>>>> preserve/broken-signup-logic
+            // >>>>>>> preserve/broken-signup-logic
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -189,25 +198,25 @@ namespace CulinaryCommand.Services
             {
                 return user;
             }
-// <<<<<<< HEAD
+            // <<<<<<< HEAD
             // pass in input password and hashed version stored in the database
             return VerifyPassword(password, user.Password) ? user : null;
-// =======
+            // =======
 
-//             // Legacy fallback: check old SHA256 hash OR plain-text password
-//             var legacyHash = LegacySha256(password);
+            //             // Legacy fallback: check old SHA256 hash OR plain-text password
+            //             var legacyHash = LegacySha256(password);
 
-//             if (string.Equals(user.Password, legacyHash, StringComparison.OrdinalIgnoreCase) ||
-//                 string.Equals(user.Password, password, StringComparison.Ordinal))
-//             {
-//                 // Migrate legacy password (SHA256 or plain text) to new Identity-style hash
-//                 user.Password = HashPassword(password);
-//                 await _context.SaveChangesAsync();
-//                 return user;
-//             }
+            //             if (string.Equals(user.Password, legacyHash, StringComparison.OrdinalIgnoreCase) ||
+            //                 string.Equals(user.Password, password, StringComparison.Ordinal))
+            //             {
+            //                 // Migrate legacy password (SHA256 or plain text) to new Identity-style hash
+            //                 user.Password = HashPassword(password);
+            //                 await _context.SaveChangesAsync();
+            //                 return user;
+            //             }
 
-//             return null;
-// >>>>>>> preserve/broken-signup-logic
+            //             return null;
+            // >>>>>>> preserve/broken-signup-logic
         }
 
         private string HashPassword(string password)
@@ -217,7 +226,7 @@ namespace CulinaryCommand.Services
 
         private bool VerifyPassword(string password, string storedHash)
         {
-// <<<<<<< HEAD
+            // <<<<<<< HEAD
             // // determine the hashed value of the password input by the user
             // var hashOfInput = HashPassword(password);
 
@@ -225,7 +234,7 @@ namespace CulinaryCommand.Services
             // Console.WriteLine("STORED HASH:    " + hashedPassword);
 
             // return hashOfInput == hashedPassword;
-// =======
+            // =======
             try
             {
                 var result = _passwordHasher.VerifyHashedPassword(new User(), storedHash, password);
@@ -236,7 +245,7 @@ namespace CulinaryCommand.Services
                 // Not a valid Identity hash → allow ValidateCredentialsAsync() to try the SHA256 fallback
                 return false;
             }
-// >>>>>>> preserve/broken-signup-logic
+            // >>>>>>> preserve/broken-signup-logic
         }
 
         private string LegacySha256(string input)
@@ -321,5 +330,114 @@ namespace CulinaryCommand.Services
 
             return admin;
         }
+
+        public async Task<User> CreateInvitedUserForLocationAsync(CreateUserForLocationRequest request, int companyId, int createdByUserId)
+        {
+            // normalize email
+            var email = request.Email.Trim().ToLowerInvariant();
+
+            // prevent duplicate email within same company
+            var exists = await _context.Users
+                .AnyAsync(u => u.Email == email && u.CompanyId == companyId);
+
+            if (exists)
+            {
+                throw new InvalidOperationException("A user with this email already exists for this company.");
+            }
+
+            // generate invite token now; email comes later (step C)
+            var inviteToken = Guid.NewGuid().ToString("N");
+
+            var user = new User
+            {
+                Name = request.FirstName.Trim() + " " + request.LastName.Trim(),
+                Email = email,
+                Role = request.Role,              // "Manager" or "Employee"
+                CompanyId = companyId,
+
+                // assuming these fields exist / you can add them:
+                IsActive = false,            // not active until they set password
+                EmailConfirmed = false,
+                InviteToken = inviteToken,
+                InviteTokenExpires = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                CreatedByUserId = createdByUserId
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // link to location as a user
+            var userLocation = new UserLocation
+            {
+                UserId = user.Id,
+                LocationId = request.LocationId
+            };
+            _context.UserLocations.Add(userLocation);
+
+            // if they're a manager, also add ManagerLocation link
+            if (string.Equals(request.Role, "Manager", StringComparison.OrdinalIgnoreCase))
+            {
+                var managerLocation = new ManagerLocation
+                {
+                    UserId = user.Id,
+                    LocationId = request.LocationId
+                };
+                _context.ManagerLocations.Add(managerLocation);
+            }
+
+            await _context.SaveChangesAsync();
+
+            // we'll send the invite email in step C using user.InviteToken
+            return user;
+        }
+
+        public async Task SendInviteEmailAsync(User user)
+        {
+            if (string.IsNullOrWhiteSpace(user.InviteToken))
+                throw new InvalidOperationException("User does not have an invite token.");
+
+            string link = $"https://yourdomain.com/account/setup?token={user.InviteToken}";
+
+            string subject = "Your CulinaryCommand Account Invitation";
+            string body = $@"
+                <h2>Welcome to CulinaryCommand!</h2>
+                <p>You have been invited to join <strong>{user.Company?.Name}</strong>.</p>
+                <p>Click the button below to set your password and activate your account:</p>
+                <p><a href='{link}' style='padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;border-radius:4px;'>Set Your Password</a></p>
+                <p>If the button doesn't work, use this link:</p>
+                <p>{link}</p>
+            ";
+
+            // implement actual email send (SendGrid, SMTP, Mailgun, whatever)
+            await _emailSender.SendEmailAsync(user.Email!, subject, body);
+        }
+
+        public async Task<User?> GetUserByInviteTokenAsync(string token)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.InviteToken == token &&
+                                        u.InviteTokenExpires > DateTime.UtcNow &&
+                                        u.IsActive == false);
+        }
+
+        public async Task<bool> ActivateUserAsync(string token, string password)
+        {
+            var user = await GetUserByInviteTokenAsync(token);
+
+            if (user == null)
+                return false;
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(password);
+            user.IsActive = true;
+            user.EmailConfirmed = true;
+            user.InviteToken = null;
+            user.InviteTokenExpires = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

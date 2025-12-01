@@ -74,21 +74,30 @@
     private List<Location> ManagedLocations { get; set; } = new();
     private bool hydrated = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Load user from localStorage
-        await Auth.InitializeFromJsAsync();
+        if (firstRender)
+        {
+            // Wait for auth hydration
+            await Auth.EnsureHydratedAsync();
 
-        if (!Auth.IsSignedIn)
-            return;
+            if (!Auth.IsSignedIn)
+            {
+                // Do NOT redirect here — navbar dropdown is visible on all pages,
+                // so returning silently is correct
+                return;
+            }
 
-        // 1. Hydrate from localStorage for instant UI
-        ManagedLocations = await LoadCachedLocationsAsync();
+            // 1. Load cached instantly
+            ManagedLocations = await LoadCachedLocationsAsync();
 
-        // 2. Fetch fresh data from server
-        await LoadLocationsFromServerAsync();
+            // 2. Load fresh server data
+            await LoadLocationsFromServerAsync();
 
-        hydrated = true;
+            hydrated = true;
+
+            StateHasChanged();
+        }
     }
 
     private async Task<List<Location>> LoadCachedLocationsAsync()
