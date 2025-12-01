@@ -1,4 +1,5 @@
-@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Inventory.Entities
+@using CulinaryCommand.Inventory.Services
 @inject IngredientService Ingredients
 @inject NavigationManager Nav
 @inject IJSRuntime Js
@@ -6,7 +7,7 @@
 
 <h3 class="mb-3">Ingredients</h3>
 
-<button class="btn btn-success mb-3" @onclick="AddNew">
+<button type="button" class="btn btn-success mb-3" @onclick="AddNew">
     <i class="bi bi-plus-circle"></i> Add New Ingredient
 </button>
 
@@ -31,12 +32,12 @@ else
                 <tr>
                     <td>@i.Name</td>
                     <td>@i.Category</td>
-                    <td>@i.DefaultUnit</td>
+                    <td>@i.Unit?.Abbreviation</td>
                     <td>
-                        <button class="btn btn-primary me-2" @onclick="() => Edit(i.IngredientId)">
+                        <button class="btn btn-primary me-2" @onclick="() => Edit(i.Id)">
                             <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="btn btn-danger" @onclick="() => Delete(i.IngredientId)">
+                        <button class="btn btn-danger" @onclick="() => Delete(i.Id)">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -51,6 +52,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // ensure service returns Unit navigation populated
         items = await Ingredients.GetAllAsync();
     }
 

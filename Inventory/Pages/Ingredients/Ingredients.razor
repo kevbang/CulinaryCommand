@@ -1,0 +1,121 @@
+@* @page "/ingredients" *@
+@using CulinaryCommand.Inventory.Entities
+@using CulinaryCommand.Inventory.Models
+@using CulinaryCommand.Inventory.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+@inject IIngredientService IngredientService
+
+<h3>Ingredients</h3>
+
+<button class="btn btn-primary" @onclick="StartAdd">Add Ingredient</button>
+
+@if (editing)
+{
+    <EditForm Model="model" OnValidSubmit="Save">
+        <InputText @bind-Value="model.Name" placeholder="Name" class="form-control" />
+        <InputText @bind-Value="model.Category" placeholder="Category" class="form-control mt-2" />
+
+        <label class="form-label mt-2">Default Unit</label>
+        <select class="form-select" @bind="model.DefaultUnitId">
+            <option value="">-- Select Unit --</option>
+            @foreach (var u in availableUnits)
+            {
+                <option value="@u.Id">@u.Name (@u.Abbreviation)</option>
+            }
+        </select>
+
+        <button class="btn btn-success mt-3">Save</button>
+    </EditForm>
+}
+
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Default Unit</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in ingredients)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Category</td>
+                <td>@item.Unit?.Abbreviation</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" @onclick="() => Edit(item)">Edit</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    List<Ingredient> ingredients = new();
+    IngredientViewModel model = new();
+    bool editing = false;
+    // list of available units for the unit dropdown
+    List<Unit> availableUnits = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var list = await IngredientService.GetAllAsync();
+        ingredients = list.ToList();
+
+        // build available units from the included Unit navigation
+        availableUnits = ingredients
+            .Where(i => i.Unit != null)
+            .Select(i => i.Unit!)
+            .GroupBy(u => u.Id)
+            .Select(g => g.First())
+            .OrderBy(u => u.Name)
+            .ToList();
+    }
+
+    void StartAdd()
+    {
+        editing = true;
+        model = new IngredientViewModel();
+    }
+
+    void Edit(Ingredient ing)
+    {
+        editing = true;
+        model = new IngredientViewModel {
+            IngredientId = ing.Id,
+            Name = ing.Name,
+            Category = ing.Category,
+            DefaultUnitId = ing.UnitId
+        };
+    }
+
+    async Task Save()
+    {
+        if (model.IngredientId == 0)
+        {
+            await IngredientService.CreateAsync(new Ingredient
+            {
+                Name = model.Name,
+                Category = model.Category,
+                UnitId = model.DefaultUnitId ?? 0
+            });
+        }
+        else
+        {
+            await IngredientService.UpdateAsync(new Ingredient
+            {
+                Id = model.IngredientId,
+                Name = model.Name,
+                Category = model.Category,
+                UnitId = model.DefaultUnitId ?? 0
+            });
+        }
+
+        var refreshed = await IngredientService.GetAllAsync();
+        ingredients = refreshed.ToList();
+        editing = false;
+    }
+}
