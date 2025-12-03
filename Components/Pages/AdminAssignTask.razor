@@ -1,0 +1,522 @@
+@page "/assign-tasks"
+@using System.ComponentModel.DataAnnotations
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services
+@using CulinaryCommand.Models;
+@using CulinaryCommand.Data.Enums;   <!-- add this -->
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject ILocationService LocationService
+@inject IUserService UserService
+@inject LocationState LocationState
+@inject ITaskAssignmentService TaskService
+
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Assign Tasks</PageTitle>
+
+@if (!ready)
+{
+    <div class="text-center mt-5">Loading task assignment...</div>
+}
+else if (!allowed)
+{
+    <div class="alert alert-warning mt-4">
+        You need admin or manager permissions to assign work. Please sign in with an authorized account.
+    </div>
+}
+else
+{
+    <div class="container mt-4 assign-task-page">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <p class="text-muted mb-1">Plan the line, prep, and cleaning tasks for today.</p>
+                <h1 class="fw-bold mb-0">Task Assignment</h1>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="text-muted small text-end">
+                    <div class="fw-semibold">Location</div>
+                    <div>@SelectedLocationName</div>
+                </div>
+                <select class="form-select form-select-sm"
+                        @bind-Value="selectedLocationId"
+                        @bind-Value:event="onchange">
+                    @foreach (var loc in locations)
+                    {
+                        <option value="@loc.Id">@loc.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="fw-semibold mb-1">Create a task</h5>
+                                <p class="text-muted small mb-0">Assign work to a team member with an expected due date.</p>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border">Team: @teamMembers.Count</span>
+                        </div>
+
+                        <EditForm Model="newTask" OnValidSubmit="HandleSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+
+                            <!-- Task type -->
+                            <div class="mb-3">
+                                <label class="form-label">Task type</label>
+                                <InputSelect class="form-select" @bind-Value="newTask.TaskType">
+                                    <option value="@WorkTaskKind.Generic">General task (line, cleaning, etc.)</option>
+                                    <option value="@WorkTaskKind.PrepFromRecipe">Prep from recipe / ingredient</option>
+                                </InputSelect>
+                                <div class="form-text">
+                                    Use "Prep from recipe" when you want it to show on the prep list with Par / Count.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Task name</label>
+                                <InputText class="form-control" @bind-Value="newTask.Name" />
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Station</label>
+                                    <InputSelect class="form-select" @bind-Value="newTask.Station">
+                                        @foreach (var station in stationOptions)
+                                        {
+                                            <option value="@station">@station</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Priority</label>
+                                    <InputSelect class="form-select" @bind-Value="newTask.Priority">
+                                        @foreach (var p in priorityOptions)
+                                        {
+                                            <option value="@p">@p</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            @* Prep-only fields *@
+                            @if (newTask.TaskType == WorkTaskKind.PrepFromRecipe)
+                            {
+                                <div class="row g-3 mt-1">
+                                    <div class="col-6">
+                                        <label class="form-label">Par</label>
+                                        <InputNumber class="form-control" @bind-Value="newTask.Par" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Current count</label>
+                                        <InputNumber class="form-control" @bind-Value="newTask.Count" />
+                                    </div>
+                                </div>
+                                <div class="form-text mt-1">
+                                    Prep amount will be calculated as <strong>max(Par − Count, 0)</strong> on the employee view.
+                                </div>
+                            }
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Assign to</label>
+                                    <InputSelect class="form-select" @bind-Value="newTask.UserId">
+                                        <option value="">Unassigned</option>
+                                        @foreach (var user in teamMembers)
+                                        {
+                                            <option value="@user.Id">@user.Name (@user.Role)</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label">Due date</label>
+                                    <InputDate class="form-control" @bind-Value="newTask.DueDate" />
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="form-label">Notes</label>
+                                <InputTextArea class="form-control" rows="3"
+                                               placeholder="Add any details or prep targets"
+                                               @bind-Value="newTask.Notes" />
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 mt-4">
+                                Assign Task
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-7">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+                        <div>
+                            <div class="text-muted small">Open tasks</div>
+                            <div class="fs-4 fw-semibold">@OpenTaskCount</div>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Due today</div>
+                            <div class="fs-5 fw-semibold">@DueTodayCount</div>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                                <input class="form-control"
+                                       placeholder="Search tasks or people"
+                                       @bind="searchTerm"
+                                       @bind:event="oninput" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    @foreach (var status in statusBuckets)
+                    {
+                        <div class="col-12 col-md-6">
+                            <div class="card shadow-sm border-0 task-column">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-semibold">@status</div>
+                                        <span class="badge bg-secondary-subtle text-secondary">@TasksByStatus(status).Count()</span>
+                                    </div>
+
+                                    @if (!TasksByStatus(status).Any())
+                                    {
+                                        <div class="text-muted small">No tasks in this column.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var task in TasksByStatus(status))
+                                        {
+                                            <div class="border rounded-3 p-3 mb-2 task-card">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <div class="fw-semibold">@task.Name</div>
+                                                        <div class="text-muted small">@task.Station • @FormatAssignee(task.UserId)</div>
+                                                        <div class="text-muted small">Due @task.DueDate.ToString("MMM d")</div>
+                                                    </div>
+                                                    <span class="@PriorityBadge(task.Priority)">@task.Priority</span>
+                                                </div>
+
+                                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                                    @if (task.Status != "Completed")
+                                                    {
+                                                        <button class="btn btn-outline-success btn-sm" @onclick="() => MarkComplete(task.Id)">
+                                                            Mark done
+                                                        </button>
+                                                    }
+                                                    @if (task.Status == "Pending")
+                                                    {
+                                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => MarkInProgress(task.Id)">
+                                                            Start
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => BumpTask(task.Id)">
+                                                        Bump to tomorrow
+                                                    </button>
+                                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteTask(task.Id)">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool ready;
+    private bool allowed;
+    private List<Location> locations = new();
+    private List<User> teamMembers = new();
+
+    private List<WorkTask> assignments = new();
+    private TaskFormModel newTask = new();
+    private int? selectedLocationId;
+    private string searchTerm = string.Empty;
+
+    private readonly List<string> stationOptions = new() { "Prep", "Grill", "Saute", "Expo", "Pastry", "Dish" };
+    private readonly List<string> priorityOptions = new() { "Low", "Normal", "High", "Critical" };
+    private readonly List<string> statusBuckets = new() { "Pending", "In Progress", "Completed" };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await Auth.EnsureHydratedAsync();
+
+        allowed = Auth.IsSignedIn && (Auth.UserRole == "Admin" || Auth.UserRole == "Manager");
+
+        if (!Auth.IsSignedIn)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        if (!allowed)
+        {
+            ready = true;
+            StateHasChanged();
+            return;
+        }
+
+        LocationState.OnChange += HandleLocationStateChanged;
+
+        await LoadLocationsAsync();
+        await LoadTeamAsync();
+        await LoadAssignmentsAsync();
+
+        ready = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadLocationsAsync()
+    {
+        try
+        {
+            if (Auth.UserRole == "Admin")
+            {
+                locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId ?? 0);
+            }
+            else
+            {
+                locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId ?? 0);
+            }
+        }
+        catch
+        {
+            locations = new()
+            {
+                new Location { Id = 1, Name = "Main Kitchen" },
+                new Location { Id = 2, Name = "Prep Lab" }
+            };
+        }
+
+        if (!locations.Any())
+        {
+            locations.Add(new Location { Id = 1, Name = "Main Kitchen" });
+        }
+
+        selectedLocationId ??= LocationState.CurrentLocation?.Id ?? locations.FirstOrDefault()?.Id;
+    }
+
+    private async Task LoadTeamAsync()
+    {
+        teamMembers.Clear();
+
+        if (selectedLocationId.HasValue)
+        {
+            try
+            {
+                teamMembers = await LocationService.GetUsersForLocationAsync(selectedLocationId.Value);
+            }
+            catch
+            {
+                // fallback sample users
+            }
+        }
+
+        if (!teamMembers.Any())
+        {
+            teamMembers = new()
+            {
+                new User { Id = 101, Name = "Ava Thompson", Role = "Prep Cook" },
+                new User { Id = 102, Name = "Marco Ruiz", Role = "Line Cook" },
+                new User { Id = 103, Name = "Priya Desai", Role = "Dish" },
+                new User { Id = 104, Name = "Louis Park", Role = "Pastry" }
+            };
+        }
+    }
+
+    private async Task LoadAssignmentsAsync()
+    {
+        if (!selectedLocationId.HasValue) return;
+        assignments = await TaskService.GetByLocationAsync(selectedLocationId.Value);
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!selectedLocationId.HasValue)
+            return;
+
+        var task = new WorkTask
+        {
+            Name = newTask.Name.Trim(),
+            Station = newTask.Station,
+            Priority = newTask.Priority,
+            Status = "Pending",
+            UserId = newTask.UserId,
+            DueDate = newTask.DueDate ?? DateTime.Today,
+            Notes = newTask.Notes?.Trim(),
+            LocationId = selectedLocationId.Value,
+            Assigner = Auth.CurrentUser?.Name
+                ?? Auth.UserEmail
+                ?? "Manager",
+            Kind = newTask.TaskType,
+            Par = newTask.Par,
+            Count = newTask.Count,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        var created = await TaskService.CreateAsync(task);
+        assignments.Insert(0, created);
+
+        newTask = new TaskFormModel
+        {
+            TaskType = task.Kind,   // keep last used type
+            Station = task.Station,
+            Priority = task.Priority,
+            DueDate = task.DueDate,
+            Notes = string.Empty
+        };
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private IEnumerable<WorkTask> TasksByStatus(string status) =>
+        assignments.Where(t => t.LocationId == (selectedLocationId ?? t.LocationId))
+                   .Where(t => string.Equals(t.Status, status, StringComparison.OrdinalIgnoreCase))
+                   .Where(FilterBySearch);
+
+    private bool FilterBySearch(WorkTask task)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return true;
+
+        var term = searchTerm.Trim().ToLowerInvariant();
+        return task.Name.ToLowerInvariant().Contains(term)
+            || task.Station.ToLowerInvariant().Contains(term)
+            || FormatAssignee(task.UserId).ToLowerInvariant().Contains(term);
+    }
+
+    private async Task MoveToStatus(int id, string status)
+    {
+        await TaskService.UpdateStatusAsync(id, status);
+
+        var t = assignments.FirstOrDefault(x => x.Id == id);
+        if (t == null) return;
+
+        t.Status = status;
+        t.UpdatedAt = DateTime.UtcNow;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task MarkComplete(int id) => MoveToStatus(id, "Completed");
+    private Task MarkInProgress(int id) => MoveToStatus(id, "In Progress");
+
+    private async Task BumpTask(int id)
+    {
+        await TaskService.BumpDueDateAsync(id, 1);
+
+        var t = assignments.FirstOrDefault(x => x.Id == id);
+        if (t == null) return;
+
+        t.DueDate = t.DueDate.AddDays(1);
+        t.UpdatedAt = DateTime.UtcNow;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DeleteTask(int id)
+    {
+        await TaskService.DeleteAsync(id);
+        assignments.RemoveAll(t => t.Id == id);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnLocationSelectChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            selectedLocationId = id;
+            await LoadTeamAsync();
+            await LoadAssignmentsAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HandleLocationStateChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            selectedLocationId = LocationState.CurrentLocation?.Id ?? selectedLocationId;
+            await LoadTeamAsync();
+            await LoadAssignmentsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private string SelectedLocationName =>
+        locations.FirstOrDefault(l => l.Id == selectedLocationId)?.Name ?? "Select a location";
+
+    private IEnumerable<WorkTask> TasksForCurrentLocation =>
+        assignments.Where(t => !selectedLocationId.HasValue || t.LocationId == selectedLocationId.Value);
+
+    private int OpenTaskCount => TasksForCurrentLocation.Count(t => t.Status != "Completed");
+    private int DueTodayCount => TasksForCurrentLocation.Count(t => t.DueDate.Date == DateTime.Today);
+
+    private string FormatAssignee(int? id)
+    {
+        if (!id.HasValue) return "Unassigned";
+        return teamMembers.FirstOrDefault(u => u.Id == id.Value)?.Name ?? "Unassigned";
+    }
+
+    private string PriorityBadge(string priority) => priority switch
+    {
+        "Critical" => "badge bg-danger",
+        "High" => "badge bg-warning text-dark",
+        "Normal" => "badge bg-success-subtle text-success",
+        "Low" => "badge bg-secondary-subtle text-secondary",
+        _ => "badge bg-secondary"
+    };
+
+    public void Dispose()
+    {
+        LocationState.OnChange -= HandleLocationStateChanged;
+    }
+
+    private class TaskFormModel
+    {
+        [Required, StringLength(128)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public string Station { get; set; } = "Prep";
+
+        [Required]
+        public string Priority { get; set; } = "Normal";
+
+        public int? UserId { get; set; }
+
+        [Required]
+        public DateTime? DueDate { get; set; } = DateTime.Today;
+
+        [StringLength(512)]
+        public string? Notes { get; set; } = string.Empty;
+
+        // NEW: differentiate generic vs prep tasks
+        public WorkTaskKind TaskType { get; set; } = WorkTaskKind.Generic;
+
+        // NEW: prep fields
+        public int? Par { get; set; }
+        public int? Count { get; set; }
+    }
+}

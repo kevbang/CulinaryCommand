@@ -4,6 +4,7 @@ using CulinaryCommand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CulinaryCommand.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251203000350_AddWorkTaskFields")]
+    partial class AddWorkTaskFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -372,23 +375,14 @@ namespace CulinaryCommand.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Assigner")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("Count")
-                        .HasColumnType("int");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("IngredientId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("int");
 
                     b.Property<int>("LocationId")
                         .HasColumnType("int");
@@ -401,15 +395,10 @@ namespace CulinaryCommand.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Par")
-                        .HasColumnType("int");
-
                     b.Property<string>("Priority")
                         .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("RecipeId")
-                        .HasColumnType("int");
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("Station")
                         .IsRequired()
@@ -418,7 +407,8 @@ namespace CulinaryCommand.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -428,11 +418,7 @@ namespace CulinaryCommand.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IngredientId");
-
                     b.HasIndex("LocationId");
-
-                    b.HasIndex("RecipeId");
 
                     b.HasIndex("UserId");
 
@@ -660,29 +646,17 @@ namespace CulinaryCommand.Migrations
 
             modelBuilder.Entity("CulinaryCommand.Data.Entities.WorkTask", b =>
                 {
-                    b.HasOne("CulinaryCommand.Inventory.Entities.Ingredient", "Ingredient")
-                        .WithMany()
-                        .HasForeignKey("IngredientId");
-
                     b.HasOne("CulinaryCommand.Data.Entities.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CulinaryCommand.Data.Entities.Recipe", "Recipe")
-                        .WithMany()
-                        .HasForeignKey("RecipeId");
-
                     b.HasOne("CulinaryCommand.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
 
-                    b.Navigation("Ingredient");
-
                     b.Navigation("Location");
-
-                    b.Navigation("Recipe");
 
                     b.Navigation("User");
                 });

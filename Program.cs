@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data;
-using CulinaryCommand.Components;
+using CulinaryCommand;
 using CulinaryCommand.Services;
 using CulinaryCommand.Inventory.Services;
 using CulinaryCommand.Inventory;
@@ -76,6 +76,7 @@ builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionService>();
 builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 
 var app = builder.Build();
 

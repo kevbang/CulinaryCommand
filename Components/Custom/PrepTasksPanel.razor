@@ -15,26 +15,34 @@
         <ul class="cc-task-list">
             @foreach (var t in Tasks)
             {
-                <li class="cc-task @(t.IsDone ? "cc-task-done" : null)">
-                    <button class="cc-check" @onclick="() => ToggleDone(t)" aria-label="toggle complete">
-                        <span class="cc-check-circle @(t.IsDone ? "checked" : "")"></span>
+                var isDone = string.Equals(t.Status, "Completed", StringComparison.OrdinalIgnoreCase);
+
+                <li class="cc-task @(isDone ? "cc-task-done" : null)">
+                    <button class="cc-check"
+                            @onclick="() => OnMarkDoneClicked(t)"
+                            aria-label="toggle complete">
+                        <span class="cc-check-circle @(isDone ? "checked" : "")"></span>
                     </button>
 
                     <div class="cc-task-main">
-                        <div class="cc-title">@t.Title</div>
+                        <div class="cc-title">
+                            @DisplayTitle(t)
+                        </div>
+
                         <div class="cc-metrics">
-                            <span>Par: <strong>@t.Par</strong></span>
-                            <span>Count: <strong>@t.Count</strong></span>
+                            <span>Par: <strong>@(t.Par?.ToString() ?? "-")</strong></span>
+                            <span>Count: <strong>@(t.Count?.ToString() ?? "-")</strong></span>
                             <span>Prep: <strong>@t.Prep</strong></span>
                         </div>
                     </div>
 
                     <div class="cc-task-meta">
-                        @if (t.DurationMin is not null)
-                        {
-                            <div class="cc-duration">🕒 @t.DurationMin min</div>
-                        }
-                        <button class="cc-mark" @onclick="() => MarkDone(t)" disabled="@(t.IsDone)">
+                        <div class="cc-duration">
+                            @t.DueDate.ToString("MMM d · h:mm tt")
+                        </div>
+                        <button class="cc-mark"
+                                @onclick="() => OnMarkDoneClicked(t)"
+                                disabled="@(isDone)">
                             Mark Done
                         </button>
                     </div>
@@ -45,18 +53,24 @@
 </div>
 
 @code {
-    [Parameter] public List<PrepTask> Tasks { get; set; } = new();
-    [Parameter] public EventCallback<PrepTask> OnMarkDone { get; set; }
+    // Now we work with WorkTask instead of PrepTask
+    [Parameter] public List<WorkTask> Tasks { get; set; } = new();
+    [Parameter] public EventCallback<WorkTask> OnMarkDone { get; set; }
 
-    void ToggleDone(PrepTask t)
+    private string DisplayTitle(WorkTask t)
     {
-        t.IsDone = !t.IsDone;
-        StateHasChanged();
+        // Prefer recipe title if provided, otherwise fall back to task name
+        if (t.Recipe is not null && !string.IsNullOrWhiteSpace(t.Recipe.Title))
+            return t.Recipe.Title;
+
+        return t.Name;
     }
 
-    async Task MarkDone(PrepTask t)
+    private async Task OnMarkDoneClicked(WorkTask t)
     {
-        if (!t.IsDone) t.IsDone = true;
-        if (OnMarkDone.HasDelegate) await OnMarkDone.InvokeAsync(t);
+        if (OnMarkDone.HasDelegate)
+        {
+            await OnMarkDone.InvokeAsync(t);
+        }
     }
 }

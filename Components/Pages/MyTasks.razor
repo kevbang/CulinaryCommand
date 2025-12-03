@@ -2,6 +2,13 @@
 @namespace CulinaryCommand.Components.Pages
 @using CulinaryCommand.Components.Custom
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Data.Enums
+@using CulinaryCommand.Services
+
+@inject AuthService Auth
+@inject ITaskAssignmentService TaskService
+@inject NavigationManager Nav
+@inject LocationState LocationState
 
 <PageTitle>My Tasks</PageTitle>
 
@@ -9,26 +16,171 @@
     <h1 class="fw-bold mb-1">Welcome, @username</h1>
     <div class="text-muted mb-3">Here's what needs your attention today.</div>
 
-    <PrepTasksPanel Tasks="@prepTasks" OnMarkDone="HandleMarkDone" />
+    @if (!ready)
+    {
+        <p><em>Loading your tasks...</em></p>
+    }
+    else
+    {
+        <!-- Generic tasks (cleaning, line work, etc.) -->
+        <div class="mb-4">
+            <h4 class="fw-semibold mb-2">Tasks assigned to you</h4>
+
+            @if (!GenericTasks.Any())
+            {
+                <div class="text-muted small">
+                    Nothing assigned yet. Check back later or ask your manager.
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var t in GenericTasks)
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div>
+                                            <div class="fw-semibold">@t.Name</div>
+                                            <div class="text-muted small">@t.Station</div>
+                                        </div>
+                                        <span class="@PriorityBadge(t.Priority)">@t.Priority</span>
+                                    </div>
+
+                                    <div class="text-muted small mb-2">
+                                        Due @t.DueDate.ToString("MMM d · h:mm tt")
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(t.Notes))
+                                    {
+                                        <div class="small mb-2">
+                                            @t.Notes
+                                        </div>
+                                    }
+
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-light text-dark">@t.Status</span>
+
+                                        @if (!string.Equals(t.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <button class="btn btn-sm btn-success"
+                                                    @onclick="() => MarkGenericTaskComplete(t)">
+                                                Mark done
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Prep list (recipe/ingredient-based tasks) -->
+        <div class="mt-4">
+            <h4 class="fw-semibold mb-2">Prep list</h4>
+            <PrepTasksPanel Tasks="@PrepTasks" OnMarkDone="HandlePrepTaskDone" />
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">
+            <pre>@errorMessage</pre>
+        </div>
+    }
 </div>
 
 @code {
-    private string username = "Alex";
+    private string username = "there";
+    private bool ready;
+    private string? errorMessage;
 
-    // Temporary sample data (replace with API call)
-    private List<PrepTask> prepTasks = new()
-    {
-        new() { Title="Chop onions", Par=5, Count=2, DurationMin=30 },
-        new() { Title="Prepare marinara sauce", Par=3, Count=1, DurationMin=30 },
-        new() { Title="Portion chicken breasts", Par=10, Count=4, DurationMin=30 },
-        new() { Title="Mix house dressing", Par=2, Count=0, DurationMin=30 },
-        new() { Title="Slice fresh bread", Par=8, Count=2, DurationMin=30 },
-    };
+    // All tasks for this user at the active location
+    private List<WorkTask> assignedTasks = new();
 
-    Task HandleMarkDone(PrepTask t)
+    private IEnumerable<WorkTask> GenericTasks =>
+        assignedTasks.Where(t => t.Kind == WorkTaskKind.Generic);
+
+    private List<WorkTask> PrepTasks =>
+        assignedTasks.Where(t => t.Kind == WorkTaskKind.PrepFromRecipe).ToList();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // TODO: persist completion via your API
-        Console.WriteLine($"[DEBUG] Marked done: {t.Title}");
-        return Task.CompletedTask;
+        if (!firstRender) return;
+
+        try
+        {
+            await Auth.EnsureHydratedAsync();
+
+            if (!Auth.IsSignedIn)
+            {
+                Nav.NavigateTo("/signin", replace: true);
+                return;
+            }
+
+            // Use first name if we have it, else email, else fallback
+            username = Auth.CurrentUser?.Name?.Split(' ')[0]
+                       ?? Auth.UserEmail
+                       ?? "there";
+
+            await LoadAssignedTasksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            ready = true;
+            StateHasChanged();
+        }
     }
+
+    private async Task LoadAssignedTasksAsync()
+    {
+        assignedTasks.Clear();
+
+        if (Auth.UserId is null)
+        {
+            return;
+        }
+
+        // Prefer active location from Auth, else fallback to LocationState
+        int? activeLocationId = Auth.ActiveLocationId ?? LocationState.CurrentLocation?.Id;
+
+        if (activeLocationId.HasValue)
+        {
+            assignedTasks = await TaskService.GetForUserAsync(Auth.UserId.Value, activeLocationId.Value);
+        }
+        else
+        {
+            assignedTasks = await TaskService.GetForUserAsync(Auth.UserId.Value, null);
+        }
+    }
+
+    private async Task MarkGenericTaskComplete(WorkTask task)
+    {
+        await TaskService.UpdateStatusAsync(task.Id, "Completed");
+        task.Status = "Completed";   // update UI immediately
+        StateHasChanged();
+    }
+
+    private async Task HandlePrepTaskDone(WorkTask task)
+    {
+        await TaskService.UpdateStatusAsync(task.Id, "Completed");
+        task.Status = "Completed";   // update UI immediately
+        StateHasChanged();
+    }
+
+    private string PriorityBadge(string priority) => priority switch
+    {
+        "Critical" => "badge bg-danger",
+        "High" => "badge bg-warning text-dark",
+        "Normal" => "badge bg-success-subtle text-success",
+        "Low" => "badge bg-secondary-subtle text-secondary",
+        _ => "badge bg-secondary"
+    };
 }
