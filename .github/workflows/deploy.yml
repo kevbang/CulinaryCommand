@@ -112,14 +112,14 @@ jobs:
             - name: Run EF Migrations on Lightsail
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
-                  cd '${{ env.REMOTE_APP_DIR }}' || cd ~/deploy/${{ github.sha }} && \
+                  cd ~/deploy/${{ github.sha }} && \
                   export ConnectionStrings__DefaultConnection='Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;' && \
                   export ASPNETCORE_ENVIRONMENT=Production && \
                   export ASPNETCORE_URLS=http://0.0.0.0:5000 && \
                   command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-sdk-9.0) && \
                   dotnet tool install --global dotnet-ef --version 9.* && \
-                  export PATH="$PATH:$HOME/.dotnet/tools" && \
-                  dotnet ef database update --project '${{ env.REMOTE_APP_DIR }}/CulinaryCommand.csproj' --context AppDbContext"
+                  export PATH=\"$PATH:$HOME/.dotnet/tools\" && \
+                  dotnet ef database update --project 'CulinaryCommand.csproj' --context AppDbContext"
 
             - name: Activate release and restart service
               run: |
