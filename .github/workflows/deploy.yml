@@ -115,11 +115,9 @@ jobs:
                   sudo systemctl stop '${{ env.SERVICE_NAME }}' || true && \
                   cd \$HOME/deploy/${{ github.sha }} && \
                   set -a && . /var/www/culinarycommand/.env && set +a && \
-                  command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-sdk-9.0) && \
-                  export PATH=\"\$PATH:\$HOME/.dotnet/tools\" && \
-                  command -v dotnet-ef >/dev/null || dotnet tool install --global dotnet-ef --version 9.* && \
-                  export PATH=\"\$PATH:\$HOME/.dotnet/tools\" && \
-                  dotnet ef database update --assembly \"\$PWD/CulinaryCommand.dll\" --startup-assembly \"\$PWD/CulinaryCommand.dll\" --context AppDbContext && \
+                  command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-runtime-9.0) && \
+                  export MIGRATE_ONLY=true && \
+                  dotnet ./CulinaryCommand.dll && \
                   sudo systemctl start '${{ env.SERVICE_NAME }}' || true"
 
             - name: Activate release and restart service

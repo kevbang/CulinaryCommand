@@ -6,6 +6,7 @@ using CulinaryCommand.Inventory.Services;
 using CulinaryCommand.Inventory;
 using CulinaryCommand.Inventory.Services.Interfaces;
 using System; // for Version, TimeSpan
+using System.Linq; // for args.Any
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,6 +80,10 @@ builder.Services.AddScoped<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
+// Determine whether the app should only run migrations and exit
+var migrateOnly = (Environment.GetEnvironmentVariable("MIGRATE_ONLY")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+                  || (args != null && args.Any(a => a.Equals("--migrate-only", StringComparison.OrdinalIgnoreCase)));
+
 // Apply pending EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
 {
@@ -92,6 +97,12 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[Startup] Migration failed: {ex.GetType().Name} - {ex.Message}");
         // Optionally: keep running without schema update; remove this catch to fail hard instead
     }
+}
+
+if (migrateOnly)
+{
+    Console.WriteLine("[Startup] MIGRATE_ONLY set; exiting after applying migrations.");
+    return;
 }
 
 // Configure the HTTP request pipeline.
