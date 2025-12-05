@@ -7,8 +7,8 @@ namespace CulinaryCommand.Models
         [Required, MaxLength(256)]
         public string Name { get; set; } = string.Empty;
 
-        [Required, MaxLength(50)]
-        public string CompanyCode { get; set; } = string.Empty;
+        [MaxLength(50)]
+        public string? CompanyCode { get; set; }
 
         [MaxLength(256)]
         public string? Address { get; set; }

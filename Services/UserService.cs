@@ -267,10 +267,17 @@ namespace CulinaryCommand.Services
                 throw new Exception("A user with this email already exists.");
 
             // 1) Create Company
+            // Generate a unique company code if not provided
+            string companyCode = req.Company.CompanyCode;
+            if (string.IsNullOrWhiteSpace(companyCode))
+            {
+                companyCode = await GenerateUniqueCompanyCodeAsync(req.Company.Name);
+            }
+
             var company = new Company
             {
                 Name = req.Company.Name,
-                CompanyCode = req.Company.CompanyCode,
+                CompanyCode = companyCode,
                 Address = req.Company.Address,
                 City = req.Company.City,
                 State = req.Company.State,
@@ -437,6 +444,38 @@ namespace CulinaryCommand.Services
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        /// <summary>
+        /// Generates a unique company code based on the company name
+        /// </summary>
+        private async Task<string> GenerateUniqueCompanyCodeAsync(string companyName)
+        {
+            // Create a base code from the company name (first 3-6 characters, uppercase, no spaces)
+            string baseCode = new string(companyName
+                .Replace(" ", "")
+                .Replace("-", "")
+                .Replace("_", "")
+                .ToUpperInvariant()
+                .Take(6)
+                .ToArray());
+
+            if (string.IsNullOrEmpty(baseCode))
+            {
+                baseCode = "COMP";
+            }
+
+            // Check if this code exists
+            string candidateCode = baseCode;
+            int suffix = 1;
+
+            while (await _context.Companies.AnyAsync(c => c.CompanyCode == candidateCode))
+            {
+                candidateCode = $"{baseCode}{suffix}";
+                suffix++;
+            }
+
+            return candidateCode;
         }
 
     }
