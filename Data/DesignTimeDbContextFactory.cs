@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace CulinaryCommand.Data
 {
@@ -11,10 +13,13 @@ namespace CulinaryCommand.Data
         public AppDbContext CreateDbContext(string[] args)
         {
             // force EF to load the correct appsettings.json
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory()) // this is key
-                .AddJsonFile("appsettings.json", optional: false)
-                .AddJsonFile("appsettings.Development.json", optional: true)
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile($"appsettings.{env}.json", optional: true)
+                .AddEnvironmentVariables()
                 .Build();
 
             var conn = configuration.GetConnectionString("DefaultConnection");
