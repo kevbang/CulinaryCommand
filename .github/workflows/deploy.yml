@@ -109,25 +109,22 @@ jobs:
                   command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
                   nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
 
-            - name: Activate release, apply remote EF migrations, and restart service
+            - name: Run EF Migrations on Lightsail
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
-                  set -e; \
+                  cd '${{ env.REMOTE_APP_DIR }}' || cd ~/deploy/${{ github.sha }} && \
+                  export ConnectionStrings__DefaultConnection='Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;' && \
+                  export ASPNETCORE_ENVIRONMENT=Production && \
+                  export ASPNETCORE_URLS=http://0.0.0.0:5000 && \
+                  command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-sdk-9.0) && \
+                  dotnet ef database update --project '${{ env.REMOTE_APP_DIR }}/CulinaryCommand.csproj' --context AppDbContext"
+
+            - name: Activate release and restart service
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
                   sudo mkdir -p '${{ env.REMOTE_APP_DIR }}' && \
                   sudo rsync -a --delete --exclude='.env' ~/deploy/${{ github.sha }}/ '${{ env.REMOTE_APP_DIR }}'/ && \
-                  sudo chown -R www-data:www-data '${{ env.REMOTE_APP_DIR }}'; \
-                  # Ensure .env is present (written previously by workflow)
-                  sudo chown www-data:www-data /var/www/culinarycommand/.env || true; \
-                  # Stop the systemd service so we can run the new release to migrate safely
-                  sudo systemctl stop '${{ env.SERVICE_NAME }}' || true; \
-                  # Run the published app in background (as www-data) to apply migrations via Program.cs
-                  sudo -u www-data bash -lc 'set -a; . /var/www/culinarycommand/.env; set +a; nohup dotnet /var/www/culinarycommand/CulinaryCommandApp.dll > /tmp/ef-migrate.log 2>&1 &' ; \
-                  # Wait for migrations to apply (tune sleep if migrations take longer)
-                  sleep 15; \
-                  # Kill the one-off run (if still running) - ignore failure
-                  sudo pkill -f '/var/www/culinarycommand/CulinaryCommandApp.dll' || true; \
-                  # Start the managed systemd service
-                  sudo systemctl start '${{ env.SERVICE_NAME }}'; \
-                  sudo systemctl --no-pager --lines=10 status '${{ env.SERVICE_NAME }}' || true; \
-                  # Show migration log (if it exists)
-                  sudo tail -n 200 /tmp/ef-migrate.log || true"
+                  sudo chown -R www-data:www-data '${{ env.REMOTE_APP_DIR }}' && \
+                  rm -rf ~/deploy/${{ github.sha }} && \
+                  sudo systemctl restart '${{ env.SERVICE_NAME }}' && \
+                  sudo systemctl --no-pager --lines=5 status '${{ env.SERVICE_NAME }}' || true"
