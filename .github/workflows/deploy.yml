@@ -79,10 +79,23 @@ jobs:
               with:
                 dotnet-version: 9.0.x
 
+            - name: Install dotnet-ef global tool
+              run: dotnet tool install --global dotnet-ef
+
+            - name: Add .NET tools to PATH
+              run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
             - name: Build and publish Blazor Server
               run: |
                 dotnet restore "${{ env.PROJECT_PATH }}"
                 dotnet publish "${{ env.PROJECT_PATH }}" -c Release -o "${{ env.PUBLISH_DIR }}"
+
+            - name: Create EF Core migrations bundle
+              run: |
+                dotnet ef migrations bundle \
+                  --project "${{ env.PROJECT_PATH }}" \
+                  --output "${{ env.PUBLISH_DIR }}/efbundle" \
+                  --configuration Release
 
             - name: Start SSH agent
               uses: webfactory/ssh-agent@v0.9.0
@@ -94,7 +107,6 @@ jobs:
                 REMOTE_TMP="~/deploy/${{ github.sha }}"
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
                 rsync -az --delete --exclude='.env' "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
-
 
             - name: Write RDS connection env file
               run: |
@@ -109,15 +121,14 @@ jobs:
                   command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
                   nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
 
-            - name: Run EF Migrations on Lightsail
+            - name: Run EF migrations bundle on Lightsail
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
                   sudo systemctl stop '${{ env.SERVICE_NAME }}' || true && \
                   cd \$HOME/deploy/${{ github.sha }} && \
                   set -a && . /var/www/culinarycommand/.env && set +a && \
-                  command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-runtime-9.0) && \
-                  export MIGRATE_ONLY=true && \
-                  dotnet ./CulinaryCommand.dll && \
+                  command -v ./efbundle >/dev/null || chmod +x ./efbundle && \
+                  ./efbundle && \
                   sudo systemctl start '${{ env.SERVICE_NAME }}' || true"
 
             - name: Activate release and restart service
