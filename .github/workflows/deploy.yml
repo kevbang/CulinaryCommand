@@ -95,7 +95,9 @@ jobs:
                 dotnet ef migrations bundle \
                   --project "${{ env.PROJECT_PATH }}" \
                   --output "${{ env.PUBLISH_DIR }}/efbundle" \
-                  --configuration Release
+                  --configuration Release \
+                  --self-contained \
+                  --runtime linux-x64
 
             - name: Start SSH agent
               uses: webfactory/ssh-agent@v0.9.0
