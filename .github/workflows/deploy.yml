@@ -109,6 +109,15 @@ jobs:
                   command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
                   nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
 
+            - name: Run EF Migrations
+              env:
+                CONNECTION_STRING: "Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+              run: |
+                dotnet tool install --global dotnet-ef --version 9.*
+                export PATH="$HOME/.dotnet/tools:$PATH"
+                dotnet restore "${{ env.PROJECT_PATH }}"
+                dotnet ef database update --project "${{ env.PROJECT_PATH }}" --connection "${CONNECTION_STRING}"
+
             - name: Activate release and restart service
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
