@@ -117,6 +117,8 @@ jobs:
                   export ASPNETCORE_ENVIRONMENT=Production && \
                   export ASPNETCORE_URLS=http://0.0.0.0:5000 && \
                   command -v dotnet >/dev/null || (sudo apt-get update && sudo apt-get install -y dotnet-sdk-9.0) && \
+                  dotnet tool install --global dotnet-ef --version 9.* && \
+                  export PATH="$HOME/.dotnet/tools:$PATH" && \
                   dotnet ef database update --project '${{ env.REMOTE_APP_DIR }}/CulinaryCommand.csproj' --context AppDbContext"
 
             - name: Activate release and restart service
