@@ -122,10 +122,11 @@ jobs:
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   ConnectionStrings__DefaultConnection=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;
                   EOF
-
-                  sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env
+                  REMOTE_EOF
+                  echo "testing it worked" \
+                  sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env \
                   sudo chmod 640 /var/www/culinarycommand/.env
-                REMOTE_EOF
+                
 
             - name: RDS port check (via peering)
               run: |
