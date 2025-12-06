@@ -91,6 +91,8 @@ jobs:
                 dotnet publish "${{ env.PROJECT_PATH }}" -c Release -o "${{ env.PUBLISH_DIR }}"
 
             - name: Create EF Core migrations bundle
+              env:
+                ConnectionStrings__DefaultConnection: "Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
               run: |
                 dotnet ef migrations bundle \
                   --project "${{ env.PROJECT_PATH }}" \
