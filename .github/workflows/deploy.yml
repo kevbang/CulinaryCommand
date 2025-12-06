@@ -80,7 +80,7 @@ jobs:
                 dotnet-version: 9.0.x
 
             - name: Install dotnet-ef global tool
-              run: dotnet tool install --global dotnet-ef
+              run: dotnet tool install --global dotnet-ef --version 9.*
 
             - name: Add .NET tools to PATH
               run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
