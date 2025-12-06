@@ -121,7 +121,7 @@ jobs:
                   ASPNETCORE_ENVIRONMENT=Production
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   ConnectionStrings__DefaultConnection=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;
-                  EOF
+                EOF
                   
                   echo "testing it worked" \
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env \
