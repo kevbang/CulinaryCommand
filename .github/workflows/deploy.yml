@@ -18,7 +18,7 @@ jobs:
         env:
             AWS_REGION: us-east-2
             AWS_ACCOUNT_NUMBER: 578513450318
-            PROJECT_PATH: CulinaryCommand.csproj
+            PROJECT_PATH: CulinaryCommandApp/CulinaryCommand.csproj
             PUBLISH_DIR: ./publish
             REMOTE_APP_DIR: /var/www/culinarycommand
             SERVICE_NAME: culinarycommand
