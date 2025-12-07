@@ -33,12 +33,12 @@
                 <div class="btn-group w-100" role="group">
                     <input type="radio" class="btn-check" name="role" id="manager" value="Manager" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Manager")">
                     <label class="btn btn-outline-success role-btn" for="manager">
-                    <i class="fas fa-building me-2"></i>Manager
+                    <i class="fas fa-building me-2"></i>Admin/Manager
                     </label>
 
                     <input type="radio" class="btn-check" name="role" id="cook" value="Cook" @onchange="@((e) => signInModel.Role = e.Value?.ToString())" checked="@(signInModel.Role == "Cook")">
                     <label class="btn btn-outline-success role-btn" for="cook">
-                    <i class="fas fa-building me-2"></i>Cook
+                    <i class="fas fa-building me-2"></i>Employee
                     </label>
                 </div>
             </div>

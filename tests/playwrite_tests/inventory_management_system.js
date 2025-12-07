@@ -1,0 +1,30 @@
+import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('http://3.20.198.36/signin');
+  await page.getByRole('textbox', { name: 'Email' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill('admin@test.com');
+  await page.getByRole('textbox', { name: 'Email' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Password' }).fill('testing1234');
+  await page.getByRole('textbox', { name: 'Password' }).press('Enter');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('link', { name: 'Inventory' }).click();
+  await page.getByRole('button', { name: ' Add Item' }).click();
+  await page.getByRole('textbox').first().click();
+  await page.getByRole('textbox').first().fill('Pasta');
+  await page.getByRole('textbox').first().press('Tab');
+  await page.getByRole('textbox').nth(1).fill('1234567');
+  await page.getByRole('textbox').nth(1).press('Tab');
+  await page.getByRole('combobox').first().selectOption('Dry Goods');
+  await page.getByRole('spinbutton').first().click();
+  await page.getByRole('spinbutton').first().fill('10');
+  await page.getByRole('spinbutton').nth(1).click();
+  await page.getByRole('spinbutton').nth(1).fill('5');
+  await page.getByRole('spinbutton').nth(2).click();
+  await page.getByRole('spinbutton').nth(2).fill('15');
+  await page.getByRole('button', { name: 'Add Item', exact: true }).click();
+  await page.getByTitle('Edit').nth(4).click();
+  await page.getByRole('spinbutton').first().click();
+  await page.getByRole('spinbutton').first().fill('20');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+});
