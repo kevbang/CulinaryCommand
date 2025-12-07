@@ -5,9 +5,14 @@
 /obj/
 /publish/
 
+CulinaryCommandApp/bin/
+CulinaryCommandApp/Obj/
+CulinaryCommandApp/publish/
+
 CulinaryCommandUnitTests/bin/
 CulinaryCommandUnitTests/Obj/
 CulinaryCommandUnitTests/publish/
+
 
 # ============================
 # Visual Studio / IDE

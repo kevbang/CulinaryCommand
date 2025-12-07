@@ -29,5 +29,4 @@ namespace CulinaryCommand.Inventory.Entities
         // unit used for transaction
         public Unit? Unit { get; set; }
     }
-
 }
