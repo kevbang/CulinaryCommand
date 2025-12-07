@@ -47,3 +47,13 @@ inventory/.copilot_instructions.md
 publish/
 
 appsettings.Development.json
+
+# ============================
+# Playwright / Testing
+# ============================
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
