@@ -13,7 +13,7 @@ namespace CulinaryCommand.Data
 
         public DbSet<Location> Locations => Set<Location>();
         public DbSet<User> Users => Set<User>();
-        public DbSet<WorkTask> Tasks => Set<WorkTask>();
+        public DbSet<Tasks> Tasks => Set<Tasks>();
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<CulinaryCommand.Inventory.Entities.Ingredient> Ingredients => Set<CulinaryCommand.Inventory.Entities.Ingredient>();
         public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
