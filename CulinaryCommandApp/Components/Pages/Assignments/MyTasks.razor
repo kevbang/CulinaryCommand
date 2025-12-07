@@ -1,0 +1,35 @@
+@page "/tasks"
+@namespace CulinaryCommand.Components.Pages
+@using CulinaryCommand.Components.Custom
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Data.Enums
+@using CulinaryCommand.Data.Models
+
+<PageTitle>My Tasks</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="fw-bold mb-1">Welcome, @username</h1>
+    <div class="text-muted mb-3">Here's what needs your attention today.</div>
+
+    <PrepTasksPanel Tasks="@prepTasks" OnMarkDone="HandleMarkDone" />
+</div>
+
+@code {
+    private string username = "Alex";
+
+    // Temporary sample data (replace with API call)
+    private List<Tasks> prepTasks = new()
+    {
+        new() { Name="Chop onions", Par=5, Count=2, DueDate=DateTime.Now, Status="Pending", Kind=WorkTaskKind.PrepFromRecipe },
+        new() { Name="Prepare marinara sauce", Par=3, Count=1, DueDate=DateTime.Now, Status="Pending", Kind=WorkTaskKind.PrepFromRecipe },
+        new() { Name="Portion chicken breasts", Par=10, Count=4, DueDate=DateTime.Now, Status="Pending", Kind=WorkTaskKind.PrepFromRecipe },
+        new() { Name="Mix house dressing", Par=2, Count=0, DueDate=DateTime.Now, Status="Pending", Kind=WorkTaskKind.PrepFromRecipe },
+        new() { Name="Slice fresh bread", Par=8, Count=2, DueDate=DateTime.Now, Status="Pending", Kind=WorkTaskKind.PrepFromRecipe },
+    };
+
+    Task HandleMarkDone(Tasks t)
+    {
+        Console.WriteLine($"[DEBUG] Marked done: {t.Name}");
+        return Task.CompletedTask;
+    }
+}

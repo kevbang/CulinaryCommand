@@ -1,0 +1,27 @@
+name: Validate Culinary Command
+
+on:
+    pull_request:
+        branches: [ "main" ]
+
+permissions:
+  id-token: write
+  contents: read
+
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: 9.0.x
+
+        - name: Run Culinary Command xUnit tests
+          run: |
+            pwd
+            dotnet test CulinaryCommandApp/CulinaryCommand.sln

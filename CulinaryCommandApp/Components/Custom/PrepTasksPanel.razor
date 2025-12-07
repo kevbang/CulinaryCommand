@@ -1,0 +1,77 @@
+@namespace CulinaryCommand.Components.Custom
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Data.Models
+
+<div class="cc-card">
+    <div class="cc-card-header">
+        <h3>Today's Prep Tasks</h3>
+    </div>
+
+    @if (Tasks is null || Tasks.Count == 0)
+    {
+        <div class="cc-empty">No prep tasks for today.</div>
+    }
+    else
+    {
+        <ul class="cc-task-list">
+            @foreach (var t in Tasks)
+            {
+                var isDone = string.Equals(t.Status, "Completed", StringComparison.OrdinalIgnoreCase);
+
+                <li class="cc-task @(isDone ? "cc-task-done" : null)">
+                    <button class="cc-check"
+                            @onclick="() => OnMarkDoneClicked(t)"
+                            aria-label="toggle complete">
+                        <span class="cc-check-circle @(isDone ? "checked" : "")"></span>
+                    </button>
+
+                    <div class="cc-task-main">
+                        <div class="cc-title">
+                            @DisplayTitle(t)
+                        </div>
+
+                        <div class="cc-metrics">
+                            <span>Par: <strong>@(t.Par?.ToString() ?? "-")</strong></span>
+                            <span>Count: <strong>@(t.Count?.ToString() ?? "-")</strong></span>
+                            <span>Prep: <strong>@t.Prep</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="cc-task-meta">
+                        <div class="cc-duration">
+                            @t.DueDate.ToString("MMM d · h:mm tt")
+                        </div>
+                        <button class="cc-mark"
+                                @onclick="() => OnMarkDoneClicked(t)"
+                                disabled="@(isDone)">
+                            Mark Done
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    // Now we work with WorkTask instead of PrepTask
+    [Parameter] public List<Tasks> Tasks { get; set; } = new();
+    [Parameter] public EventCallback<Tasks> OnMarkDone { get; set; }
+
+    private string DisplayTitle(Tasks t)
+    {
+        // Prefer recipe title if provided, otherwise fall back to task name
+        if (t.Recipe is not null && !string.IsNullOrWhiteSpace(t.Recipe.Title))
+            return t.Recipe.Title;
+
+        return t.Name;
+    }
+
+    private async Task OnMarkDoneClicked(Tasks t)
+    {
+        if (OnMarkDone.HasDelegate)
+        {
+            await OnMarkDone.InvokeAsync(t);
+        }
+    }
+}

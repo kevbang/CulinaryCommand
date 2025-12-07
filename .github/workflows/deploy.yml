@@ -18,7 +18,7 @@ jobs:
         env:
             AWS_REGION: us-east-2
             AWS_ACCOUNT_NUMBER: 578513450318
-            PROJECT_PATH: CulinaryCommand.csproj
+            PROJECT_PATH: CulinaryCommandApp/CulinaryCommand.csproj
             PUBLISH_DIR: ./publish
             REMOTE_APP_DIR: /var/www/culinarycommand
             SERVICE_NAME: culinarycommand
@@ -79,10 +79,27 @@ jobs:
               with:
                 dotnet-version: 9.0.x
 
+            - name: Install dotnet-ef global tool
+              run: dotnet tool install --global dotnet-ef --version 9.*
+
+            - name: Add .NET tools to PATH
+              run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
             - name: Build and publish Blazor Server
               run: |
                 dotnet restore "${{ env.PROJECT_PATH }}"
                 dotnet publish "${{ env.PROJECT_PATH }}" -c Release -o "${{ env.PUBLISH_DIR }}"
+
+            - name: Create EF Core migrations bundle
+              env:
+                ConnectionStrings__DefaultConnection: "Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+              run: |
+                dotnet ef migrations bundle \
+                  --project "${{ env.PROJECT_PATH }}" \
+                  --output "${{ env.PUBLISH_DIR }}/efbundle" \
+                  --configuration Release \
+                  --self-contained \
+                  --runtime linux-x64
 
             - name: Start SSH agent
               uses: webfactory/ssh-agent@v0.9.0
@@ -95,19 +112,42 @@ jobs:
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST}} "mkdir -p $REMOTE_TMP"
                 rsync -az --delete --exclude='.env' "${{ env.PUBLISH_DIR }}/" "${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:$REMOTE_TMP/"
 
-
             - name: Write RDS connection env file
               run: |
-                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
-                  sudo mkdir -p /var/www/culinarycommand && \
-                  printf 'ASPNETCORE_ENVIRONMENT=Production\nASPNETCORE_URLS=http://0.0.0.0:5000\nConnectionStrings__DefaultConnection=Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;\n' | \
-                  sudo tee /var/www/culinarycommand/.env > /dev/null"
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << "REMOTE_EOF"
+                  sudo mkdir -p /var/www/culinarycommand
+                  sudo tee /var/www/culinarycommand/.env > /dev/null << EOF
+                  ASPNETCORE_ENVIRONMENT=Production
+                  ASPNETCORE_URLS=http://0.0.0.0:5000
+                  ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+                EOF
+                  sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env
+                  sudo chmod 640 /var/www/culinarycommand/.env
+
+                  sudo tee /var/www/culinarycommand/.env.export > /dev/null << EOF
+                  ASPNETCORE_ENVIRONMENT=Production
+                  ASPNETCORE_URLS=http://0.0.0.0:5000
+                  export ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+                EOF
+                  sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env.export
+                  sudo chmod 640 /var/www/culinarycommand/.env.export
+                REMOTE_EOF
 
             - name: RDS port check (via peering)
               run: |
                 ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
                   command -v nc >/dev/null || (sudo apt-get update && sudo apt-get install -y netcat-openbsd); \
                   nc -vz ${{ secrets.RDS_HOST }} 3306 || (echo 'RDS port is not reachable over peering' && exit 1)"
+
+            - name: Run EF migrations bundle on Lightsail
+              run: |
+                ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} "\
+                  sudo systemctl stop '${{ env.SERVICE_NAME }}' || true && \
+                  cd \$HOME/deploy/${{ github.sha }} && \
+                  set -a && . /var/www/culinarycommand/.env.export && set +a && \
+                  command -v ./efbundle >/dev/null || chmod +x ./efbundle && \
+                  ./efbundle && \
+                  sudo systemctl start '${{ env.SERVICE_NAME }}' || true"
 
             - name: Activate release and restart service
               run: |
