@@ -59,7 +59,21 @@ namespace CulinaryCommandUnitTests.Inventory.DTOs
             Assert.Equal(out_of_stock, DTO.OutOfStockDate);
             Assert.Equal(last_order, DTO.LastOrderDate);
             Assert.Equal("Keep cool", DTO.Notes);
-            
+        }
+
+        [Fact]
+        public void nullable_properties_can_be_null()
+        {
+            var DTO = new InventoryItemDTO
+            {
+                OutOfStockDate = null,
+                LastOrderDate = null,
+                Notes = null
+            };
+
+            Assert.Null(DTO.OutOfStockDate);
+            Assert.Null(DTO.LastOrderDate);
+            Assert.Null(DTO.Notes);
         }
     }
 }
