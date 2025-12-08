@@ -119,7 +119,7 @@
             ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value);
         }
         else {
-            ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value);
+            ManagedLocations = await LocationService.GetLocationsByEmployeeAsync(Auth.UserId!.Value);
         }
 
         // Update localStorage

@@ -1,8 +1,8 @@
 @using CulinaryCommand.Data.Entities
-
+@inject AuthService Auth
 <div class="card shadow-sm p-3">
 
-    <h4>Your Location</h4>
+    <h4>@Auth.Company</h4>
 
     @if (Location == null)
     {
