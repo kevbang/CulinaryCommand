@@ -1,13 +1,27 @@
 using Microsoft.Playwright;
-using Microsoft.Playwright.NUnit;
 
 namespace PlaywrightTests;
 
-[Parallelizable(ParallelScope.Self)]
-[TestFixture]
-public class AdminSignupTests : PageTest
+public class AdminSignupTests : IAsyncLifetime
 {
-    [Test]
+    private IPlaywright _playwright = null!;
+    private IBrowser _browser = null!;
+    public IPage Page { get; private set; } = null!;
+
+    public async Task InitializeAsync()
+    {
+        _playwright = await Playwright.CreateAsync();
+        _browser = await _playwright.Chromium.LaunchAsync();
+        Page = await _browser.NewPageAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _browser.CloseAsync();
+        _playwright.Dispose();
+    }
+
+    [Fact]
     public async Task AdminCanCreateRestaurantAccount()
     {
         await Page.GotoAsync("http://3.20.198.36/signin");
