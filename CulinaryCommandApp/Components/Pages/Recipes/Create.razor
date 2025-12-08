@@ -2,6 +2,7 @@
 @using CulinaryCommand.Data.Entities
 @inject NavigationManager Nav
 @inject RecipeService Recipes
+@inject LocationState LocationState
 @rendermode InteractiveServer
 
 <h3>Create Recipe</h3>
@@ -13,6 +14,17 @@
 
     private async Task Save()
     {
+        // Make sure we have a current location
+        if (LocationState.CurrentLocation is null)
+        {
+            // You can swap this for a nicer UI message later
+            Console.WriteLine("No current location selected – cannot save recipe.");
+            return;
+        }
+
+        // 🔥 attach recipe to the active location
+        model.LocationId = LocationState.CurrentLocation.Id;
+
         await Recipes.CreateAsync(model);
         Nav.NavigateTo("/recipes");
     }
