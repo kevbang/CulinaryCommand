@@ -29,7 +29,14 @@ jobs:
             - name: Add host key
               run: |
                 mkdir -p ~/.ssh
-                ssh-keyscan -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts
+                for i in {1..5}; do
+                  if ssh-keyscan -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
+                    echo "Host key added."
+                    break
+                  fi
+                  echo "ssh-keyscan failed (attempt $i), retrying in 5s..."
+                  sleep 5
+                done
 
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v4

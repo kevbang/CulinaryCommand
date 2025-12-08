@@ -19,9 +19,6 @@
             <h1 class="app-title">Culinary Command</h1>
             <p class="subtitle">Sign In To Your Account</p>
         </div>
-    <p class="text-muted small">
-    @($"Live Email: {signInModel?.Email ?? "(empty)"} | Password: {signInModel?.Password ?? "(empty)"}")
-</p>
 
         <EditForm Model="@signInModel" OnValidSubmit="@HandleSubmit" FormName="SignInForm">
         <DataAnnotationsValidator />

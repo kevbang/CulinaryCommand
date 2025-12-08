@@ -3,6 +3,7 @@
 @inject IngredientService Ingredients
 @inject UnitService Units
 @inject NavigationManager Nav;
+@inject EnumService enumService
 @rendermode InteractiveServer
 
 
@@ -19,7 +20,13 @@
 
         <div class="mb-3">
             <label class="form-label">Category</label>
-            <input class="form-control" @bind="Model.Category" />
+            <select class="form-select" @bind="Model.Category">
+                <option value="">-- Select Category --</option>
+                @foreach (var c in Categories)
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
         </div>
 
         <div class="mb-3">
@@ -44,10 +51,12 @@
     [Parameter] public EventCallback OnValidSubmit { get; set; }
 
     List<Unit> UnitsList = new();
+    List<string> Categories = new();
 
     protected override async Task OnInitializedAsync()
     {
         UnitsList = await Units.GetAllUnitsAsync();
+        Categories = enumService.GetCategories();
     }
 
     async Task Save() => await OnValidSubmit.InvokeAsync();

@@ -78,6 +78,7 @@ builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionSer
 builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
+builder.Services.AddSingleton<EnumService>();
 
 var app = builder.Build();
 
