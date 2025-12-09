@@ -40,6 +40,9 @@ else
                     <td>@r.RecipeType</td>
                     <td>@FormatYield(r)</td>
                     <td>
+                        <button class="btn btn-secondary me-2" @onclick="() => View(r.RecipeId)">
+                            <i class="bi bi-eye"></i>
+                        </button>
                         @if (priv)
                         {
                             <button class="btn btn-primary me-2" @onclick="() => Edit(r.RecipeId)">
@@ -118,6 +121,7 @@ else
 
     void AddNew() => Nav.NavigateTo("/recipes/create");
     void Edit(int id) => Nav.NavigateTo($"/recipes/edit/{id}");
+    void View(int id) => Nav.NavigateTo($"/recipes/view/{id}");
 
     async Task Delete(int id)
     {

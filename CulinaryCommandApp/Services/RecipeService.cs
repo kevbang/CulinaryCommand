@@ -28,11 +28,17 @@ namespace CulinaryCommand.Services
                 .ToListAsync();
         }
 
-        public async Task<Recipe?> GetByIdAsync(int id)
-            => await _db.Recipes
+        public Task<Recipe?> GetByIdAsync(int id)
+        {
+            return _db.Recipes
                 .Include(r => r.RecipeIngredients)
+                    .ThenInclude(ri => ri.Ingredient)
+                .Include(r => r.RecipeIngredients)
+                    .ThenInclude(ri => ri.Unit)
                 .Include(r => r.Steps)
                 .FirstOrDefaultAsync(r => r.RecipeId == id);
+        }
+
 
         public async Task CreateAsync(Recipe recipe)
         {
