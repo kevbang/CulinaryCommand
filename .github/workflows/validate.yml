@@ -46,6 +46,19 @@ jobs:
             dotnet run --project CulinaryCommand.csproj --urls "http://0.0.0.0:5000" &
             sleep 10 # wait for app to start
 
+        - name: Wait for app to be ready
+          run: |
+            for i in {1..30}; do
+              if curl -sSf http://localhost:5000 > /dev/null; then
+                echo "App is ready!"
+                exit 0
+              fi
+              echo "Waiting for app..."
+              sleep 2
+            done
+            echo "App did not start in time."
+            exit 1
+
         - name: Run Culinary Command xUnit tests
           run: |
             dotnet test CulinaryCommandApp/CulinaryCommand.sln
