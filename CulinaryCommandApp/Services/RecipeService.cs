@@ -18,6 +18,15 @@ namespace CulinaryCommand.Services
                 .Include(r => r.RecipeIngredients)
                 .Include(r => r.Steps)
                 .ToListAsync();
+        
+        public async Task<List<Recipe>> GetAllByLocationIdAsync(int locationId)
+        {
+            return await _db.Recipes
+                .Where(r => r.LocationId == locationId)
+                .Include(r => r.RecipeIngredients)
+                .Include(r => r.Steps)
+                .ToListAsync();
+        }
 
         public async Task<Recipe?> GetByIdAsync(int id)
             => await _db.Recipes

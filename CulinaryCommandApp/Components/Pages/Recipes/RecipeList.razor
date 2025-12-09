@@ -2,14 +2,18 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @inject RecipeService Recipes
-@inject AuthService auth
+@inject AuthService Auth
+@inject LocationState LocationState
 @rendermode InteractiveServer
 
 <h3 class="mb-3">Recipes</h3>
 
-<button class="btn btn-success mb-3" @onclick="AddNew">
-    <i class="bi bi-plus-circle"></i> Add New Recipe
-</button>
+@if (priv)
+{
+    <button class="btn btn-success mb-3" @onclick="AddNew">
+        <i class="bi bi-plus-circle"></i> Add New Recipe
+    </button>
+}
 
 @if (recipes == null)
 {
@@ -36,14 +40,15 @@ else
                     <td>@r.RecipeType</td>
                     <td>@FormatYield(r)</td>
                     <td>
-                    @if (priv){
-                        <button class="btn btn-primary me-2" @onclick="() => Edit(r.RecipeId)">
-                            <i class="bi bi-pencil-square"></i>
-                        </button>
-                        <button class="btn btn-danger" @onclick="() => Delete(r.RecipeId)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    }
+                        @if (priv)
+                        {
+                            <button class="btn btn-primary me-2" @onclick="() => Edit(r.RecipeId)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-danger" @onclick="() => Delete(r.RecipeId)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
                     </td>
                 </tr>
             }
@@ -52,17 +57,41 @@ else
 }
 
 @code {
-    List<Recipe>? recipes;
-    private string role = string.Empty;
+    private List<Recipe>? recipes;
     private bool priv = false;
-    
+
     protected override async Task OnInitializedAsync()
     {
-        recipes = await Recipes.GetAllAsync();
-        if (auth.CurrentUser?.Role == "Manager" || auth.CurrentUser.Role == "Admin"){
-            priv = true;
-        }
+        LocationState.OnChange += RefreshRecipes;
+
+        var role = Auth.CurrentUser?.Role;
+        priv = role is "Manager" or "Admin";
+
+        await LoadRecipesAsync();
     }
+
+    private async Task LoadRecipesAsync()
+    {
+        var loc = LocationState.CurrentLocation;
+
+        if (loc == null)
+        {
+            recipes = new List<Recipe>();
+            return;
+        }
+
+        recipes = await Recipes.GetAllByLocationIdAsync(loc.Id);
+    }
+
+    private void RefreshRecipes()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadRecipesAsync();
+            StateHasChanged();
+        });
+    }
+
 
     void AddNew() => Nav.NavigateTo("/recipes/create");
     void Edit(int id) => Nav.NavigateTo($"/recipes/edit/{id}");
@@ -71,29 +100,29 @@ else
     {
         if (await Js.InvokeAsync<bool>("confirm", $"Delete recipe #{id}?"))
         {
-           await Recipes.DeleteAsync(id);
-           recipes = await Recipes.GetAllAsync();
+            await Recipes.DeleteAsync(id);
+            await LoadRecipesAsync();
         }
     }
 
     private string FormatYield(Recipe r)
     {
         if (!r.YieldAmount.HasValue)
-        {
-            // If you ever want to show "—" when no yield, do it here
             return string.IsNullOrWhiteSpace(r.YieldUnit) ? string.Empty : r.YieldUnit!;
-        }
 
         var amount = r.YieldAmount.Value;
 
-        // Strip pointless trailing zeros: 20.0000 -> "20", 20.5 -> "20.5"
         var amountText = decimal.Truncate(amount) == amount
-            ? amount.ToString("0")      // integer
-            : amount.ToString("0.##");  // up to 2 decimal places
+            ? amount.ToString("0")
+            : amount.ToString("0.##");
 
-        if (string.IsNullOrWhiteSpace(r.YieldUnit))
-            return amountText;
+        return string.IsNullOrWhiteSpace(r.YieldUnit)
+            ? amountText
+            : $"{amountText} {r.YieldUnit}";
+    }
 
-        return $"{amountText} {r.YieldUnit}";
+    public void Dispose()
+    {
+        LocationState.OnChange -= RefreshRecipes;
     }
 }
