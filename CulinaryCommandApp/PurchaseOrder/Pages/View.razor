@@ -1,0 +1,246 @@
+@page "/purchase-orders/view/{id:int}"
+@inject NavigationManager Nav
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Purchase Order #@Id</h3>
+    <div>
+        <button class="btn btn-primary me-2" @onclick="Edit">
+            <i class="bi bi-pencil-square"></i> Edit
+        </button>
+        <button class="btn btn-secondary" @onclick="BackToList">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </button>
+    </div>
+</div>
+
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Purchase Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>PO Number:</strong>
+                            <p>@model.PoNumber</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Date:</strong>
+                            <p>@model.Date.ToShortDateString()</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Supplier:</strong>
+                            <p>@model.Supplier</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <p>
+                                <span class="badge @GetStatusBadgeClass(model.Status)">
+                                    @model.Status
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(model.Notes))
+                    {
+                        <div class="mb-3">
+                            <strong>Notes:</strong>
+                            <p>@model.Notes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Line Items</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in model.LineItems)
+                            {
+                                <tr>
+                                    <td>@item.ItemName</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.Unit</td>
+                                    <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                                    <td class="text-end">@item.Subtotal.ToString("C")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                <td class="text-end"><strong>@model.Total.ToString("C")</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        @if (model.Status == "Pending")
+                        {
+                            <button class="btn btn-success" @onclick="Approve">
+                                <i class="bi bi-check-circle"></i> Approve
+                            </button>
+                            <button class="btn btn-danger" @onclick="Reject">
+                                <i class="bi bi-x-circle"></i> Reject
+                            </button>
+                        }
+                        else if (model.Status == "Approved")
+                        {
+                            <button class="btn btn-info" @onclick="MarkComplete">
+                                <i class="bi bi-check-all"></i> Mark as Completed
+                            </button>
+                        }
+                        <button class="btn btn-outline-primary" @onclick="Print">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ExportPdf">
+                            <i class="bi bi-file-pdf"></i> Export PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="mb-3">
+                            <small class="text-muted">@model.Date.ToString("g")</small>
+                            <p class="mb-0">Purchase order created</p>
+                        </div>
+                        @if (model.Status != "Pending")
+                        {
+                            <div class="mb-3">
+                                <small class="text-muted">@model.Date.AddHours(2).ToString("g")</small>
+                                <p class="mb-0">Status changed to @model.Status</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private PurchaseOrderViewModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate loading - replace with actual service call
+        await Task.Delay(300);
+        
+        // Mock data
+        model = new PurchaseOrderViewModel
+        {
+            Id = Id,
+            PoNumber = $"PO-2025-{Id:000}",
+            Date = DateTime.Now.AddDays(-Id),
+            Supplier = Id == 1 ? "ABC Suppliers" : "XYZ Distributors",
+            Status = Id == 1 ? "Pending" : "Approved",
+            Notes = "This is a sample purchase order for demonstration purposes.",
+            LineItems = new List<LineItemViewModel>
+            {
+                new() { ItemName = "Fresh Tomatoes", Quantity = 50, Unit = "lb", UnitPrice = 2.50m },
+                new() { ItemName = "Olive Oil", Quantity = 10, Unit = "gal", UnitPrice = 25.00m },
+                new() { ItemName = "Pasta", Quantity = 30, Unit = "lb", UnitPrice = 3.75m }
+            }
+        };
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Pending" => "bg-warning",
+        "Approved" => "bg-success",
+        "Rejected" => "bg-danger",
+        "Completed" => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    private void Edit() => Nav.NavigateTo($"/purchase-orders/edit/{Id}");
+    private void BackToList() => Nav.NavigateTo("/purchase-orders");
+
+    private void Approve()
+    {
+        if (model != null) model.Status = "Approved";
+        // TODO: Update via service
+    }
+
+    private void Reject()
+    {
+        if (model != null) model.Status = "Rejected";
+        // TODO: Update via service
+    }
+
+    private void MarkComplete()
+    {
+        if (model != null) model.Status = "Completed";
+        // TODO: Update via service
+    }
+
+    private void Print()
+    {
+        // TODO: Implement print functionality
+    }
+
+    private void ExportPdf()
+    {
+        // TODO: Implement PDF export
+    }
+
+    private class PurchaseOrderViewModel
+    {
+        public int Id { get; set; }
+        public string PoNumber { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Supplier { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public List<LineItemViewModel> LineItems { get; set; } = new();
+        public decimal Total => LineItems.Sum(x => x.Subtotal);
+    }
+
+    private class LineItemViewModel
+    {
+        public string ItemName { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public string Unit { get; set; } = string.Empty;
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal => Quantity * UnitPrice;
+    }
+}
