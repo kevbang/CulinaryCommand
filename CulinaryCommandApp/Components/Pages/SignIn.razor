@@ -109,7 +109,7 @@
         if (user != null)
         {
             var userLocations = await LocationService.GetLocationsByManagerAsync(user.Id);
-            LocationState.SetLocations(userLocations);
+            await LocationState.SetLocationsAsync(userLocations);
             await Auth.SignInAsync(user);
             await LocationService.LoadAndPersistLocationsAsync(user.Id);
             Nav.NavigateTo("/dashboard");

@@ -63,11 +63,35 @@ else
     protected override async Task OnInitializedAsync()
     {
         LocationState.OnChange += RefreshRecipes;
+        Auth.OnAuthStateChanged += AuthChanged;
 
+        await Auth.EnsureHydratedAsync();
+
+        UpdatePriv();
+        await LoadRecipesAsync();
+    }
+
+    @* protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureHydratedAsync();
+            UpdatePriv();
+            await LoadRecipesAsync();
+            StateHasChanged();
+        }
+    } *@
+
+    private void UpdatePriv()
+    {
         var role = Auth.CurrentUser?.Role;
         priv = role is "Manager" or "Admin";
+    }
 
-        await LoadRecipesAsync();
+    private void AuthChanged()
+    {
+        UpdatePriv();
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadRecipesAsync()
@@ -91,7 +115,6 @@ else
             StateHasChanged();
         });
     }
-
 
     void AddNew() => Nav.NavigateTo("/recipes/create");
     void Edit(int id) => Nav.NavigateTo($"/recipes/edit/{id}");
@@ -124,5 +147,7 @@ else
     public void Dispose()
     {
         LocationState.OnChange -= RefreshRecipes;
+        Auth.OnAuthStateChanged -= AuthChanged;
     }
 }
+

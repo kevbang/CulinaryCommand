@@ -50,6 +50,7 @@ namespace CulinaryCommand.Services
         /// </summary>
         public async Task EnsureHydratedAsync()
         {
+
             if (_hydrated) return;
 
             // Wait for JS/localStorage

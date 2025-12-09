@@ -82,11 +82,11 @@
         if (int.TryParse(idStr, out int id) && id > 0)
         {
             Location? cached = await LocationService.GetLocationByIdAsync(id);
-            LocationState.SetCurrentLocation(cached);
+            await LocationState.SetCurrentLocationAsync(cached);
         }
         else
         {
-            LocationState.SetCurrentLocation(null);
+            await LocationState.SetCurrentLocationAsync(null);
         }
 
         _initializedFromJS = true;
@@ -104,13 +104,13 @@
 
         if (fresh != null)
         {
-            LocationState.SetCurrentLocation(fresh);
+            await LocationState.SetCurrentLocationAsync(fresh);
         }
         else
         {
             // Location removed or permission revoked
             await JS.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
-            LocationState.SetCurrentLocation(null!);
+            await LocationState.SetCurrentLocationAsync(null!);
         }
 
         StateHasChanged();

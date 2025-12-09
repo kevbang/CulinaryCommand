@@ -40,7 +40,7 @@
                     <div
                         class="dropdown-item d-flex justify-content-between align-items-center @(LocationState.CurrentLocation == location ? "active" : "")">
                         <span class="flex-grow-1" style="cursor: pointer;"
-                            @onclick="() => LocationState.SetCurrentLocation(location)">
+                            @onclick="() => SetLocation(location)">
                             @location.Name
                         </span>
                         <button class="btn btn-link p-0 ms-2 edit-btn" title="Edit @location.Name"
@@ -100,6 +100,7 @@
         }
     }
 
+
     private async Task<List<Location>> LoadCachedLocationsAsync()
     {
         var json = await JS.InvokeAsync<string>("localStorage.getItem", "cc_locations");
@@ -129,12 +130,12 @@
 
         // Set a default current location if none
         if (LocationState.CurrentLocation == null && ManagedLocations.Any())
-            LocationState.SetCurrentLocation(ManagedLocations.First());
+            await LocationState.SetCurrentLocationAsync(ManagedLocations.First());
     }
 
-    private void SetLocation(Location location)
+    private async Task SetLocation(Location location)
     {
-        LocationState.SetCurrentLocation(location);
+        await LocationState.SetCurrentLocationAsync(location);
     }
 
     private void EditLocation(Location location)

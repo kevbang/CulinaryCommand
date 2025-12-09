@@ -1,5 +1,6 @@
 // Services/LocationState.cs
 using CulinaryCommand.Data.Entities;
+using Microsoft.JSInterop;
 
 namespace CulinaryCommand.Services
 {
@@ -13,22 +14,45 @@ namespace CulinaryCommand.Services
      */
     public class LocationState
     {
+        private readonly IJSRuntime _js;
+
         public List<Location> ManagedLocations { get; private set; } = new();
         public Location? CurrentLocation { get; private set; }
 
         public event Action? OnChange;
 
-        public void SetLocations(List<Location> locations)
+        public LocationState(IJSRuntime js)
+        {
+            _js = js;
+        }
+
+        public async Task SetLocationsAsync(List<Location> locations)
         {
             ManagedLocations = locations ?? new List<Location>();
-            CurrentLocation = ManagedLocations.FirstOrDefault();
+
+            // Try to restore saved current location
+            var savedId = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_activeLocationId");
+
+            if (int.TryParse(savedId, out int id))
+            {
+                CurrentLocation = ManagedLocations.FirstOrDefault(l => l.Id == id);
+            }
+
+            // Default to first if invalid
+            CurrentLocation ??= ManagedLocations.FirstOrDefault();
+
             OnChange?.Invoke();
         }
 
-        public void SetCurrentLocation(Location loc)
+        public async Task SetCurrentLocationAsync(Location loc)
         {
             CurrentLocation = loc;
+
+            // Persist to localStorage
+            await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", loc.Id);
+
             OnChange?.Invoke();
         }
     }
+
 }

@@ -242,8 +242,12 @@ namespace CulinaryCommand.Services
         public async Task LoadAndPersistLocationsAsync(int userId)
         {
             var locations = await GetLocationsByManagerAsync(userId);
+            if (locations == null)
+            {
+                locations = new List<Location>();
+            }
 
-            _locationState.SetLocations(locations);
+            await _locationState.SetLocationsAsync(locations);
 
             var json = JsonSerializer.Serialize(locations);
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_locations", json);
