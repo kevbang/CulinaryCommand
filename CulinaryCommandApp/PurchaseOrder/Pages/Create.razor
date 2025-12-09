@@ -1,0 +1,154 @@
+@page "/purchase-orders/create"
+@inject NavigationManager Nav
+
+<h3 class="mb-4">Create Purchase Order</h3>
+
+<div class="card">
+    <div class="card-body">
+        <EditForm Model="@model" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">PO Number</label>
+                    <InputText class="form-control" @bind-Value="model.PoNumber" placeholder="PO-2025-XXX" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Date</label>
+                    <InputDate class="form-control" @bind-Value="model.Date" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Supplier</label>
+                    <InputText class="form-control" @bind-Value="model.Supplier" placeholder="Supplier name" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    <InputSelect class="form-select" @bind-Value="model.Status">
+                        <option value="">-- Select Status --</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Completed">Completed</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <InputTextArea class="form-control" @bind-Value="model.Notes" rows="3" placeholder="Additional notes..." />
+            </div>
+
+            <h5 class="mt-4 mb-3">Line Items</h5>
+            
+            @foreach (var item in model.LineItems)
+            {
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Item Name</label>
+                                <InputText class="form-control" @bind-Value="item.ItemName" placeholder="Item name" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quantity</label>
+                                <InputNumber class="form-control" @bind-Value="item.Quantity" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Unit</label>
+                                <InputText class="form-control" @bind-Value="item.Unit" placeholder="ea, lb, kg" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Price</label>
+                                <InputNumber class="form-control" @bind-Value="item.UnitPrice" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Subtotal</label>
+                                <input type="text" class="form-control" value="@item.Subtotal.ToString("C")" readonly />
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger mt-2" @onclick="() => RemoveLineItem(item)">
+                            <i class="bi bi-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <button type="button" class="btn btn-secondary mb-3" @onclick="AddLineItem">
+                <i class="bi bi-plus-circle"></i> Add Line Item
+            </button>
+
+            <div class="alert alert-info mt-3">
+                <strong>Total: @CalculateTotal().ToString("C")</strong>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success me-2">
+                    <i class="bi bi-save"></i> Save Purchase Order
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private PurchaseOrderModel model = new();
+
+    protected override void OnInitialized()
+    {
+        model.Date = DateTime.Now;
+        model.Status = "Pending";
+        model.LineItems.Add(new LineItemModel());
+    }
+
+    private void AddLineItem()
+    {
+        model.LineItems.Add(new LineItemModel());
+    }
+
+    private void RemoveLineItem(LineItemModel item)
+    {
+        model.LineItems.Remove(item);
+    }
+
+    private decimal CalculateTotal()
+    {
+        return model.LineItems.Sum(x => x.Subtotal);
+    }
+
+    private void HandleSubmit()
+    {
+        // TODO: Save to database via service
+        Nav.NavigateTo("/purchase-orders");
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/purchase-orders");
+    }
+
+    private class PurchaseOrderModel
+    {
+        public string PoNumber { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Supplier { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public List<LineItemModel> LineItems { get; set; } = new();
+    }
+
+    private class LineItemModel
+    {
+        public string ItemName { get; set; } = string.Empty;
+        public int Quantity { get; set; } = 1;
+        public string Unit { get; set; } = "ea";
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal => Quantity * UnitPrice;
+    }
+}
