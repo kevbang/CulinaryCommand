@@ -1,0 +1,546 @@
+@page "/purchase-orders"
+@rendermode InteractiveServer
+
+@using CulinaryCommand.PurchaseOrder.DTOs
+@using CulinaryCommand.PurchaseOrder.Services
+@using Microsoft.AspNetCore.Components
+
+@inject IPurchaseOrderService PurchaseOrderService
+@inject NavigationManager Navigation
+
+<div class="purchase-orders-container">
+    <div class="purchase-orders-header">
+        <h1>Purchase Orders</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" @onclick="ShowAddOrderModal">
+                <i class="bi bi-plus-lg"></i> Add Purchase Order
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="tab-btn @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
+            All
+        </button>
+        <button class="tab-btn @(activeTab == "pending" ? "active" : "")" @onclick='() => SetActiveTab("pending")'>
+            Pending
+        </button>
+        <button class="tab-btn @(activeTab == "placed" ? "active" : "")" @onclick='() => SetActiveTab("placed")'>
+            Placed
+        </button>
+        <button class="tab-btn @(activeTab == "complete" ? "active" : "")" @onclick='() => SetActiveTab("complete")'>
+            Complete
+        </button>
+        <button class="btn-filter-list" @onclick="ToggleFilterPanel">
+            <i class="bi bi-funnel"></i> Filter List
+        </button>
+    </div>
+
+    <!-- Advanced Filter Panel -->
+    @if (showFilterPanel)
+    {
+        <div class="filter-panel">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" class="form-control" @bind="searchTerm" @bind:event="oninput" placeholder="Search by reference or description..." />
+                </div>
+                <div class="filter-group">
+                    <label>Supplier</label>
+                    <select class="form-control" @bind="selectedSupplierId">
+                        <option value="0">All Suppliers</option>
+                        @foreach (var supplier in suppliers)
+                        {
+                            <option value="@supplier.SupplierId">@supplier.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select class="form-control" @bind="selectedStatus">
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Placed">Placed</option>
+                        <option value="Complete">Complete</option>
+                        <option value="RequiresApproval">Requires Approval</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" @onclick="ClearFilters">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Purchase Orders Table -->
+    <div class="purchase-orders-table-container">
+        <table class="purchase-orders-table">
+            <thead>
+                <tr>
+                    <th @onclick='() => SortBy("reference")'>
+                        Reference <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Description</th>
+                    <th @onclick='() => SortBy("supplier")'>
+                        Supplier <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Supplier Reference</th>
+                    <th @onclick='() => SortBy("lineItems")'>
+                        Line Items <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("status")'>
+                        Order Status <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("targetDate")'>
+                        Target Date <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("completionDate")'>
+                        Completion Date <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th @onclick='() => SortBy("totalPrice")'>
+                        Total Price <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Responsible</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (isLoading)
+                {
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else if (!filteredOrders.Any())
+                {
+                    <tr>
+                        <td colspan="11" class="text-center py-4">
+                            <p class="text-muted">No purchase orders found</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var order in filteredOrders)
+                    {
+                        <tr class="@GetRowClass(order)">
+                            <td>
+                                <strong>@order.Reference</strong>
+                            </td>
+                            <td>
+                                <div class="order-description">
+                                    @(string.IsNullOrEmpty(order.Description) ? "-" : order.Description)
+                                </div>
+                            </td>
+                            <td>
+                                <div class="supplier-info">
+                                    @order.SupplierName
+                                </div>
+                            </td>
+                            <td>@(string.IsNullOrEmpty(order.SupplierReference) ? "-" : order.SupplierReference)</td>
+                            <td>
+                                <div class="line-items-progress">
+                                    <div class="progress-text">@order.ReceivedItems / @order.TotalItems</div>
+                                    @if (order.TotalItems > 0)
+                                    {
+                                        <div class="progress-bar-container">
+                                            <div class="progress-bar-fill" style="width: @(((double)order.ReceivedItems / order.TotalItems) * 100)%"></div>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-@order.Status.ToLower().Replace(" ", "-")">
+                                    @order.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (order.TargetDate.HasValue)
+                                {
+                                    <span class="@(IsDateOverdue(order.TargetDate.Value, order.Status) ? "text-danger fw-bold" : "")">
+                                        @order.TargetDate.Value.ToString("yyyy-MM-dd")
+                                        @if (IsDateOverdue(order.TargetDate.Value, order.Status))
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @if (order.CompletionDate.HasValue)
+                                {
+                                    @order.CompletionDate.Value.ToString("yyyy-MM-dd")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <strong>@order.Currency @order.TotalPrice.ToString("N2")</strong>
+                            </td>
+                            <td>
+                                @(string.IsNullOrEmpty(order.ResponsibleUserName) ? "-" : order.ResponsibleUserName)
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-action" @onclick="() => EditOrder(order)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn-action" @onclick="() => ViewOrderDetails(order)" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn-action text-danger" @onclick="() => DeleteOrder(order)" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="purchase-orders-stats">
+        <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">@purchaseOrders.Count</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Pending</div>
+            <div class="stat-value text-warning">@purchaseOrders.Count(o => o.Status == "Pending")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Complete</div>
+            <div class="stat-value text-success">@purchaseOrders.Count(o => o.Status == "Complete")</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Value</div>
+            <div class="stat-value">@purchaseOrders.Sum(o => o.TotalPrice).ToString("C2")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Order Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+    <div class="modal-dialog-custom">
+        <div class="modal-content-custom">
+            <div class="modal-header-custom">
+                <h3>@(editingOrder == null ? "Add Purchase Order" : "Edit Purchase Order")</h3>
+                <button class="btn-close-custom" @onclick="CloseModal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="form-group mb-3">
+                    <label>Reference <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" @bind="modalOrder.Reference" placeholder="PO0019" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Description</label>
+                    <textarea class="form-control" @bind="modalOrder.Description" rows="2" placeholder="Order description (optional)"></textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Supplier <span class="text-danger">*</span></label>
+                    <select class="form-control" @bind="modalOrder.SupplierId">
+                        <option value="0">Select Supplier</option>
+                        @foreach (var supplier in suppliers)
+                        {
+                            <option value="@supplier.SupplierId">@supplier.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Supplier Reference</label>
+                    <input type="text" class="form-control" @bind="modalOrder.SupplierReference" placeholder="Supplier order reference code" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Project Code</label>
+                    <input type="text" class="form-control" @bind="modalOrder.ProjectCode" placeholder="Project code for this order" />
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Start Date</label>
+                            <input type="date" class="form-control" @bind="modalOrder.StartDate" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Target Date</label>
+                            <input type="date" class="form-control" @bind="modalOrder.TargetDate" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Link</label>
+                    <input type="url" class="form-control" @bind="modalOrder.Link" placeholder="Link to external page" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Order Currency</label>
+                    <select class="form-control" @bind="modalOrder.Currency">
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="CAD">CAD - Canadian Dollar</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-success" @onclick="SaveOrder">
+                    @(editingOrder == null ? "Create Order" : "Update Order")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<PurchaseOrderDto> purchaseOrders = new();
+    private List<PurchaseOrderDto> filteredOrders = new();
+    private List<SupplierDto> suppliers = new();
+    
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool showFilterPanel = false;
+    
+    private string activeTab = "all";
+    private string searchTerm = "";
+    private int selectedSupplierId = 0;
+    private string selectedStatus = "";
+    private string sortColumn = "reference";
+    private bool sortAscending = true;
+    
+    private PurchaseOrderDto? editingOrder = null;
+    private CreatePurchaseOrderRequest modalOrder = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            purchaseOrders = await PurchaseOrderService.GetAllPurchaseOrdersAsync();
+            suppliers = await PurchaseOrderService.GetAllSuppliersAsync();
+            ApplyFilters();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        ApplyFilters();
+    }
+
+    private void ToggleFilterPanel()
+    {
+        showFilterPanel = !showFilterPanel;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredOrders = purchaseOrders;
+
+        // Tab filter
+        if (activeTab != "all")
+        {
+            filteredOrders = filteredOrders.Where(o => 
+                o.Status.Equals(activeTab, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredOrders = filteredOrders.Where(o =>
+                o.Reference.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (o.Description != null && o.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))).ToList();
+        }
+
+        // Supplier filter
+        if (selectedSupplierId > 0)
+        {
+            filteredOrders = filteredOrders.Where(o => o.SupplierId == selectedSupplierId).ToList();
+        }
+
+        // Status filter
+        if (!string.IsNullOrWhiteSpace(selectedStatus))
+        {
+            filteredOrders = filteredOrders.Where(o => o.Status == selectedStatus).ToList();
+        }
+
+        SortOrders();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        SortOrders();
+    }
+
+    private void SortOrders()
+    {
+        filteredOrders = sortColumn switch
+        {
+            "reference" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.Reference).ToList()
+                : filteredOrders.OrderByDescending(o => o.Reference).ToList(),
+            "supplier" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.SupplierName).ToList()
+                : filteredOrders.OrderByDescending(o => o.SupplierName).ToList(),
+            "lineItems" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.TotalItems).ToList()
+                : filteredOrders.OrderByDescending(o => o.TotalItems).ToList(),
+            "status" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.Status).ToList()
+                : filteredOrders.OrderByDescending(o => o.Status).ToList(),
+            "targetDate" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.TargetDate ?? DateTime.MaxValue).ToList()
+                : filteredOrders.OrderByDescending(o => o.TargetDate ?? DateTime.MinValue).ToList(),
+            "completionDate" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.CompletionDate ?? DateTime.MaxValue).ToList()
+                : filteredOrders.OrderByDescending(o => o.CompletionDate ?? DateTime.MinValue).ToList(),
+            "totalPrice" => sortAscending 
+                ? filteredOrders.OrderBy(o => o.TotalPrice).ToList()
+                : filteredOrders.OrderByDescending(o => o.TotalPrice).ToList(),
+            _ => filteredOrders
+        };
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedSupplierId = 0;
+        selectedStatus = "";
+        ApplyFilters();
+    }
+
+    private void ShowAddOrderModal()
+    {
+        editingOrder = null;
+        modalOrder = new CreatePurchaseOrderRequest
+        {
+            Currency = "USD"
+        };
+        showModal = true;
+    }
+
+    private void EditOrder(PurchaseOrderDto order)
+    {
+        editingOrder = order;
+        modalOrder = new CreatePurchaseOrderRequest
+        {
+            Reference = order.Reference,
+            Description = order.Description,
+            SupplierId = order.SupplierId,
+            SupplierReference = order.SupplierReference,
+            ProjectCode = order.ProjectCode,
+            Currency = order.Currency,
+            StartDate = order.StartDate,
+            TargetDate = order.TargetDate,
+            LocationId = order.LocationId,
+            Link = order.Link,
+            ResponsibleUserId = order.ResponsibleUserId
+        };
+        showModal = true;
+    }
+
+    private async Task SaveOrder()
+    {
+        if (string.IsNullOrWhiteSpace(modalOrder.Reference) || modalOrder.SupplierId == 0)
+        {
+            return; // Basic validation
+        }
+
+        try
+        {
+            if (editingOrder == null)
+            {
+                await PurchaseOrderService.CreatePurchaseOrderAsync(modalOrder);
+            }
+            else
+            {
+                await PurchaseOrderService.UpdatePurchaseOrderAsync(editingOrder.PurchaseOrderId, modalOrder);
+            }
+
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving purchase order: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteOrder(PurchaseOrderDto order)
+    {
+        if (confirm($"Are you sure you want to delete purchase order {order.Reference}?"))
+        {
+            await PurchaseOrderService.DeletePurchaseOrderAsync(order.PurchaseOrderId);
+            await LoadData();
+        }
+    }
+
+    private void ViewOrderDetails(PurchaseOrderDto order)
+    {
+        // TODO: Navigate to details page or show details modal
+        Console.WriteLine($"Viewing details for order: {order.Reference}");
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editingOrder = null;
+    }
+
+    private string GetRowClass(PurchaseOrderDto order)
+    {
+        return order.Status.ToLower() switch
+        {
+            "cancelled" => "row-cancelled",
+            "complete" => "row-complete",
+            _ => ""
+        };
+    }
+
+    private bool IsDateOverdue(DateTime targetDate, string status)
+    {
+        return targetDate < DateTime.Now && status != "Complete" && status != "Cancelled";
+    }
+
+    private bool confirm(string message)
+    {
+        // In production, use JSInterop for proper confirm dialog
+        return true;
+    }
+}

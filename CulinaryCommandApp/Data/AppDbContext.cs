@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using CulinaryCommand.Data.Entities;
 using CulinaryCommand.Inventory.Entities;
+using CulinaryCommand.PurchaseOrder.Entities;
 
 namespace CulinaryCommand.Data
 {
@@ -24,6 +25,9 @@ namespace CulinaryCommand.Data
         public DbSet<ManagerLocation> ManagerLocations => Set<ManagerLocation>();
         public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
         public DbSet<CulinaryCommand.Inventory.Entities.Unit> Units => Set<CulinaryCommand.Inventory.Entities.Unit>();
+        public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+        public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+        public DbSet<Supplier> Suppliers => Set<Supplier>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
