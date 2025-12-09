@@ -1,0 +1,134 @@
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@rendermode InteractiveServer
+
+<h3 class="mb-3">Purchase Orders</h3>
+
+<button type="button" class="btn btn-success mb-3" @onclick="AddNew">
+    <i class="bi bi-plus-circle"></i> Create Purchase Order
+</button>
+
+@if (items == null)
+{
+    <p>Loading...</p>
+}
+else if (!items.Any())
+{
+    <div class="alert alert-info">
+        No purchase orders found. Click "Create Purchase Order" to get started.
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>PO Number</th>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var po in items)
+            {
+                <tr>
+                    <td>@po.PoNumber</td>
+                    <td>@po.Date.ToShortDateString()</td>
+                    <td>@po.Supplier</td>
+                    <td>
+                        <span class="badge @GetStatusBadgeClass(po.Status)">
+                            @po.Status
+                        </span>
+                    </td>
+                    <td>@po.Total.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-2" @onclick="() => View(po.Id)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary me-2" @onclick="() => Edit(po.Id)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(po.Id)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<PurchaseOrderViewModel>? items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Mock data for baseline - replace with actual service call
+        await LoadPurchaseOrders();
+    }
+
+    private async Task LoadPurchaseOrders()
+    {
+        // Simulate loading delay
+        await Task.Delay(500);
+        
+        // Mock data - replace with actual service
+        items = new List<PurchaseOrderViewModel>
+        {
+            new PurchaseOrderViewModel
+            {
+                Id = 1,
+                PoNumber = "PO-2025-001",
+                Date = DateTime.Now.AddDays(-5),
+                Supplier = "ABC Suppliers",
+                Status = "Pending",
+                Total = 1250.50m
+            },
+            new PurchaseOrderViewModel
+            {
+                Id = 2,
+                PoNumber = "PO-2025-002",
+                Date = DateTime.Now.AddDays(-2),
+                Supplier = "XYZ Distributors",
+                Status = "Approved",
+                Total = 890.75m
+            }
+        };
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Pending" => "bg-warning",
+        "Approved" => "bg-success",
+        "Rejected" => "bg-danger",
+        "Completed" => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    private void AddNew() => Nav.NavigateTo("/purchase-orders/create");
+    private void View(int id) => Nav.NavigateTo($"/purchase-orders/view/{id}");
+    private void Edit(int id) => Nav.NavigateTo($"/purchase-orders/edit/{id}");
+
+    private async Task Delete(int id)
+    {
+        if (await Js.InvokeAsync<bool>("confirm", "Are you sure you want to delete this purchase order?"))
+        {
+            // TODO: Call service to delete
+            items = items?.Where(x => x.Id != id).ToList();
+        }
+    }
+
+    // View model - move to separate file when integrating with actual entities
+    private class PurchaseOrderViewModel
+    {
+        public int Id { get; set; }
+        public string PoNumber { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Supplier { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public decimal Total { get; set; }
+    }
+}

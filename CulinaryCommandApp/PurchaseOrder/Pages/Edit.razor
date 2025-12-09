@@ -1,0 +1,177 @@
+@page "/purchase-orders/edit/{id:int}"
+@inject NavigationManager Nav
+
+<h3 class="mb-4">Edit Purchase Order #@Id</h3>
+
+@if (model == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <EditForm Model="@model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">PO Number</label>
+                        <InputText class="form-control" @bind-Value="model.PoNumber" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date</label>
+                        <InputDate class="form-control" @bind-Value="model.Date" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Supplier</label>
+                        <InputText class="form-control" @bind-Value="model.Supplier" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="model.Status">
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Completed">Completed</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <InputTextArea class="form-control" @bind-Value="model.Notes" rows="3" />
+                </div>
+
+                <h5 class="mt-4 mb-3">Line Items</h5>
+                
+                @foreach (var item in model.LineItems)
+                {
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Item Name</label>
+                                    <InputText class="form-control" @bind-Value="item.ItemName" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Quantity</label>
+                                    <InputNumber class="form-control" @bind-Value="item.Quantity" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit</label>
+                                    <InputText class="form-control" @bind-Value="item.Unit" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Price</label>
+                                    <InputNumber class="form-control" @bind-Value="item.UnitPrice" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Subtotal</label>
+                                    <input type="text" class="form-control" value="@item.Subtotal.ToString("C")" readonly />
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger mt-2" @onclick="() => RemoveLineItem(item)">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <button type="button" class="btn btn-secondary mb-3" @onclick="AddLineItem">
+                    <i class="bi bi-plus-circle"></i> Add Line Item
+                </button>
+
+                <div class="alert alert-info mt-3">
+                    <strong>Total: @CalculateTotal().ToString("C")</strong>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="Cancel">
+                        Cancel
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private PurchaseOrderModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate loading - replace with actual service call
+        await Task.Delay(300);
+        
+        // Mock data for the purchase order
+        model = new PurchaseOrderModel
+        {
+            PoNumber = $"PO-2025-{Id:000}",
+            Date = DateTime.Now.AddDays(-Id),
+            Supplier = Id == 1 ? "ABC Suppliers" : "XYZ Distributors",
+            Status = "Pending",
+            Notes = "Original notes here",
+            LineItems = new List<LineItemModel>
+            {
+                new() { ItemName = "Product A", Quantity = 10, Unit = "ea", UnitPrice = 25.50m },
+                new() { ItemName = "Product B", Quantity = 5, Unit = "lb", UnitPrice = 15.75m }
+            }
+        };
+    }
+
+    private void AddLineItem()
+    {
+        model?.LineItems.Add(new LineItemModel());
+    }
+
+    private void RemoveLineItem(LineItemModel item)
+    {
+        model?.LineItems.Remove(item);
+    }
+
+    private decimal CalculateTotal()
+    {
+        return model?.LineItems.Sum(x => x.Subtotal) ?? 0;
+    }
+
+    private void HandleSubmit()
+    {
+        // TODO: Update in database via service
+        Nav.NavigateTo("/purchase-orders");
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/purchase-orders");
+    }
+
+    private class PurchaseOrderModel
+    {
+        public string PoNumber { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Supplier { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public List<LineItemModel> LineItems { get; set; } = new();
+    }
+
+    private class LineItemModel
+    {
+        public string ItemName { get; set; } = string.Empty;
+        public int Quantity { get; set; } = 1;
+        public string Unit { get; set; } = "ea";
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal => Quantity * UnitPrice;
+    }
+}
