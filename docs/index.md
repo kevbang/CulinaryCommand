@@ -18,24 +18,22 @@ versions:
 - Remove these comments from your article file when you're done writing.
 {% endcomment %}
 
-## A section here
+## Introduction
 
-{% comment %}
-Write one or two paragraphs about the main idea of your topic, as a summary.
-Make sure you don't have any content that isn't preceded by a header, or it won't be linkable in our table of contents.
-{% endcomment %}
+This page serves as the central location for all Culinary Command related documentation. 
 
-## Another section here
+Github uses Ruby + Jekyll to generate and host this page. More specifically, Github looks at whatever is in the `CulinaryCommand/docs/` directory and deploys it.
 
-{% comment %}
-Write one or two paragraphs about another element of your topic.
-Keep adding headers and sections until you've completed your article.
-{% endcomment %}
+## How To Contribute
 
-## Further reading
+All related information to documentation is located under the `docs/` directory. `index.md` is where all of the content is loaded from, so, if you want to add information, that is the file you want to edit. `_config.yml` serves as a configuration file that Github reads the theme from. 
 
-{% comment %}
-Optionally, include a bulleted list of related articles the user can reference to extend the concepts covered in this article. Consider linking to procedural articles or tutorials that help the user use the information in your article.
-{% endcomment %}
+## Table of Contents
 
-- [Article title](article-URL)
+- [Terraform](#terraform)
+
+## Terraform {#terraform}
+
+[Terraform](https://developer.hashicorp.com/terraform) is an Infrastructure as Code (IaC) tool that deploys all AWS related infrastructure. This is automatically done through the CI/CD pipeline.
+
+Currently, the only resource that Terraform deploys is the lightsail instance that the Culinary Commmand app is hosted on.
