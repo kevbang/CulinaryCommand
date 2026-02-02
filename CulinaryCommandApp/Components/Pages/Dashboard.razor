@@ -2,7 +2,9 @@
 @rendermode InteractiveServer
 
 @using CulinaryCommand.Components.Custom
-
+@using CulinaryCommandApp.AIDashboard.Services.Reporting
+@using CulinaryCommandApp.AIDashboard.Services.DTOs
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager Nav
 
@@ -32,11 +34,117 @@ else
         {
             <EmployeeView />
         }
+
+        <hr />
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    Weekly Report Analysis
+                </h5>
+
+                @if (_aiLoading)
+                {
+                    <div> Loading analysis from Gemini...</div>
+                }
+                else if (_aiAnalysisObj == null)
+                {
+                    <div class="text-muted"> No analysis available.</div>
+                }
+                else 
+                {
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">@_aiAnalysisObj.Title</h5>
+                                    <p class="card-text">@_aiAnalysisObj.Summary</p>
+                                    <p class="mb-1"><small class="text-muted">Generated: @_aiAnalysisObj.GeneratedAt?.ToLocalTime().ToString("g")</small></p>
+                                    <p><small class="text-muted">Confidence: @((_aiAnalysisObj.Confidence ?? 0).ToString("P0"))</small></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="row g-3">
+                                @if (_aiAnalysisObj.Metrics != null && _aiAnalysisObj.Metrics.Any())
+                                {
+                                    foreach (var m in _aiAnalysisObj.Metrics)
+                                    {
+                                        <div class="col-sm-6">
+                                            <div class="card h-100 border-primary">
+                                                <div class="card-body">
+                                                    <h6 class="card-subtitle mb-2 text-muted">@m.Label</h6>
+                                                    <p class="card-text fs-4">@m.Value @(!string.IsNullOrWhiteSpace(m.Unit) ? m.Unit : "")</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                            <div class="mt-3">
+                                @if (_aiAnalysisObj.Recommendations != null && _aiAnalysisObj.Recommendations.Any())
+                                {
+                                    <h6>Recommendations</h6>
+                                    <ul class="list-group list-group-flush">
+                                        @foreach (var r in _aiAnalysisObj.Recommendations)
+                                        {
+                                            <li class="list-group-item">@r</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_aiAnalysisObj.Sections != null && _aiAnalysisObj.Sections.Any())
+                    {
+                        <div class="row mt-3 g-3">
+                            @foreach (var s in _aiAnalysisObj.Sections)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">@s.Heading</h6>
+                                            <p class="card-text">@s.Body</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (_aiAnalysisObj.Anomalies != null && _aiAnalysisObj.Anomalies.Any())
+                    {
+                        <div class="mt-3">
+                            <h6>Anomalies</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead><tr><th>Row</th><th>Reason</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var a in _aiAnalysisObj.Anomalies)
+                                        {
+                                            <tr><td>@a.Row</td><td>@a.Reason</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
     </div>
 }
 
 @code {
     private bool _ready;
+    private bool _aiLoading;
+    private string? _aiAnalysis;
+    private AIAnalysisResultDTO? _aiAnalysisObj;
+    private bool _aiLoadedOnce = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -44,6 +152,35 @@ else
         await Auth.EnsureHydratedAsync(); // safe here (interactive)
         _ready = true;
         StateHasChanged();
+
+        if (!_aiLoadedOnce)
+        {
+            _aiLoadedOnce = true;
+            _aiLoading = true;
+            StateHasChanged();
+
+            // Get analysis:
+
+            var csvPath = Path.Combine(Env.ContentRootPath, "AIDashboard", "Services", "Reporting", "test_data.csv");
+            _aiAnalysis = await AIReportingService.AnalyzeCsvAsync(csvPath);
+
+            // Try to deserialize the returned JSON into the DTO so we can render structured cards UI.
+            if (!string.IsNullOrWhiteSpace(_aiAnalysis))
+            {
+                try
+                {
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    _aiAnalysisObj = System.Text.Json.JsonSerializer.Deserialize<AIAnalysisResultDTO>(_aiAnalysis, options);
+                }
+                catch
+                {
+                    _aiAnalysisObj = null;
+                }
+            }
+
+            _aiLoading = false;
+            StateHasChanged();
+        }
 
     }
 

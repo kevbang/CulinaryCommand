@@ -8,6 +8,7 @@ using CulinaryCommand.Inventory.Services.Interfaces;
 using System; // for Version, TimeSpan
 using System.Linq;
 using CulinaryCommand.Components; // for args.Any
+using CulinaryCommandApp.AIDashboard.Services.Reporting;
 
 var builder = WebApplication.CreateBuilder(args);
 
