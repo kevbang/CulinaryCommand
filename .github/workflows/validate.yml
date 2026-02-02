@@ -35,13 +35,11 @@ jobs:
           with:
             node-version: 20
 
-        - name: Setup Playwright
-          uses: microsoft/playwright-github-action@v1
-          with:
-            install-deps: true
-            browsers: chromium,firefox,webkit
+        - name: Install Playwright Dependencies
+          working-directory: CulinaryCommandApp
+          run: |
+            npx playwright install --with-deps
 
         - name: Run Culinary Command xUnit tests
           run: |
             dotnet test CulinaryCommandApp/CulinaryCommand.sln
-
