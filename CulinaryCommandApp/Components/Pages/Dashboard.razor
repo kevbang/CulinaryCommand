@@ -7,6 +7,7 @@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager Nav
+@inject AIReportingService ReportingService
 
 
 @if (!_ready)
@@ -162,7 +163,7 @@ else
             // Get analysis:
 
             var csvPath = Path.Combine(Env.ContentRootPath, "AIDashboard", "Services", "Reporting", "test_data.csv");
-            _aiAnalysis = await AIReportingService.AnalyzeCsvAsync(csvPath);
+            _aiAnalysis = await ReportingService.AnalyzeCsvAsync(csvPath);
 
             // Try to deserialize the returned JSON into the DTO so we can render structured cards UI.
             if (!string.IsNullOrWhiteSpace(_aiAnalysis))
