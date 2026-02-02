@@ -35,9 +35,14 @@ jobs:
           with:
             node-version: 20
 
-        - name: Install Playwright Dependencies
+        - name: Install Playwright Dependencies (project-local)
           working-directory: CulinaryCommandApp
           run: |
+            npx playwright install --with-deps
+
+        - name: Install Playwright browsers (repo root cache)
+          run: |
+            npm ci || true
             npx playwright install --with-deps
 
         - name: Run Culinary Command xUnit tests
