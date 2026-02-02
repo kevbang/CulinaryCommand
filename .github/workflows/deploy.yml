@@ -127,6 +127,7 @@ jobs:
                   ASPNETCORE_ENVIRONMENT=Production
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+                  GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env
                   sudo chmod 640 /var/www/culinarycommand/.env
@@ -135,6 +136,7 @@ jobs:
                   ASPNETCORE_ENVIRONMENT=Production
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   export ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
+                  export GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env.export
                   sudo chmod 640 /var/www/culinarycommand/.env.export
