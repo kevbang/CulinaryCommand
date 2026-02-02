@@ -11,9 +11,17 @@ namespace CulinaryCommandApp.AIDashboard.Services.Reporting
     using System.Text.Json;
     using CulinaryCommandApp.AIDashboard.Services.DTOs;
 
-    public static class AIReportingService
+
+    public class AIReportingService
     {
-        public static async Task<string> AnalyzeCsvAsync(string? csvPath = null)
+        private readonly Client _client;
+
+        public AIReportingService(Client client)
+        {
+            _client = client ?? throw new ArgumentNullException(nameof(client));
+        }
+
+        public async Task<string> AnalyzeCsvAsync(string? csvPath = null)
         {
             const string PayloadSchema = @" You are an expert restaurant data analyst.
                                             Analyze the CSV I give you and return ONLY a JSON object
@@ -43,7 +51,11 @@ namespace CulinaryCommandApp.AIDashboard.Services.Reporting
                                             ";
 
 
-            var client = new Client();
+            if (string.IsNullOrWhiteSpace(csvPath))
+            {
+                Console.WriteLine("CSV path not provided.");
+                return "CSV path not provided.";
+            }
 
             if (!System.IO.File.Exists(csvPath))
             {
@@ -62,30 +74,6 @@ namespace CulinaryCommandApp.AIDashboard.Services.Reporting
             var header = lines[0];
             var rows = lines.Skip(1).ToList();
 
-            /****DOING STATIC ANALYSIS TO BE DISPLAYED ON DASHBOARD****/
-            // Extract price values from CSV file.
-            var priceValues = rows
-                .Select(r => r.Split(","))
-                .Where(cols => cols.Length >=3 && decimal.TryParse(cols[2], NumberStyles.Any, CultureInfo.InvariantCulture, out _))
-                .Select(cols => decimal.Parse(cols[2], NumberStyles.Any, CultureInfo.InvariantCulture))
-                .ToList();
-
-            decimal? minPrice = priceValues.Any() ? priceValues.Min() : (decimal?)null;
-            decimal? maxPrice = priceValues.Any() ? priceValues.Max() : (decimal?)null;
-            double? averagePrice = priceValues.Any() ? (double?)priceValues.Average() : null;
-
-            // Try to look for any "anomalies/outliers". AI Generated:
-            var anomalies = rows.Where(row =>
-            {
-                var cols = row.Split(",");
-                if (cols.Length < 3) return true;
-                if (!DateTime.TryParse(cols[0], out var d)) return true;
-                if (!decimal.TryParse(cols[2], NumberStyles.Any, CultureInfo.InvariantCulture, out var p)) return true;
-                if (p > 100m) return true;
-                if (d.Year < 2000 || d.Year > DateTime.UtcNow.Year + 1) return true;
-                return false;
-            }).ToList();
-
             /**** Build payload to send to Gemini model****/
             var geminiPayload = new StringBuilder();
 
@@ -96,7 +84,7 @@ namespace CulinaryCommandApp.AIDashboard.Services.Reporting
             Console.WriteLine(geminiPayload);
 
             /***** Make API call to Gemini with payload ******/
-            var response = await client.Models.GenerateContentAsync(
+            var response = await _client.Models.GenerateContentAsync(
                 model: "gemini-3-flash-preview",
                 contents: geminiPayload.ToString()
             );
