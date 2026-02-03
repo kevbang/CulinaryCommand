@@ -85,10 +85,12 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionService>();
 builder.Services.AddScoped<IInventoryManagementService, InventoryManagementService>();
-builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddSingleton<EnumService>();
+
+// add email sender as http client
+builder.Services.AddHttpClient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
@@ -135,5 +137,23 @@ app.MapRazorComponents<App>()
 
 // Simple health endpoint for load balancers/CI checks
 app.MapGet("/health", () => "OK");
+
+
+//TODO REMOVE LATER
+app.MapPost("/_test/email", async (IEmailSender emailSender) =>
+{
+    await emailSender.SendEmailAsync(
+        "rockey@iastate.edu",
+        "CulinaryCommand Email Test",
+        "<p>Resend integration is live</p>"
+    );
+
+    return Results.Ok("Email sent");
+});
+//TODO REMOVE ABOVE LATER
+
+
+
+
 
 app.Run();

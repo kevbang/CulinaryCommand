@@ -62,3 +62,8 @@ publish/
 # Development
 # ============================
 appsettings.Development.json
+
+# ============================
+# Secrets
+# ============================
+secrets/

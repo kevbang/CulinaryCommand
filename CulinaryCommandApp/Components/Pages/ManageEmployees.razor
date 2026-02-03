@@ -1,0 +1,95 @@
+@page "/employees"
+@rendermode InteractiveServer
+
+<h3 class="mb-3">Viewing Employees for @RestaurantName</h3>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Employees
+    </div>
+    <div class="card-body">
+        @if (Employees.Count == 0)
+        {
+            <p class="text-muted">No employees found.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var employee in Employees)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@employee.Name</strong><br />
+                            <small class="text-muted">@employee.Email</small>
+                        </div>
+                        <span class="badge bg-secondary">@employee.Role</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        Add Employee
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label">Employee Email</label>
+            <input class="form-control"
+                   placeholder="employee@example.com"
+                   @bind="NewEmployeeEmail" />
+        </div>
+
+        <button class="btn btn-primary" @onclick="InviteEmployee">
+            Send Invite
+        </button>
+
+        @if (!string.IsNullOrEmpty(StatusMessage))
+        {
+            <div class="alert alert-info mt-3">
+                @StatusMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Hardcoded restaurant
+    private string RestaurantName = "Prarie Canarie";
+
+    // Fake employee list
+    private List<Employee> Employees = new()
+    {
+        new Employee("Ryan Rockey", "rockey@iastate.edu", "Manager"),
+        new Employee("Alex Smith", "alex@gmail.com", "Cook"),
+        new Employee("Jamie Lee", "jamie@gmail.com", "Server")
+    };
+
+    private string NewEmployeeEmail = string.Empty;
+    private string? StatusMessage;
+
+    private void InviteEmployee()
+    {
+        if (string.IsNullOrWhiteSpace(NewEmployeeEmail))
+        {
+            StatusMessage = "Please enter a valid email address.";
+            return;
+        }
+
+        // Simulate sending an email
+        StatusMessage = $"Invitation email sent to {NewEmployeeEmail}.";
+
+        // Optional: simulate pending employee
+        Employees.Add(new Employee(
+            "Pending User",
+            NewEmployeeEmail,
+            "Invited"
+        ));
+
+        NewEmployeeEmail = string.Empty;
+    }
+
+    private record Employee(string Name, string Email, string Role);
+}
