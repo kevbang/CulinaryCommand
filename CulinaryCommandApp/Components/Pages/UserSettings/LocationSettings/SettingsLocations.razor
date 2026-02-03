@@ -42,7 +42,7 @@
     {
         if (!firstRender) return;
 
-        // 1. Hydrate Auth first
+        // Hydrate Auth first
         await Auth.EnsureHydratedAsync();
 
         if (!Auth.IsSignedIn)
@@ -51,7 +51,7 @@
             return;
         }
 
-        // 2. Load location data AFTER hydration
+        // Load location data after hydration
         await LoadLocations();
 
         hydrated = true;

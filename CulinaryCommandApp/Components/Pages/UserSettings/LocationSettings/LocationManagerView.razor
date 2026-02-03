@@ -1,4 +1,7 @@
 @using CulinaryCommand.Data.Entities
+@inject AuthService Auth
+@inject ILocationService LocationService
+@inject NavigationManager NavigationManager
 @inherits ComponentBase
 
 <h4>Your Managed Locations</h4>
@@ -30,6 +33,26 @@
         }
     </div>
 }
+@if (Locations.Count == 0) 
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="alert alert-info">
+            You don’t manage any locations yet.
+        </div>
+        <div class="mx-3">
+            <button class="btn btn-secondary btn-sm" @onclick="() => AddLocation()">
+                <i class="bi bi-square-plus me-1"></i>Add location
+            </button>
+        </div>
+    </div>
+}
+
+@if (addingNew)
+{
+    <LocationForm Model="newModel" OnSave="HandleAdd" OnCancel="CancelAdd" />
+}
+
+
 
 @code {
     [Parameter] public List<Location> Locations { get; set; } = new();
@@ -61,4 +84,42 @@
         await OnEdit.InvokeAsync(model);
         CancelEdit();
     }
+
+    private bool addingNew;
+    private Location newModel = new();
+
+    private void AddLocation()
+    {
+        addingNew = true;
+        newModel = new Location(); // empty model
+    }
+
+    private void CancelAdd() => addingNew = false;
+
+    private async Task HandleAdd(Location model)
+    {
+        if (Auth.UserId != null)
+        {
+            if (!Auth.CompanyId.HasValue)
+            {
+                // handle no company ID
+                throw new InvalidOperationException("Cannot create location: CompanyId is missing for the current user.");
+            }
+
+            Location newLocation = new Location
+            {
+                Name = model.Name,
+                Address = model.Address,
+                City = model.City,
+                State = model.State,
+                ZipCode = model.ZipCode,
+                CompanyId = Auth.CompanyId.Value
+            };
+
+            await LocationService.CreateLocationAsync(newLocation, Auth.UserId.Value);
+            NavigationManager.NavigateTo("/settings/locations");
+        }
+        addingNew = false;
+    }
+
 }

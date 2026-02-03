@@ -94,6 +94,7 @@ namespace CulinaryCommand.Services
             existing.Role = user.Role;
             existing.Phone = user.Phone;
             existing.UpdatedAt = DateTime.UtcNow;
+            existing.CompanyId = user.CompanyId;
 
             await _context.SaveChangesAsync();
         }

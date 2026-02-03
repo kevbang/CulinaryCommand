@@ -142,32 +142,32 @@
         Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
         // TODO: Persist to backend
         if (Auth.UserId is null)
-    {
-        Console.WriteLine("Cannot update profile: no signed-in user.");
-        return;
-    }
+        {
+            Console.WriteLine("Cannot update profile: no signed-in user.");
+            return;
+        }
 
-    await UserService.UpdateUserProfileAsync(
-        Auth.UserId.Value,
-        profileModel.FirstName ?? "",
-        profileModel.LastName ?? "",
-        profileModel.Email ?? "",
-        profileModel.Phone ?? "",
-        profileModel.Role ?? ""
-    );
+        await UserService.UpdateUserProfileAsync(
+            Auth.UserId.Value,
+            profileModel.FirstName ?? "",
+            profileModel.LastName ?? "",
+            profileModel.Email ?? "",
+            profileModel.Phone ?? "",
+            profileModel.Role ?? ""
+        );
 
-    // Refresh AuthService's CurrentUser so UI updates:
-    if (Auth.CurrentUser != null)
-    {
-        Auth.CurrentUser.Name  = $"{profileModel.FirstName} {profileModel.LastName}".Trim();
-        Auth.CurrentUser.Email = profileModel.Email;
-        Auth.CurrentUser.Phone = profileModel.Phone;
-        Auth.CurrentUser.Role  = profileModel.Role;
+        // Refresh AuthService's CurrentUser so UI updates:
+        if (Auth.CurrentUser != null)
+        {
+            Auth.CurrentUser.Name  = $"{profileModel.FirstName} {profileModel.LastName}".Trim();
+            Auth.CurrentUser.Email = profileModel.Email;
+            Auth.CurrentUser.Phone = profileModel.Phone;
+            Auth.CurrentUser.Role  = profileModel.Role;
 
-        //Auth.NotifyStateChanged();
-    }
+            //Auth.NotifyStateChanged();
+        }
 
-    Console.WriteLine("Profile saved!");
+        Console.WriteLine("Profile saved!");
     }
 
     private void ExportData() => Console.WriteLine("Exporting user data...");
