@@ -8,6 +8,9 @@ using CulinaryCommand.Inventory.Services.Interfaces;
 using System; // for Version, TimeSpan
 using System.Linq;
 using CulinaryCommand.Components; // for args.Any
+using Google.GenAI;
+using CulinaryCommandApp.AIDashboard.Services.Reporting;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +22,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register Google GenAI client and AIReportingService so they can be injected.
+// The Client will pick up the GOOGLE_API_KEY from environment variables (set in deploy.yml).
+builder.Services.AddSingleton<Client>(_ => new Client());
+builder.Services.AddScoped<AIReportingService>();
 
 // DB hookup
 // var conn = builder.Configuration.GetConnectionString("DefaultConnection");
