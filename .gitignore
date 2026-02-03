@@ -39,14 +39,17 @@ logs/
 *.db
 *.DS_Store
 
+# ============================
 # Terraform
+# ============================
 .terraform/
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
 
-
+# ============================
 # Copilot
+# ============================
 inventory/.copilot_instructions.md
 
 
@@ -55,4 +58,7 @@ inventory/.copilot_instructions.md
 # ============================
 publish/
 
+# ============================
+# Development
+# ============================
 appsettings.Development.json
