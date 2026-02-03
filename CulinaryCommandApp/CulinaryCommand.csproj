@@ -23,6 +23,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <Content Include="AIDashboard\**\*"> 
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory> 
+    </Content>
   </ItemGroup>
   
   <!-- <ItemGroup>
