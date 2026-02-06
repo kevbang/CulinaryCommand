@@ -33,16 +33,24 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-success">
-        Save
-    </button>
+    <div class="d-flex justify-content-between">
+        <div>
+            <button type="submit" class="btn btn-success">
+                Save
+            </button>
 
-    @if (OnCancel.HasDelegate)
-    {
-        <button type="button" class="btn btn-outline-secondary ms-2" @onclick="() => OnCancel.InvokeAsync()">
-            Cancel
+            @if (OnCancel.HasDelegate)
+            {
+                <button type="button" class="btn btn-outline-secondary ms-2" @onclick="() => OnCancel.InvokeAsync()">
+                    Cancel
+                </button>
+            }
+        </div>
+
+        <button type="submit" class="btn btn-danger justify-content-right">
+            Delete
         </button>
-    }
+    </div>
 </EditForm>
 
 @code {
@@ -53,5 +61,10 @@
     private async Task Submit()
     {
         await OnSave.InvokeAsync(Model);
+    }
+
+    private async Task DeleteLocation()
+    {
+        
     }
 }
