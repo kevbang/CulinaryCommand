@@ -40,18 +40,14 @@
             </NavLink>
         </div> *@
 
-
+        @if (Auth.UserRole == "Employee")
+        {
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/tasks">
                 <span class="bi bi-list-nested nav-icon" aria-hidden="true"></span> My Tasks
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/inventory-management">
-                <span class="bi bi-box-seam nav-icon" aria-hidden="true"></span> Inventory
-            </NavLink>
-        </div>
+        }
 
         @if (Auth.UserRole == "Admin")
         {
