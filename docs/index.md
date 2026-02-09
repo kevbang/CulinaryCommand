@@ -30,9 +30,12 @@ All related information to documentation is located under the `docs/` directory.
 
 ## Table of Contents
 
-- [Terraform](#terraform)
-- [Analytics Reporting Dashboard](#dashboard)
-
+- [Introduction](#introduction)
+- [How To Contribute](#how-to-contribute)
+- [Table of Contents](#table-of-contents)
+- [Terraform {#terraform}](#terraform-terraform)
+- [Analytics Reporting Dashboard {#dashboard}](#analytics-reporting-dashboard-dashboard)
+- [HTTPS Configuration {#HTTPS-configuration}](#https-configuration-https-configuration)
 ## Terraform {#terraform}
 
 [Terraform](https://developer.hashicorp.com/terraform) is an Infrastructure as Code (IaC) tool that deploys all AWS related infrastructure. This is automatically done through the CI/CD pipeline.
@@ -51,7 +54,7 @@ All related information to documentation is located under the `docs/` directory.
 </style>
 
 <!-- Files -->
-<details>
+<details markdown="1">
 <summary>Files</summary>
 
 The Terraform configuration for this project lives in the repository's `terraform/` folder. Key files you will find here:
@@ -66,7 +69,7 @@ The Terraform configuration for this project lives in the repository's `terrafor
 </details>
 
 <!-- Purpose -->
-<details>
+<details markdown="1">
 <summary>Purpose</summary>
 
 This directory provisions the project's cloud environment. As of now, it is responsible for deploying the lightsail instance that we use to host Culinary Command.
@@ -74,7 +77,7 @@ This directory provisions the project's cloud environment. As of now, it is resp
 </details>
 
 <!-- How to use -->
-<details>
+<details markdown="1">
 <summary>Getting started</summary>
 
 The `terraform/` directory will only be changed when there needs to be infrastructure changes. For Culinary Command, it has been configured to automatically deploy infrastructure changes (via CI/CD). To get started, refer to [the official Terraform documentation](https://developer.hashicorp.com/terraform/intro). If you have any questions, reach out to Kevin.
@@ -92,4 +95,18 @@ In `AIDashboard/Services/Reporting/AIReportingService.cs`, there is a function `
 
 **Note that this is temporary as the information is not reliable.**
 
+## HTTPS Configuration {#HTTPS-configuration}
+
+The lightsail instance leverages a [reverse proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/) via Nginx to intercept HTTP traffic and points it the Blazor web app. The configuration for this can be found in the lightsail instance directory: `/etc/nginx/sites-available/culinarycommand`.
+
+SSL certificates are provided by `Let's Encrypt/Certbot` and will have to be rotated every 3 months. Once the team decides to migrate to different infrastructure, `Caddy` will most likely be used since it handles configuration and SSL certificate rotation.
+
+Useful resources/documentation:
+- [Nginx configuration on Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04#step-5-%E2%80%93-setting-up-server-blocks-(recommended))
+- [Initial server setup](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-20-04) (only referenced Step 4)
+- [Using Nginx with Let's Encrypt & Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04)
+- [Certbot getting started](https://certbot.eff.org/instructions?ws=nginx&os=snap)
+- [Let's Encrypt getting started](https://letsencrypt.org/getting-started/)
+
+**Reach out to Kevin if you have any questions!**
 
