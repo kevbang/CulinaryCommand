@@ -79,6 +79,7 @@ else
 
         selectedLocationId = LocationState.CurrentLocation?.Id;
 
+        LocationState.OnChange -= HandleLocationStateChanged;
         LocationState.OnChange += HandleLocationStateChanged;
 
         await LoadTasksAsync();
@@ -104,10 +105,11 @@ else
             allTasks = await TaskService.GetForUserAsync(Auth.UserId.Value, selectedLocationId);
 
             prepTasks = allTasks
-                .Where(t => t.Kind == WorkTaskKind.PrepFromRecipe)
+                @* .Where(t => t.Kind == WorkTaskKind.PrepFromRecipe) *@
                 .Where(t => !string.Equals(t.Status, "Completed", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(t => t.DueDate)
                 .ToList();
+
         }
         finally
         {

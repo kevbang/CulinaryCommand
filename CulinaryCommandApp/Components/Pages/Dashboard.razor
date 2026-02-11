@@ -149,12 +149,12 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-
+        if (!firstRender) return;
         await Auth.EnsureHydratedAsync(); // safe here (interactive)
         _ready = true;
         StateHasChanged();
 
-        if (!_aiLoadedOnce)
+        if (!_aiLoadedOnce && Auth.IsSignedIn)
         {
             _aiLoadedOnce = true;
             _aiLoading = true;
@@ -162,25 +162,29 @@ else
 
             // Get analysis:
 
-            var csvPath = Path.Combine(Env.ContentRootPath, "AIDashboard", "Services", "Reporting", "test_data.csv");
-            _aiAnalysis = await ReportingService.AnalyzeCsvAsync(csvPath);
-
-            // Try to deserialize the returned JSON into the DTO so we can render structured cards UI.
-            if (!string.IsNullOrWhiteSpace(_aiAnalysis))
+            try
             {
-                try
+                var csvPath = Path.Combine(Env.ContentRootPath, "AIDashboard", "Services", "Reporting", "test_data.csv");
+                _aiAnalysis = await ReportingService.AnalyzeCsvAsync(csvPath);
+                
+                // Try to deserialize the returned JSON into the DTO so we can render structured cards UI.
+                if (!string.IsNullOrWhiteSpace(_aiAnalysis))
                 {
                     var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     _aiAnalysisObj = System.Text.Json.JsonSerializer.Deserialize<AIAnalysisResultDTO>(_aiAnalysis, options);
                 }
-                catch
-                {
-                    _aiAnalysisObj = null;
-                }
             }
+            catch(Exception e)
+            {
+                Console.WriteLine($"AI Analysis failed: {e.Message}");
+                _aiAnalysisObj = null;
+                _aiAnalysis = null;
 
-            _aiLoading = false;
-            StateHasChanged();
+            }
+            finally {
+                _aiLoading = false;
+                StateHasChanged();
+            }
         }
 
     }

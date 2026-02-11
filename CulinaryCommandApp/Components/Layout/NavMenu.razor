@@ -27,62 +27,20 @@
             </NavLink>
         </div>
 
-        @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="signin">
-                <span class="bi bi-box-arrow-in-right nav-icon" aria-hidden="true"></span> Sign In
-            </NavLink>
-        </div> *@
-
-
-        @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="signup">
-                <span class="bi bi-box-arrow-in-right nav-icon" aria-hidden="true"></span> Sign Up
-            </NavLink>
-        </div> *@
-
-
+        @if (Auth.UserRole == "Employee")
+        {
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/tasks">
                 <span class="bi bi-list-nested nav-icon" aria-hidden="true"></span> My Tasks
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/inventory-management">
-                <span class="bi bi-box-seam nav-icon" aria-hidden="true"></span> Inventory
-            </NavLink>
-        </div>
-
-        @if (Auth.UserRole == "Admin")
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="recipes">
-                    <span class="bi bi-journal-text nav-icon"></span> Recipes
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="ingredients">
-                    <span class="bi bi-basket3 nav-icon"></span> Ingredients
-                </NavLink>
-            </div>
+        }
+        else { @* admin or manager *@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/assign-tasks">
                     <span class="bi bi-clipboard-check nav-icon" aria-hidden="true"></span> Assign Tasks
                 </NavLink>
             </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/purchase-orders">
-                    <span class="bi bi-cart3 nav-icon" aria-hidden="true"></span> Purchase Orders
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="users">
-                    <span class="bi bi-people nav-icon"></span> Manage Users
-                </NavLink>
-            </div>
-        }
-        else if (Auth.UserRole == "Manager")
-        {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="recipes">
                     <span class="bi bi-journal-text nav-icon"></span>Recipes
@@ -94,8 +52,8 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/assign-tasks">
-                    <span class="bi bi-clipboard-check nav-icon" aria-hidden="true"></span> Assign Tasks
+                <NavLink class="nav-link" href="/inventory-management">
+                    <span class="bi bi-box-seam nav-icon"></span> Inventory
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -103,9 +61,14 @@
                     <span class="bi bi-cart3 nav-icon" aria-hidden="true"></span> Purchase Orders
                 </NavLink>
             </div>
+            
+            
+        }
+        @if (Auth.UserRole == "Admin")
+        {
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/inventory">
-                    <span class="bi bi-box-seam nav-icon"></span> Inventory
+                <NavLink class="nav-link" href="users">
+                    <span class="bi bi-people nav-icon"></span> Manage Users
                 </NavLink>
             </div>
         }
