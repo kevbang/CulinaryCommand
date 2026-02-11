@@ -26,9 +26,9 @@
                 Locations="locations"
                 OnEdit="Update" />
         }
-        else
+        else // Auth.UserRole == "Employee"
         {
-            <LocationEmployeeView Location="employeeLocation" />
+            <LocationEmployeeView Locations="locations" />
         }
     }
 </div>
@@ -70,8 +70,8 @@
         }
         else
         {
-            employeeLocation = (await LocationService.GetLocationsByEmployeeAsync(Auth.UserId!.Value))
-                .FirstOrDefault();
+            locations = await LocationService.GetLocationsByEmployeeAsync(Auth.UserId!.Value);
+
         }
     }
 
