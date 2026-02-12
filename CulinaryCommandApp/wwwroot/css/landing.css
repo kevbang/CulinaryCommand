@@ -1,0 +1,65 @@
+/* Clean public landing layout */
+.cc-landing {
+    min-height: calc(100vh - 0px);
+    display: grid;
+    place-items: center;
+    padding: 2.5rem 1rem;
+    background:
+      radial-gradient(1200px 600px at 20% 10%, rgba(25, 135, 84, 0.12), transparent 60%),
+      radial-gradient(900px 500px at 80% 20%, rgba(25, 135, 84, 0.08), transparent 55%),
+      linear-gradient(to bottom, #fafafa, #ffffff);
+  }
+  
+  .cc-landing-card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 18px;
+    padding: 2rem 2rem 1.5rem;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+  }
+  
+  .cc-landing-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .cc-landing-badge {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 0.75rem;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: rgba(25, 135, 84, 0.12);
+    color: #198754;
+    font-size: 1.6rem;
+  }
+  
+  .cc-landing-title {
+    margin: 0;
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  
+  .cc-landing-subtitle {
+    margin: 0.35rem auto 0;
+    max-width: 44ch;
+    color: rgba(0,0,0,.65);
+    font-size: 1.05rem;
+    line-height: 1.4;
+  }
+  
+  .cc-landing-actions {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  
+  .cc-landing-footer {
+    margin-top: 1.25rem;
+    text-align: center;
+  }
+  

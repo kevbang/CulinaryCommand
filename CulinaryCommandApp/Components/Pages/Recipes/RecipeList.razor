@@ -1,10 +1,16 @@
+@* @page "/recipes" *@
+@rendermode InteractiveServer
+@implements IDisposable
+
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
+
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @inject RecipeService Recipes
-@inject AuthService Auth
 @inject LocationState LocationState
-@rendermode InteractiveServer
+@inject IUserContextService UserCtx
 
 <h3 class="mb-3">Recipes</h3>
 
@@ -60,41 +66,46 @@ else
 }
 
 @code {
+    private UserContext? _ctx;
+
     private List<Recipe>? recipes;
     private bool priv = false;
 
     protected override async Task OnInitializedAsync()
     {
-        LocationState.OnChange += RefreshRecipes;
-        Auth.OnAuthStateChanged += AuthChanged;
+        _ctx = await UserCtx.GetAsync();
 
-        await Auth.EnsureHydratedAsync();
+        // If not authenticated, bounce to Cognito login
+        if (_ctx.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        // Ensure LocationState is hydrated if user deep-links here
+        if (LocationState.ManagedLocations.Count == 0 && _ctx.AccessibleLocations.Any())
+            await LocationState.SetLocationsAsync(_ctx.AccessibleLocations);
 
         UpdatePriv();
+
+        LocationState.OnChange += RefreshRecipes;
+
         await LoadRecipesAsync();
     }
 
-    @* protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Auth.EnsureHydratedAsync();
-            UpdatePriv();
-            await LoadRecipesAsync();
-            StateHasChanged();
-        }
-    } *@
-
     private void UpdatePriv()
     {
-        var role = Auth.CurrentUser?.Role;
-        priv = role is "Manager" or "Admin";
-    }
-
-    private void AuthChanged()
-    {
-        UpdatePriv();
-        _ = InvokeAsync(StateHasChanged);
+        var role = _ctx?.User?.Role;
+        priv =
+            string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task LoadRecipesAsync()
@@ -129,6 +140,7 @@ else
         {
             await Recipes.DeleteAsync(id);
             await LoadRecipesAsync();
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -151,7 +163,5 @@ else
     public void Dispose()
     {
         LocationState.OnChange -= RefreshRecipes;
-        Auth.OnAuthStateChanged -= AuthChanged;
     }
 }
-

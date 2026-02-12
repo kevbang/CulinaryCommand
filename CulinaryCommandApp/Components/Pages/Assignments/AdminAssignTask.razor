@@ -3,8 +3,8 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Services
 @using CulinaryCommand.Data.Enums;
-
-@inject AuthService Auth
+@using CulinaryCommand.Services.UserContextSpace
+@inject IUserContextService UserCtx
 @inject NavigationManager Nav
 @inject ILocationService LocationService
 @inject IUserService UserService
@@ -248,11 +248,10 @@ else
 }
 
 @code {
+    private UserContext? _ctx;
     private bool ready;
     private bool allowed;
-    private List<Location> locations = new();
     private List<User> teamMembers = new();
-
     private List<Tasks> assignments = new();
     private TaskFormModel newTask = new();
     private int? selectedLocationId;
@@ -264,71 +263,51 @@ else
     private readonly List<string> priorityOptions = new() { "Low", "Normal", "High", "Critical" };
     private readonly List<string> statusBuckets = new() { "Pending", "In Progress", "Completed" };
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
+        _ctx = await UserCtx.GetAsync();
 
-        await Auth.EnsureHydratedAsync();
-
-        allowed = Auth.IsSignedIn && (Auth.UserRole == "Admin" || Auth.UserRole == "Manager");
-
-        if (!Auth.IsSignedIn)
+        if (!_ctx.IsAuthenticated)
         {
-            Nav.NavigateTo("/signin", replace: true);
+            Nav.NavigateTo("/login", true);
             return;
         }
+
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        allowed =
+            string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
 
         if (!allowed)
         {
             ready = true;
-            StateHasChanged();
             return;
         }
 
-        // use header-selected location as source of truth
+        // Ensure LocationState is hydrated if user deep-links here
+        if (LocationState.ManagedLocations.Count == 0 && _ctx.AccessibleLocations.Any())
+            await LocationState.SetLocationsAsync(_ctx.AccessibleLocations);
+
+        // Source of truth: header-selected location
         selectedLocationId = LocationState.CurrentLocation?.Id;
 
         LocationState.OnChange += HandleLocationStateChanged;
 
-        await LoadLocationsAsync();
         await LoadTeamAsync();
         await LoadRecipesAsync();
         await LoadAssignmentsAsync();
 
         ready = true;
-        StateHasChanged();
     }
 
-    private async Task LoadLocationsAsync()
-    {
-        try
-        {
-            if (Auth.UserRole == "Admin")
-            {
-                locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId ?? 0);
-            }
-            else
-            {
-                locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId ?? 0);
-            }
-        }
-        catch
-        {
-            locations = new()
-            {
-                new Location { Id = 1, Name = "Main Kitchen" },
-                new Location { Id = 2, Name = "Prep Lab" }
-            };
-        }
 
-        if (!locations.Any())
-        {
-            locations.Add(new Location { Id = 1, Name = "Main Kitchen" });
-        }
-
-        // fallback only if header has no location
-        selectedLocationId ??= LocationState.CurrentLocation?.Id ?? locations.FirstOrDefault()?.Id;
-    }
+    
 
     private async Task LoadTeamAsync()
     {
@@ -414,9 +393,7 @@ else
             DueDate = newTask.DueDate ?? DateTime.Today,
             Notes = newTask.Notes?.Trim(),
             LocationId = selectedLocationId.Value,
-            Assigner = Auth.CurrentUser?.Name
-                ?? Auth.UserEmail
-                ?? "Manager",
+            Assigner = "Manager",
             Kind = newTask.TaskType,
             Par = newTask.Par,
             Count = newTask.Count,

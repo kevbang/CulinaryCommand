@@ -1,0 +1,225 @@
+﻿@page "/"
+@namespace CulinaryCommand.Components.Pages
+@layout CulinaryCommand.Components.Layout.PublicLayout
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="cc-hero">
+    <div class="cc-shell">
+
+        <div class="cc-top">
+            <div class="cc-mark">
+                <i class="bi bi-journal-check"></i>
+            </div>
+            <div>
+                <div class="cc-title">Culinary Command</div>
+                <div class="cc-subtitle">Tasks, inventory, recipes, and team management — in one place.</div>
+            </div>
+        </div>
+
+        <div class="cc-grid">
+
+            <div class="cc-card">
+                <div class="cc-card-head">
+                    <div class="cc-pill">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Owner / Admin</span>
+                    </div>
+                    <div class="cc-card-title">Create your company</div>
+                    <div class="cc-card-text">
+                        Set up your company and locations, then invite managers and employees.
+                    </div>
+                </div>
+
+                <button class="btn btn-success w-100 cc-btn"
+                        @onclick="() => Nav.NavigateTo(adminSignup, true)">
+                    Create Company
+                </button>
+
+                <div class="cc-muted mt-2">
+                    Admins are the only users who can create a new organization.
+                </div>
+            </div>
+
+            <div class="cc-card cc-card-alt">
+                <div class="cc-card-head">
+                    <div class="cc-pill cc-pill-alt">
+                        <i class="bi bi-people"></i>
+                        <span>Employee / Manager</span>
+                    </div>
+                    <div class="cc-card-title">Join your team</div>
+                    <div class="cc-card-text">
+                        Use your invite link to set your password, then sign in.
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-dark w-100 cc-btn"
+                            @onclick="() => Nav.NavigateTo(signIn, true)">
+                        Sign In
+                    </button>
+
+                    <button class="btn btn-outline-secondary w-100 cc-btn"
+                            @onclick="() => Nav.NavigateTo(invite, true)">
+                        I have an invite link
+                    </button>
+                </div>
+
+                <div class="cc-muted mt-2">
+                    Don’t have an invite? Ask your manager or admin.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="cc-foot">
+            By continuing, you agree to your organization’s access policies.
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .cc-hero{
+        min-height: calc(100vh - 0px);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding: 48px 18px;
+        background:
+            radial-gradient(900px 420px at 20% 10%, rgba(25,135,84,.14), transparent 60%),
+            radial-gradient(800px 380px at 80% 0%, rgba(0,0,0,.08), transparent 55%),
+            #f8fafc;
+    }
+
+    .cc-shell{
+        width: 100%;
+        max-width: 980px;
+    }
+
+    .cc-top{
+        display:flex;
+        align-items:center;
+        gap: 14px;
+        margin-bottom: 22px;
+        padding: 18px 18px 0 18px;
+    }
+
+    .cc-mark{
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background: rgba(25,135,84,.12);
+        color: #198754;
+        font-size: 24px;
+        flex: 0 0 auto;
+        border: 1px solid rgba(25,135,84,.18);
+    }
+
+    .cc-title{
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        font-size: 34px;
+        line-height: 1.1;
+        color: #111827;
+    }
+
+    .cc-subtitle{
+        margin-top: 6px;
+        font-size: 16px;
+        color: #4b5563;
+        max-width: 660px;
+    }
+
+    .cc-grid{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        padding: 18px;
+    }
+
+    .cc-card{
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid rgba(17,24,39,.08);
+        box-shadow: 0 10px 30px rgba(17,24,39,.06);
+        padding: 18px;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        min-height: 250px;
+    }
+
+    .cc-card-alt{
+        background:
+            linear-gradient(180deg, rgba(17,24,39,.02), rgba(17,24,39,0)),
+            #ffffff;
+    }
+
+    .cc-card-head{
+        margin-bottom: 14px;
+    }
+
+    .cc-pill{
+        display:inline-flex;
+        align-items:center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(25,135,84,.10);
+        border: 1px solid rgba(25,135,84,.18);
+        color: #166534;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+
+    .cc-pill-alt{
+        background: rgba(17,24,39,.06);
+        border-color: rgba(17,24,39,.10);
+        color: #111827;
+    }
+
+    .cc-card-title{
+        font-size: 20px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 6px;
+        letter-spacing: -0.2px;
+    }
+
+    .cc-card-text{
+        color: #4b5563;
+        font-size: 14.5px;
+        line-height: 1.45;
+        max-width: 44ch;
+    }
+
+    .cc-btn{
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-weight: 800;
+    }
+
+    .cc-muted{
+        color: #6b7280;
+        font-size: 12.5px;
+        line-height: 1.35;
+    }
+
+    .cc-foot{
+        text-align:center;
+        color: #6b7280;
+        font-size: 12.5px;
+        padding: 6px 18px 0 18px;
+    }
+</style>
+
+@code {
+    private const string signIn = "/login";
+    private const string adminSignup = "/adminsignup";
+    private const string invite = "/invite";
+}

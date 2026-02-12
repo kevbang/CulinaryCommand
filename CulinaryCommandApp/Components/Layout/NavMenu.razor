@@ -1,9 +1,11 @@
 ﻿@namespace CulinaryCommand.Components.Layout
+@using CulinaryCommand.Services.UserContextSpace
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Routing
 @using CulinaryCommand.Components.Custom
+@using CulinaryCommand.Services
+@inject IUserContextService UserCtx
 @rendermode InteractiveServer
-@inject AuthService Auth
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -27,20 +29,6 @@
             </NavLink>
         </div>
 
-        @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="signin">
-                <span class="bi bi-box-arrow-in-right nav-icon" aria-hidden="true"></span> Sign In
-            </NavLink>
-        </div> *@
-
-
-        @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="signup">
-                <span class="bi bi-box-arrow-in-right nav-icon" aria-hidden="true"></span> Sign Up
-            </NavLink>
-        </div> *@
-
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/tasks">
                 <span class="bi bi-list-nested nav-icon" aria-hidden="true"></span> My Tasks
@@ -53,7 +41,7 @@
             </NavLink>
         </div>
 
-        @if (Auth.UserRole == "Admin")
+        @if (_role == "Admin")
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="recipes">
@@ -81,11 +69,11 @@
                 </NavLink>
             </div>
         }
-        else if (Auth.UserRole == "Manager")
+        else if (_role == "Manager")
         {
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="recipes">
-                    <span class="bi bi-journal-text nav-icon"></span>Recipes
+                    <span class="bi bi-journal-text nav-icon"></span> Recipes
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -113,14 +101,13 @@
 </div>
 
 @code {
+    private string? _role;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        Auth.OnAuthStateChanged += StateHasChanged;
-    }
-
-    public void Dispose()
-    {
-        Auth.OnAuthStateChanged -= StateHasChanged;
+        // Compile-safe even if auth isn't working yet:
+        // - If not authenticated or DB user not found, _role stays null.
+        var ctx = await UserCtx.GetAsync();
+        _role = ctx.User?.Role;
     }
 }

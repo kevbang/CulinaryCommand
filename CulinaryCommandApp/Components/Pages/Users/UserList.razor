@@ -1,66 +1,98 @@
-@using CulinaryCommand.Data.Entities
-@inject IUserService Users
-@inject AuthService Auth
-@inject NavigationManager Nav
+@* @page "/users" *@
 @rendermode InteractiveServer
-<h3 class="mb-3">Users</h3>
-<button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
 
-@if (_users == null)
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject IUserService Users
+@inject IUserContextService UserCtx
+@inject NavigationManager Nav
+
+<h3 class="mb-3">Users</h3>
+
+@if (!_ready)
 {
     <p>Loading...</p>
 }
+else if (!_allowed)
+{
+    <div class="alert alert-warning">
+        You do not have permission to view users.
+    </div>
+}
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Locations</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in _users)
-            {
+    <button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
+
+    @if (_users == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>@u.Name</td>
-                    <td>@u.Email</td>
-                    <td>@u.Role</td>
-                    <td>@string.Join(", ", u.UserLocations.Select(x => x.Location.Name))</td>
-                    <td>
-                        <button class="btn btn-primary me-2" @onclick="() => Edit(u.Id)">Edit</button>
-                        <button class="btn btn-danger" @onclick="() => Delete(u.Id)">Delete</button>
-                    </td>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Locations</th>
+                    <th></th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var u in _users)
+                {
+                    <tr>
+                        <td>@u.Name</td>
+                        <td>@u.Email</td>
+                        <td>@u.Role</td>
+                        <td>@FormatLocations(u)</td>
+                        <td>
+                            <button class="btn btn-primary me-2" @onclick="() => Edit(u.Id)">Edit</button>
+                            <button class="btn btn-danger" @onclick="() => Delete(u.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }
 
 @code {
-    List<User>? _users;
+    private UserContext? _ctx;
+    private bool _ready;
+    private bool _allowed;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private List<User>? _users;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        _ctx = await UserCtx.GetAsync();
+
+        if (_ctx.IsAuthenticated != true)
         {
-            // Wait for JS + hydration
-            await Auth.EnsureHydratedAsync();
-
-            if (!Auth.IsSignedIn)
-            {
-                Nav.NavigateTo("/signin", replace: true);
-                return;
-            }
-
-            // Now safe to load data
-            _users = await Users.GetAllUsersAsync();
-
-            StateHasChanged();
+            Nav.NavigateTo("/login", true);
+            return;
         }
+
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        _allowed =
+            string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+        if (_allowed)
+        {
+            _users = await Users.GetAllUsersAsync();
+        }
+
+        _ready = true;
     }
 
     void CreateUser() => Nav.NavigateTo("/users/create");
@@ -68,7 +100,21 @@ else
 
     async Task Delete(int id)
     {
+        if (!_allowed) return;
+
         await Users.DeleteUserAsync(id);
         _users = await Users.GetAllUsersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatLocations(User u)
+    {
+        // Don’t crash if UserLocations or Location is null
+        var names = u.UserLocations?
+            .Select(x => x.Location?.Name)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList() ?? new List<string>();
+
+        return names.Count == 0 ? "-" : string.Join(", ", names);
     }
 }

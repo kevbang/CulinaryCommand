@@ -3,10 +3,12 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Models
 @using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
+@using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Nav
-@inject AuthService Auth
 @inject ILocationService LocationService
 @rendermode InteractiveServer
+@attribute [Authorize]
+
 
 <PageTitle>Settings - Culinary Command</PageTitle>
 
@@ -100,32 +102,6 @@
     private string ActiveTab => string.IsNullOrWhiteSpace(Tab)
         ? "profile"
         : Tab!.ToLowerInvariant();
-
-    private bool _hydrating = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !_hydrating)
-        {
-            _hydrating = true;
-
-            await Auth.EnsureHydratedAsync();
-
-            if (!Auth.IsSignedIn)
-            {
-                Nav.NavigateTo("/signin", replace: true);
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(Tab))
-                Nav.NavigateTo("/settings/profile", replace: true);
-
-            if (Auth.UserId != null)
-                await LocationService.LoadAndPersistLocationsAsync(Auth.UserId.Value);
-
-            StateHasChanged();
-        }
-    }
 
     private void NavigateToTab(string tab)
     {

@@ -2,32 +2,34 @@
 @rendermode InteractiveServer
 
 @using CulinaryCommand.Components.Custom
+@using CulinaryCommand.Services.UserContextSpace
 @using CulinaryCommandApp.AIDashboard.Services.Reporting
 @using CulinaryCommandApp.AIDashboard.Services.DTOs
+@using CulinaryCommand.Services
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
-@inject CulinaryCommand.Services.AuthService Auth
 @inject NavigationManager Nav
 @inject AIReportingService ReportingService
-
+@inject IUserContextService UserCtx
 
 @if (!_ready)
 {
     <div class="text-center mt-5">Loading…</div>
 }
-else if (!Auth.IsSignedIn)
+else if (!_isSignedIn)
 {
     <div class="text-center mt-5">
-        You’re not signed in. <button class="btn btn-success" @onclick="() => NavigateToSignIn()">Go to Sign In</button>
+        You’re not signed in.
+        <button class="btn btn-success" @onclick="NavigateToSignIn">Go to Sign In</button>
     </div>
 }
 else
 {
     <div class="container mt-4">
-        @if (Auth.UserRole == "Admin")
+        @if (_role == "Admin")
         {
             <AdminView />
         }
-        else if (Auth.UserRole == "Manager")
+        else if (_role == "Manager")
         {
             <ManagerView />
         }
@@ -40,20 +42,19 @@ else
 
         <div class="card mt-4">
             <div class="card-body">
-                <h5 class="card-title">
-                    Weekly Report Analysis
-                </h5>
+                <h5 class="card-title">Weekly Report Analysis</h5>
 
                 @if (_aiLoading)
                 {
-                    <div> Loading analysis from Gemini...</div>
+                    <div>Loading analysis from Gemini...</div>
                 }
                 else if (_aiAnalysisObj == null)
                 {
-                    <div class="text-muted"> No analysis available.</div>
+                    <div class="text-muted">No analysis available.</div>
                 }
-                else 
+                else
                 {
+                    <!-- your existing rendering unchanged -->
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="card h-100">
@@ -136,37 +137,42 @@ else
                 }
             </div>
         </div>
-
     </div>
 }
 
 @code {
     private bool _ready;
+    private bool _isSignedIn;
+    private string? _role;
+
     private bool _aiLoading;
     private string? _aiAnalysis;
     private AIAnalysisResultDTO? _aiAnalysisObj;
-    private bool _aiLoadedOnce = false;
+    private bool _aiLoadedOnce;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+        _isSignedIn = ctx.User?.Id != null;
+        _role = ctx.User?.Role;
+
+        _ready = true;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
 
-        await Auth.EnsureHydratedAsync(); // safe here (interactive)
-        _ready = true;
-        StateHasChanged();
-
-        if (!_aiLoadedOnce)
+        if (_isSignedIn && !_aiLoadedOnce)
         {
             _aiLoadedOnce = true;
             _aiLoading = true;
             StateHasChanged();
 
-            // Get analysis:
-
             var csvPath = Path.Combine(Env.ContentRootPath, "AIDashboard", "Services", "Reporting", "test_data.csv");
             _aiAnalysis = await ReportingService.AnalyzeCsvAsync(csvPath);
 
-            // Try to deserialize the returned JSON into the DTO so we can render structured cards UI.
-            if (!string.IsNullOrWhiteSpace(_aiAnalysis))
+            @* if (!string.IsNullOrWhiteSpace(_aiAnalysis))
             {
                 try
                 {
@@ -179,14 +185,15 @@ else
                 }
             }
 
-            _aiLoading = false;
+            _aiLoading = false; *@
+            _aiAnalysisObj = null;          //  Uncoomment above and delete curent like to activate AI
             StateHasChanged();
         }
-
     }
 
     private void NavigateToSignIn()
     {
-        Nav.NavigateTo("/signin");
+        // This should go to your Cognito login page once that route is finalized.
+        Nav.NavigateTo("/login", forceLoad: true);
     }
 }

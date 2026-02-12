@@ -1,6 +1,6 @@
 @using CulinaryCommand.Services
-@inject AuthService Auth
-@inject IJSRuntime JS
+@using CulinaryCommand.Services.UserContextSpace
+@inject IUserContextService UserCtx
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 
@@ -18,18 +18,18 @@
              style="width:2.5rem; height:2.5rem;" />
 
         <div class="text-start">
-            <div class="fw-semibold">@Auth.UserEmail</div>
-            <small class="text-muted">@Auth.UserRole</small>
+            <div class="fw-semibold">@UserEmail</div>
+            <small class="text-muted">@UserRole</small>
         </div>
     </button>
 
     <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="profileMenu">
-        <li><h6 class="dropdown-header">@Auth.Company</h6></li>
+        <li><h6 class="dropdown-header">@CompanyName</h6></li>
         <li><a class="dropdown-item" href="/profile">View Profile</a></li>
         <li><a class="dropdown-item" href="/settings">Settings</a></li>
         <li><hr class="dropdown-divider" /></li>
         <li>
-            <button class="dropdown-item text-danger fw-semibold" @onclick="() => Logout()">
+            <button class="dropdown-item text-danger fw-semibold" @onclick="Logout">
                 <i class="bi bi-box-arrow-right me-2"></i> Logout
             </button>
         </li>
@@ -39,40 +39,34 @@
 @code {
     private string UserEmail = "Guest";
     private string UserRole = "";
-    private string Company = "";
-    private bool _hydrated = false;
+    private string CompanyName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+        UserEmail = string.IsNullOrWhiteSpace(ctx.Email) ? "Guest" : ctx.Email;
+        UserRole = ctx.User?.Role ?? "";
+        CompanyName = ctx.User?.Company?.Name ?? "";
+    }
+
+    private bool _loaded;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) {
+        if (!firstRender || _loaded) return;
+        _loaded = true;
 
-            if (!_hydrated)
-            {
-                // Load from localStorage
-                UserEmail = await JS.InvokeAsync<string>("localStorage.getItem", "cc_email") ?? "Guest";
-                UserRole = await JS.InvokeAsync<string>("localStorage.getItem", "cc_role") ?? "";
-                Company = await JS.InvokeAsync<string>("localStorage.getItem", "cc_company") ?? "";
+        var ctx = await UserCtx.RefreshAsync();
+        UserEmail = string.IsNullOrWhiteSpace(ctx.Email) ? "Guest" : ctx.Email;
+        UserRole = ctx.User?.Role ?? "";
+        CompanyName = ctx.User?.Company?.Name ?? "";
 
-                // Subscribe to AuthService changes
-                Auth.OnAuthStateChanged += Refresh;
-
-                _hydrated = true;
-                StateHasChanged();
-            }
-        }
+        StateHasChanged();
     }
 
-    private void Refresh() => InvokeAsync(StateHasChanged);
 
-    private async Task Logout()
-    {
-        await Auth.LogoutAsync();
+    private void Logout() => Nav.NavigateTo("/logout", forceLoad: true);
 
-        Nav.NavigateTo("/signin", forceLoad: true);
-    }
 
-    public void Dispose()
-    {
-        Auth.OnAuthStateChanged -= Refresh;
-    }
+
 }

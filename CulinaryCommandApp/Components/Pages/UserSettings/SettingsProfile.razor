@@ -1,173 +1,228 @@
-@using CulinaryCommand.Services
-@inject AuthService Auth
-@inject IUserService UserService
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+
+@using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject IUserService UserService
+@inject IUserContextService UserCtx
+@inject NavigationManager Nav
 
 <div class="tab-pane active">
     <h4 class="mb-4">
         <i class="fas fa-user me-2"></i>Profile Information
     </h4>
 
-    <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="firstName" class="form-label">First Name</label>
-                <InputText id="firstName" class="form-control"
-                           @bind-Value="profileModel.FirstName"
-                           placeholder="Enter your first name" />
-            </div>
-            <div class="col-md-6">
-                <label for="lastName" class="form-label">Last Name</label>
-                <InputText id="lastName" class="form-control"
-                           @bind-Value="profileModel.LastName"
-                           placeholder="Enter your last name" />
-            </div>
+    @if (!_ready)
+    {
+        <div>Loading...</div>
+    }
+    else if (!_ctx?.IsAuthenticated ?? true)
+    {
+        <div class="alert alert-warning">
+            You need to sign in to view your profile.
         </div>
-
-        <div class="mb-3">
-            <label for="email" class="form-label">Email Address</label>
-            <InputText id="email" type="email" class="form-control"
-                       @bind-Value="profileModel.Email"
-                       placeholder="Enter your email" />
+    }
+    else if (_ctx?.User is null)
+    {
+        <div class="alert alert-warning">
+            Your account is not linked to an invited user record. Contact an admin.
         </div>
+    }
+    else
+    {
+        <EditForm Model="@profileModel" OnValidSubmit="@HandleProfileSubmit">
+            <DataAnnotationsValidator />
 
-        <div class="mb-3">
-            <label for="phone" class="form-label">Phone Number</label>
-            <InputText id="phone" type="tel" class="form-control"
-                       @bind-Value="profileModel.Phone"
-                       placeholder="Enter your phone number" />
-        </div>
-
-        <div class="mb-3">
-            <label for="role" class="form-label">Current Role</label>
-            <select id="role" class="form-control" @bind="profileModel.Role">
-                <option value="Manager">Manager</option>
-                <option value="Cook">Cook</option>
-                <option value="Admin">Admin</option>
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-success settings-btn">Update Profile</button>
-    </EditForm>
-
-    <!-- Danger Zone -->
-    <div class="danger-zone mt-5">
-        <h5 class="text-danger mb-3">
-            <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
-        </h5>
-        <p class="text-muted mb-4">
-            These actions are permanent and cannot be undone. Please proceed with caution.
-        </p>
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="danger-action-card">
-                    <h6 class="mb-2">Export Your Data</h6>
-                    <p class="text-muted small mb-3">Download a copy of all your account data</p>
-                    <button class="btn btn-outline-info w-100" @onclick="ExportData">
-                        <i class="fas fa-download me-2"></i>Export Data
-                    </button>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <InputText id="firstName" class="form-control"
+                               @bind-Value="profileModel.FirstName"
+                               placeholder="Enter your first name" />
+                </div>
+                <div class="col-md-6">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <InputText id="lastName" class="form-control"
+                               @bind-Value="profileModel.LastName"
+                               placeholder="Enter your last name" />
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="danger-action-card">
-                    <h6 class="mb-2">Reset All Settings</h6>
-                    <p class="text-muted small mb-3">Restore all settings to default values</p>
-                    <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
-                        <i class="fas fa-undo me-2"></i>Reset Settings
-                    </button>
-                </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <InputText id="email" type="email" class="form-control"
+                           @bind-Value="profileModel.Email"
+                           placeholder="Enter your email" />
             </div>
-            <div class="col-md-6">
-                <div class="danger-action-card">
-                    <h6 class="mb-2">Deactivate Account</h6>
-                    <p class="text-muted small mb-3">Temporarily disable your account access</p>
-                    <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
-                        <i class="fas fa-user-slash me-2"></i>Deactivate
-                    </button>
-                </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <InputText id="phone" type="tel" class="form-control"
+                           @bind-Value="profileModel.Phone"
+                           placeholder="Enter your phone number" />
             </div>
-            <div class="col-md-6">
-                <div class="danger-action-card">
-                    <h6 class="mb-2">Delete Account</h6>
-                    <p class="text-muted small mb-3">Permanently delete your account and all data</p>
-                    <button class="btn btn-danger w-100" @onclick="DeleteAccount">
-                        <i class="fas fa-trash me-2"></i>Delete Forever
-                    </button>
+
+            <div class="mb-3">
+                <label for="role" class="form-label">Current Role</label>
+                <select id="role" class="form-control" @bind="profileModel.Role" disabled="@(!_canEditRole)">
+                    <option value="Manager">Manager</option>
+                    <option value="Cook">Cook</option>
+                    <option value="Admin">Admin</option>
+                </select>
+
+                @if (!_canEditRole)
+                {
+                    <div class="form-text text-muted">
+                        Role changes are restricted to Admins.
+                    </div>
+                }
+            </div>
+
+            <button type="submit" class="btn btn-success settings-btn" disabled="@_saving">
+                @(_saving ? "Saving..." : "Update Profile")
+            </button>
+
+            @if (!string.IsNullOrWhiteSpace(_saveMessage))
+            {
+                <div class="mt-3 alert alert-info">@_saveMessage</div>
+            }
+        </EditForm>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone mt-5">
+            <h5 class="text-danger mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+            </h5>
+            <p class="text-muted mb-4">
+                These actions are permanent and cannot be undone. Please proceed with caution.
+            </p>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Export Your Data</h6>
+                        <p class="text-muted small mb-3">Download a copy of all your account data</p>
+                        <button class="btn btn-outline-info w-100" @onclick="ExportData">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Reset All Settings</h6>
+                        <p class="text-muted small mb-3">Restore all settings to default values</p>
+                        <button class="btn btn-outline-warning w-100" @onclick="ResetSettings">
+                            <i class="fas fa-undo me-2"></i>Reset Settings
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Deactivate Account</h6>
+                        <p class="text-muted small mb-3">Temporarily disable your account access</p>
+                        <button class="btn btn-outline-danger w-100" @onclick="DeactivateAccount">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="danger-action-card">
+                        <h6 class="mb-2">Delete Account</h6>
+                        <p class="text-muted small mb-3">Permanently delete your account and all data</p>
+                        <button class="btn btn-danger w-100" @onclick="DeleteAccount">
+                            <i class="fas fa-trash me-2"></i>Delete Forever
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 @code {
+    private UserContext? _ctx;
+
+    private bool _ready;
+    private bool _saving;
+    private string? _saveMessage;
+
+    private bool _canEditRole;
+
     private ProfileModel profileModel = new();
 
-    private bool _startedHydration = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender && !_startedHydration)
+        _ctx = await UserCtx.GetAsync();
+
+        if (_ctx.IsAuthenticated != true)
         {
-            _startedHydration = true;
-
-            await Auth.EnsureHydratedAsync();
-
-            if (!Auth.IsSignedIn)
-            {
-                Nav.NavigateTo("/signin", replace: true);
-                return;
-            }
-
-            // Now safe to initialize UI model
-            if (Auth.CurrentUser != null)
-            {
-                var user = Auth.CurrentUser;
-
-                var parts = (user.Name ?? "").Split(' ', 2);
-                profileModel.FirstName = parts.Length > 0 ? parts[0] : "";
-                profileModel.LastName  = parts.Length > 1 ? parts[1] : "";
-                profileModel.Email     = user.Email;
-                profileModel.Phone     = user.Phone;
-                profileModel.Role      = user.Role;
-
-                StateHasChanged();
-            }
+            Nav.NavigateTo("/login", true);
+            return;
         }
+
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        _canEditRole = string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+
+        // Initialize UI model from DB user
+        var user = _ctx.User;
+
+        var parts = (user.Name ?? "").Split(' ', 2);
+        profileModel.FirstName = parts.Length > 0 ? parts[0] : "";
+        profileModel.LastName  = parts.Length > 1 ? parts[1] : "";
+        profileModel.Email     = user.Email;
+        profileModel.Phone     = user.Phone;
+        profileModel.Role      = user.Role;
+
+        _ready = true;
     }
 
     private async Task HandleProfileSubmit()
     {
-        Console.WriteLine($"Profile updated: {profileModel.FirstName} {profileModel.LastName}");
-        // TODO: Persist to backend
-        if (Auth.UserId is null)
-    {
-        Console.WriteLine("Cannot update profile: no signed-in user.");
-        return;
-    }
+        if (_saving) return;
 
-    await UserService.UpdateUserProfileAsync(
-        Auth.UserId.Value,
-        profileModel.FirstName ?? "",
-        profileModel.LastName ?? "",
-        profileModel.Email ?? "",
-        profileModel.Phone ?? "",
-        profileModel.Role ?? ""
-    );
+        if (_ctx?.User?.Id is null)
+        {
+            _saveMessage = "Cannot update profile: no signed-in user.";
+            return;
+        }
 
-    // Refresh AuthService's CurrentUser so UI updates:
-    if (Auth.CurrentUser != null)
-    {
-        Auth.CurrentUser.Name  = $"{profileModel.FirstName} {profileModel.LastName}".Trim();
-        Auth.CurrentUser.Email = profileModel.Email;
-        Auth.CurrentUser.Phone = profileModel.Phone;
-        Auth.CurrentUser.Role  = profileModel.Role;
+        _saving = true;
+        _saveMessage = null;
 
-        //Auth.NotifyStateChanged();
-    }
+        try
+        {
+            // If they can't edit role, keep existing role
+            var roleToSave = _canEditRole
+                ? (profileModel.Role ?? _ctx.User.Role ?? "Cook")
+                : (_ctx.User.Role ?? "Cook");
 
-    Console.WriteLine("Profile saved!");
+            await UserService.UpdateUserProfileAsync(
+                _ctx.User.Id,
+                profileModel.FirstName ?? "",
+                profileModel.LastName ?? "",
+                profileModel.Email ?? "",
+                profileModel.Phone ?? "",
+                roleToSave
+            );
+
+            // Refresh context so rest of app sees updates
+            _ctx = await UserCtx.RefreshAsync();
+
+            _saveMessage = "Profile saved!";
+        }
+        catch (Exception ex)
+        {
+            _saveMessage = $"Failed to save profile: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void ExportData() => Console.WriteLine("Exporting user data...");
@@ -177,7 +232,6 @@
 
     private class ProfileModel
     {
-        public int? userId {get; set;}
         public string? FirstName { get; set; }
         public string? LastName  { get; set; }
         public string? Email     { get; set; }

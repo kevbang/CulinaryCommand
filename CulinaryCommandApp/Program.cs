@@ -14,6 +14,12 @@ using CulinaryCommand.Components;
 using CulinaryCommandApp.AIDashboard.Services.Reporting;
 using Google.GenAI;
 using System;
+using CulinaryCommand.Services.UserContextSpace;
+using Amazon.CognitoIdentityProvider;
+using Amazon.Extensions.NETCore.Setup;
+using CulinaryCommandApp.Services;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +44,7 @@ builder.Services
   .AddCookie()
   .AddOpenIdConnect(options =>
   {
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
       var userPoolId = "us-east-2_SULe0c9vr";
       var region = "us-east-2";
 
@@ -45,7 +52,17 @@ builder.Services
       options.MetadataAddress = $"{options.Authority}/.well-known/openid-configuration";
 
       options.ClientId = "55joip0viah9qtj7dndhvma2gt";
-      options.ClientSecret = Environment.GetEnvironmentVariable("COGNITO_CLIENT_SECRET"); // don’t hardcode
+      var cognitoClientId = builder.Configuration["Authentication:Cognito:ClientId"];
+        var cognitoSecretFromEnv = Environment.GetEnvironmentVariable("COGNITO_CLIENT_SECRET");
+        var cognitoSecretFromConfig = builder.Configuration["Authentication:Cognito:ClientSecret"];
+
+        var cognitoClientSecret =
+            !string.IsNullOrWhiteSpace(cognitoSecretFromEnv) ? cognitoSecretFromEnv :
+            cognitoSecretFromConfig;
+
+        options.ClientId = cognitoClientId;
+        options.ClientSecret = cognitoClientSecret;
+
 
       options.ResponseType = OpenIdConnectResponseType.Code;
       options.SaveTokens = true;
@@ -66,13 +83,29 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-
 //
 // =====================
 // AI Services
 // =====================
-builder.Services.AddSingleton<Client>(_ => new Client());
-builder.Services.AddScoped<AIReportingService>();
+// builder.Services.AddSingleton<Client>(_ => new Client());
+// builder.Services.AddScoped<AIReportingService>();
+
+var googleKey =
+    Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+    ?? builder.Configuration["Google:ApiKey"]; // optional appsettings slot
+
+if (!string.IsNullOrWhiteSpace(googleKey))
+{
+    builder.Services.AddSingleton(_ => new Google.GenAI.Client(apiKey: googleKey));
+    builder.Services.AddScoped<AIReportingService>();
+    Console.WriteLine("✅ AI enabled (GOOGLE_API_KEY found).");
+}
+else
+{
+    Console.WriteLine("⚠️ GOOGLE_API_KEY not set; AI features disabled.");
+    // Do NOT register AIReportingService at all.
+}
+
 
 //
 // =====================
@@ -97,8 +130,16 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 // =====================
 // Application Services
 // =====================
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserContextService, UserContextService>();
+
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
+builder.Services.AddScoped<CognitoProvisioningService>();
+
 builder.Services.AddScoped<RecipeService>();
 builder.Services.AddScoped<UnitService>();
 builder.Services.AddScoped<IngredientService>();
@@ -120,9 +161,13 @@ builder.Services.AddSingleton<EnumService>();
 // =====================
 var app = builder.Build();
 
+// Determine whether the app should only run migrations and exit
+var migrateOnly = (Environment.GetEnvironmentVariable("MIGRATE_ONLY")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+                  || (args != null && args.Any(a => a.Equals("--migrate-only", StringComparison.OrdinalIgnoreCase)));
+
 //
 // =====================
-// Apply EF Migrations
+// Apply pending EF Core migrations at startup
 // =====================
 using (var scope = app.Services.CreateScope())
 {
@@ -141,6 +186,23 @@ using (var scope = app.Services.CreateScope())
 // =====================
 // Middleware
 // =====================
+if (migrateOnly)
+{
+    Console.WriteLine("[Startup] MIGRATE_ONLY set; exiting after applying migrations.");
+    return;
+}
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+    // app.UseHttpsRedirection();
+}
+
+// Temporarily disable HTTPS redirect for development
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
@@ -156,19 +218,42 @@ app.MapRazorComponents<App>()
 
 app.MapGet("/health", () => "OK");
 
+var cognitoDomain = builder.Configuration["Authentication:Cognito:Domain"];
+var clientId = builder.Configuration["Authentication:Cognito:ClientId"];
+var callbackPath = builder.Configuration["Authentication:Cognito:CallbackPath"] ?? "/signin-oidc";
+var logoutCallbackPath = builder.Configuration["Authentication:Cognito:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
+
 app.MapGet("/login", async (HttpContext ctx) =>
 {
     await ctx.ChallengeAsync(
         OpenIdConnectDefaults.AuthenticationScheme,
-        new AuthenticationProperties { RedirectUri = "/" }
+        new AuthenticationProperties { RedirectUri = "/post-login" }
     );
 });
 
-app.MapGet("/logout", async (HttpContext ctx) =>
+app.MapGet("/logout", async (HttpContext ctx, IConfiguration config) =>
 {
+    // Clear local cookie
     await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme,
-        new AuthenticationProperties { RedirectUri = "/" });
+
+    var domain = config["Authentication:Cognito:Domain"]!.TrimEnd('/');
+    var clientId = config["Authentication:Cognito:ClientId"]!;
+
+    var postLogout = $"{ctx.Request.Scheme}://{ctx.Request.Host}/"; // must match allowed sign-out URL
+
+    var url = $"{domain}/logout" +
+              $"?client_id={Uri.EscapeDataString(clientId)}" +
+              $"&logout_uri={Uri.EscapeDataString(postLogout)}";
+
+    return Results.Redirect(url);
 });
+
+
+
+
+
+
+
+
 
 app.Run();

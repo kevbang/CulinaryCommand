@@ -1,8 +1,12 @@
+@rendermode InteractiveServer
 @using CulinaryCommand.Data.Entities
-@inject AuthService Auth
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject IUserContextService UserCtx
+
 <div class="card shadow-sm p-3">
 
-    <h4>@Auth.Company</h4>
+    <h4>@(CompanyDisplay ?? "Company")</h4>
 
     @if (Location == null)
     {
@@ -19,4 +23,17 @@
 
 @code {
     [Parameter] public Location? Location { get; set; }
+
+    private string? CompanyDisplay;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+
+        // Invite-only: ctx.User null means authenticated but not in DB
+        CompanyDisplay =
+            ctx.User?.Company?.Name
+            ?? ctx.User?.Company?.CompanyCode
+            ?? "Company";
+    }
 }

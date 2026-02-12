@@ -1,0 +1,36 @@
+@page "/whoami"
+@rendermode InteractiveServer
+@inject CulinaryCommand.Services.UserContextSpace.IUserContextService UserCtxSvc
+
+<h3>WhoAmI</h3>
+
+@if (_ctx is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p><b>IsAuthenticated:</b> @_ctx.IsAuthenticated</p>
+    <p><b>Email:</b> @_ctx.Email</p>
+    <p><b>CognitoSub:</b> @_ctx.CognitoSub</p>
+
+    @if (_ctx.User is null)
+    {
+        <p style="color:crimson"><b>DB User:</b> NOT FOUND</p>
+    }
+    else
+    {
+        <p style="color:green">
+            <b>DB User:</b> Found (Id=@_ctx.User.Id, Role=@_ctx.User.Role, CompanyId=@_ctx.User.CompanyId)
+        </p>
+    }
+}
+
+@code {
+    private CulinaryCommand.Services.UserContextSpace.UserContext? _ctx;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ctx = await UserCtxSvc.RefreshAsync();
+    }
+}
