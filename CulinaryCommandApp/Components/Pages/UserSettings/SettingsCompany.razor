@@ -1,22 +1,37 @@
-@using CulinaryCommand.Services
+@rendermode InteractiveServer
+
 @using CulinaryCommand.Data.Entities
-@inject AuthService Auth
+@using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
+
 @inject NavigationManager Nav
 @inject ICompanyService CompanyService
-@rendermode InteractiveServer
+@inject IUserContextService UserCtx
 
 <div class="tab-pane active">
     <h4 class="mb-4">
         <i class="fas fa-building me-2"></i>Company Settings
     </h4>
 
-    @if (companyModel is null)
+    @if (!_ready)
+    {
+        <div>Loading...</div>
+    }
+    else if (!_allowed)
+    {
+        <div class="alert alert-warning">
+            You do not have permission to manage company settings.
+        </div>
+    }
+    else if (companyModel is null)
     {
         <div class="alert alert-warning">
             You do not belong to a company yet. Create one below.
         </div>
 
         <EditForm Model="@createCompanyModel" OnValidSubmit="@HandleCreateCompany">
+            <DataAnnotationsValidator />
+
             <div class="mb-3">
                 <label class="form-label">Company Name</label>
                 <InputText class="form-control" @bind-Value="createCompanyModel.Name" />
@@ -27,7 +42,9 @@
                 <InputText class="form-control" @bind-Value="createCompanyModel.CompanyCode" />
             </div>
 
-            <button class="btn btn-primary">Create Company</button>
+            <button class="btn btn-primary" disabled="@_saving">
+                @(_saving ? "Creating..." : "Create Company")
+            </button>
         </EditForm>
 
         <hr class="my-4" />
@@ -35,6 +52,8 @@
     else
     {
         <EditForm Model="@companyModel" OnValidSubmit="@HandleCompanySubmit">
+            <DataAnnotationsValidator />
+
             <div class="mb-3">
                 <label class="form-label">Company Name</label>
                 <InputText class="form-control" @bind-Value="companyModel.Name" />
@@ -45,94 +64,127 @@
                 <InputText class="form-control" @bind-Value="companyModel.CompanyCode" />
             </div>
 
-            <button class="btn btn-success">Update Company</button>
+            <button class="btn btn-success" disabled="@_saving">
+                @(_saving ? "Saving..." : "Update Company")
+            </button>
         </EditForm>
     }
 </div>
 
 @code {
+    private UserContext? _ctx;
+
+    private bool _ready;
+    private bool _allowed;
+    private bool _saving;
+
     private CompanyModel? companyModel;
     private CompanyModel createCompanyModel = new();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
+        _ctx = await UserCtx.GetAsync();
 
-        // Wait for AuthService to hydrate
-        await Auth.EnsureHydratedAsync();
-
-        if (!Auth.IsSignedIn)
+        if (_ctx.IsAuthenticated != true)
         {
-            Nav.NavigateTo("/signin", replace: true);
+            Nav.NavigateTo("/login", true);
             return;
         }
 
-        // Now safe to use Auth.CurrentUser
-        if (Auth.CurrentUser?.Company != null)
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        // Gate: Admin only (change if needed)
+        _allowed = string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+
+        if (_allowed && _ctx.User.Company is not null)
         {
             companyModel = new CompanyModel
             {
-                Id = Auth.CurrentUser.Company.Id,
-                Name = Auth.CurrentUser.Company.Name,
-                CompanyCode = Auth.CurrentUser.Company.CompanyCode
-                
+                Id = _ctx.User.Company.Id,
+                Name = _ctx.User.Company.Name,
+                CompanyCode = _ctx.User.Company.CompanyCode
             };
         }
 
-        StateHasChanged(); // re-render now that the model is populated
+        _ready = true;
     }
 
     private async Task HandleCompanySubmit()
     {
-        if (companyModel is null || Auth.CurrentUser?.CompanyId is null)
-        return;
+        if (!_allowed || companyModel is null) return;
+        if (_saving) return;
 
-        var updated = new Company
+        _saving = true;
+        try
         {
-            Id = companyModel.Id,
-            Name = companyModel.Name,
-            CompanyCode = companyModel.CompanyCode
-        };
+            var updated = new Company
+            {
+                Id = companyModel.Id,
+                Name = companyModel.Name ?? string.Empty,
+                CompanyCode = companyModel.CompanyCode ?? string.Empty
+            };
 
-        await CompanyService.UpdateCompanyAsync(updated);
+            await CompanyService.UpdateCompanyAsync(updated);
 
-        // reload updated company for the current user
-        var refreshedCompany = await CompanyService.GetCompanyByIdAsync(updated.Id);
+            // Refresh user context so other UI sees latest company/locations
+            _ctx = await UserCtx.RefreshAsync();
 
-        if (Auth.CurrentUser != null)
-        {
-            Auth.CurrentUser.Company = refreshedCompany;
-            //Auth.NotifyStateChanged();
+            // Re-hydrate the form model from refreshed context if present
+            if (_ctx.User?.Company is not null)
+            {
+                companyModel = new CompanyModel
+                {
+                    Id = _ctx.User.Company.Id,
+                    Name = _ctx.User.Company.Name,
+                    CompanyCode = _ctx.User.Company.CompanyCode
+                };
+            }
         }
-
-        Console.WriteLine("Company updated successfully.");
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private async Task HandleCreateCompany()
     {
-        var newCompany = new Company
-        {
-            Name = createCompanyModel.Name,
-            CompanyCode = createCompanyModel.CompanyCode
-        };
+        if (!_allowed) return;
+        if (_saving) return;
 
-        var created = await CompanyService.CreateCompanyAsync(newCompany);
-
-        if (Auth.CurrentUser != null)
+        _saving = true;
+        try
         {
-            Auth.CurrentUser.CompanyId = created.Id;
-            Auth.CurrentUser.Company = created;
-            //Auth.NotifyStateChanged();
+            var newCompany = new Company
+            {
+                Name = createCompanyModel.Name ?? string.Empty,
+                CompanyCode = createCompanyModel.CompanyCode ?? string.Empty
+            };
+
+            var created = await CompanyService.CreateCompanyAsync(newCompany);
+
+            // IMPORTANT:
+            // Your DB also needs to link the current user to this company.
+            // If CreateCompanyAsync DOES NOT do that, you'll want a UserService method like:
+            //   await UserService.AssignCompanyAsync(_ctx.User.Id, created.Id);
+            // For now we refresh and rely on your backend behavior.
+
+            _ctx = await UserCtx.RefreshAsync();
+
+            companyModel = new CompanyModel
+            {
+                Id = created.Id,
+                Name = created.Name,
+                CompanyCode = created.CompanyCode
+            };
         }
-
-        companyModel = new CompanyModel
+        finally
         {
-            Id = created.Id,
-            Name = created.Name,
-            CompanyCode = created.CompanyCode
-        };
-
-        Console.WriteLine("Company created successfully.");
+            _saving = false;
+        }
     }
 
     private class CompanyModel

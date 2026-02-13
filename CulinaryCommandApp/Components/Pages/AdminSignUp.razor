@@ -1,125 +1,366 @@
 @page "/adminsignup"
-@using System.ComponentModel.DataAnnotations
 @using CulinaryCommand.Models
 @using Microsoft.AspNetCore.Components
-@using CulinaryCommand.Services
-@using CulinaryCommand.Data.Entities
-@inject IUserService UserService
+@using Microsoft.AspNetCore.Components.Forms
+@inject CulinaryCommand.Services.IUserService UserService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <PageTitle>Admin Sign Up - Culinary Command</PageTitle>
 
-<div class="signup-container">
-    <div class="signup-card">
-        <div class="text-center mb-4">
-            <h1 class="app-title">Culinary Command</h1>
-            <p class="signup-subtitle">Create a new account</p>
-        </div>
+<div class="cc-hero">
+    <div class="cc-shell">
 
-        @*display error message if registering fails*@
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger" role ="alert">
-            @errorMessage
+        <div class="cc-top">
+            <div class="cc-mark">
+                <i class="bi bi-person-badge"></i>
             </div>
-        }
-
-        @if (!string.IsNullOrEmpty(successMessage))
-        {
-            <div class="alert alert-success" role="alert">
-                @successMessage
+            <div>
+                <div class="cc-title">Create your company</div>
+                <div class="cc-subtitle">Add your locations, create the admin account, then invite your team.</div>
             </div>
-        }
-
-        <EditForm Model="@Signup" OnValidSubmit="@HandleSubmit" FormName="SignUpForm">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <!-- COMPANY -->
-    <h4 class="mb-3">Restaurant Information</h4>
-
-    <div class="mb-3">
-        <label class="form-label">Restaurant Name</label>
-        <InputText class="form-control" @bind-Value="Signup.Company.Name" />
-        <ValidationMessage For="@(() => Signup.Company.Name)" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Address</label>
-        <InputText class="form-control" @bind-Value="Signup.Company.Address" />
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <label class="form-label">City</label>
-            <InputText class="form-control" @bind-Value="Signup.Company.City" />
         </div>
-        <div class="col">
-            <label class="form-label">State</label>
-            <InputText class="form-control" @bind-Value="Signup.Company.State" />
-        </div>
-        <div class="col">
-            <label class="form-label">Zip</label>
-            <InputText class="form-control" @bind-Value="Signup.Company.ZipCode" />
-        </div>
-    </div>
 
+        <div class="cc-formcard">
 
-    <!-- ADMIN -->
-    <h4 class="mt-4 mb-3">Admin Account</h4>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+            }
 
-    <div class="row">
-        <div class="col">
-            <label class="form-label">First Name</label>
-            <InputText class="form-control" @bind-Value="FirstName" />
-        </div>
-        <div class="col">
-            <label class="form-label">Last Name</label>
-            <InputText class="form-control" @bind-Value="LastName" />
-        </div>
-    </div>
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success" role="alert">@successMessage</div>
+            }
 
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <InputText type="email" class="form-control" @bind-Value="Signup.Admin.Email" />
-        <ValidationMessage For="@(() => Signup.Admin.Email)" />
-    </div>
+            <EditForm Model="@Signup" OnValidSubmit="@HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <InputText type="password" class="form-control" @bind-Value="Signup.Admin.Password" />
-        <ValidationMessage For="@(() => Signup.Admin.Password)" />
-    </div>
+                <div class="cc-section">
+                    <div class="cc-section-head">
+                        <div class="cc-section-title">Company</div>
+                        <div class="cc-section-note">This is the organization that owns the locations.</div>
+                    </div>
 
-    <button type="submit" class="btn btn-success w-100 mt-3">
-        Create Account
-    </button>
-</EditForm>
+                    <div class="cc-grid2">
+                        <div>
+                            <label class="form-label">Company Name</label>
+                            <InputText class="form-control cc-input" @bind-Value="Signup.Company.Name" />
+                        </div>
 
-        <!-- Sign In Link -->
-        <div class="text-center mt-4">
-            <span class="text-muted">Already have an account? </span>
-            <a href="/signin" class="signin-link">Sign in</a>
+                        <div>
+                            <label class="form-label">Company Email (optional)</label>
+                            <InputText class="form-control cc-input" @bind-Value="Signup.Company.Email" />
+                        </div>
+
+                        <div class="cc-span2">
+                            <label class="form-label">Company Phone (optional)</label>
+                            <InputText class="form-control cc-input" @bind-Value="Signup.Company.Phone" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cc-divider"></div>
+
+                <div class="cc-section">
+                    <div class="cc-section-row">
+                        <div>
+                            <div class="cc-section-title">Locations</div>
+                            <div class="cc-section-note">Add one or more restaurant locations.</div>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-outline-success cc-btn-sm"
+                                @onclick="AddLocation"
+                                disabled="@isSubmitting">
+                            <i class="bi bi-plus-lg me-1"></i> Add Location
+                        </button>
+                    </div>
+
+                    @foreach (var loc in Signup.Locations.ToList())
+                    {
+                        var locIndex = Signup.Locations.IndexOf(loc);
+
+                        <div class="cc-loc-card" @key="loc">
+                            <div class="cc-loc-head">
+                                <div class="cc-loc-title">Location @(locIndex + 1)</div>
+
+                                <button type="button"
+                                        class="btn btn-outline-danger cc-btn-sm"
+                                        @onclick="() => RemoveLocation(loc)"
+                                        disabled="@(isSubmitting || Signup.Locations.Count == 1)">
+                                    Remove
+                                </button>
+                            </div>
+
+                            <div class="cc-grid2">
+                                <div class="cc-span2">
+                                    <label class="form-label">Location Name</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.Name" />
+                                </div>
+
+                                <div class="cc-span2">
+                                    <label class="form-label">Address</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.Address" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">City</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.City" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">State</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.State" />
+                                </div>
+
+                                <div class="cc-span2">
+                                    <label class="form-label">Zip</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.ZipCode" />
+                                </div>
+
+                                <div class="cc-span2">
+                                    <label class="form-label">MarginEdge Key (optional)</label>
+                                    <InputText class="form-control cc-input" @bind-Value="loc.MarginEdgeKey" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="cc-divider"></div>
+
+                <div class="cc-section">
+                    <div class="cc-section-head">
+                        <div class="cc-section-title">Admin Profile</div>
+                        <div class="cc-section-note">This user owns the company and can invite others.</div>
+                    </div>
+
+                    <div class="cc-grid2">
+                        <div>
+                            <label class="form-label">First Name</label>
+                            <InputText class="form-control cc-input" @bind-Value="FirstName" />
+                        </div>
+
+                        <div>
+                            <label class="form-label">Last Name</label>
+                            <InputText class="form-control cc-input" @bind-Value="LastName" />
+                        </div>
+
+                        <div class="cc-span2">
+                            <label class="form-label">Admin Email</label>
+                            <InputText type="email" class="form-control cc-input" @bind-Value="Signup.Admin.Email" />
+                        </div>
+
+                        <div class="cc-span2">
+                            <label class="form-label">Admin Password</label>
+                            <InputText type="password" class="form-control cc-input" @bind-Value="Signup.Admin.Password" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 cc-btn mt-2" disabled="@isSubmitting">
+                    @(isSubmitting ? "Creating..." : "Create Company")
+                </button>
+
+                <div class="cc-footlink">
+                    <span class="text-muted">Already have an account?</span>
+                    <a href="/signin" class="ms-2">Sign in</a>
+                </div>
+
+            </EditForm>
         </div>
     </div>
 </div>
 
+<style>
+    .cc-hero{
+        min-height: calc(100vh - 0px);
+        display:flex;
+        align-items:flex-start;
+        justify-content:center;
+        padding: 44px 18px;
+        background:
+            radial-gradient(900px 420px at 20% 10%, rgba(25,135,84,.14), transparent 60%),
+            radial-gradient(800px 380px at 80% 0%, rgba(0,0,0,.08), transparent 55%),
+            #f8fafc;
+    }
+
+    .cc-shell{ width:100%; max-width: 980px; }
+
+    .cc-top{
+        display:flex;
+        align-items:center;
+        gap: 14px;
+        margin-bottom: 14px;
+        padding: 0 6px;
+    }
+
+    .cc-mark{
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background: rgba(25,135,84,.12);
+        color: #198754;
+        font-size: 22px;
+        border: 1px solid rgba(25,135,84,.18);
+        flex: 0 0 auto;
+    }
+
+    .cc-title{
+        font-weight: 850;
+        letter-spacing: -0.5px;
+        font-size: 28px;
+        line-height: 1.1;
+        color: #111827;
+    }
+
+    .cc-subtitle{
+        margin-top: 6px;
+        font-size: 14.5px;
+        color: #4b5563;
+        max-width: 680px;
+    }
+
+    .cc-formcard{
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid rgba(17,24,39,.08);
+        box-shadow: 0 10px 30px rgba(17,24,39,.06);
+        padding: 18px;
+    }
+
+    .cc-section{ padding: 4px 2px; }
+
+    .cc-section-head{ margin-bottom: 10px; }
+
+    .cc-section-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .cc-section-title{
+        font-weight: 850;
+        color: #111827;
+        letter-spacing: -0.2px;
+        font-size: 16px;
+    }
+
+    .cc-section-note{
+        margin-top: 4px;
+        color: #6b7280;
+        font-size: 12.5px;
+        line-height: 1.35;
+    }
+
+    .cc-divider{
+        height: 1px;
+        background: rgba(17,24,39,.08);
+        margin: 14px 0;
+    }
+
+    .cc-grid2{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .cc-span2{ grid-column: span 2; }
+
+    @* @media (max-width: 860px){
+        .cc-grid2{ grid-template-columns: 1fr; }
+        .cc-span2{ grid-column: span 1; }
+        .cc-section-row{ flex-direction: column; align-items: stretch; }
+    } *@
+
+    .cc-input{
+        border-radius: 12px;
+        padding: 10px 12px;
+    }
+
+    .cc-btn{
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-weight: 850;
+    }
+
+    .cc-btn-sm{
+        border-radius: 999px;
+        font-weight: 800;
+        padding: 6px 12px;
+    }
+
+    .cc-loc-card{
+        border-radius: 16px;
+        border: 1px solid rgba(17,24,39,.08);
+        background:
+            linear-gradient(180deg, rgba(17,24,39,.02), rgba(17,24,39,0)),
+            #ffffff;
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+
+    .cc-loc-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .cc-loc-title{
+        font-weight: 850;
+        color: #111827;
+        font-size: 14px;
+    }
+
+    .cc-footlink{
+        text-align:center;
+        margin-top: 14px;
+        font-size: 13px;
+    }
+
+    .cc-footlink a{
+        text-decoration:none;
+        font-weight: 800;
+    }
+</style>
+
 @code {
-    private bool showPassword = false;
-    private bool showConfirmPassword = false;
-
-    //flag to track if form is being submitted
     private bool isSubmitting = false;
-
-    // messages to display to the user
     private string errorMessage = string.Empty;
     private string successMessage = string.Empty;
 
     private SignupRequest Signup { get; set; } = new();
-    
+
     private string FirstName { get; set; } = string.Empty;
     private string LastName { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        Signup.Locations ??= new List<LocationSignup>();
+
+        if (Signup.Locations.Count == 0)
+            Signup.Locations.Add(new LocationSignup());
+    }
+
+    private void AddLocation()
+    {
+        Signup.Locations.Add(new LocationSignup());
+    }
+
+    private void RemoveLocation(LocationSignup loc)
+    {
+        if (Signup.Locations.Count <= 1) return;
+        Signup.Locations.Remove(loc);
+    }
 
     private async Task HandleSubmit()
     {
@@ -129,11 +370,11 @@
 
         try
         {
-            // Combine first and last name
             Signup.Admin.Name = $"{FirstName} {LastName}".Trim();
-            
-            // You will write this service method.
+
             await UserService.CreateAdminWithCompanyAndLocationAsync(Signup);
+
+            successMessage = "Company created. Redirecting to sign in...";
             Navigation.NavigateTo("/signin", true);
         }
         catch (Exception ex)
@@ -145,14 +386,4 @@
             isSubmitting = false;
         }
     }
-    private void TogglePasswordVisibility()
-    {
-        showPassword = !showPassword;
-    }
-
-    private void ToggleConfirmPasswordVisibility()
-    {
-        showConfirmPassword = !showConfirmPassword;
-    }
-
 }

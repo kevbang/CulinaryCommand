@@ -4,14 +4,6 @@ using Microsoft.JSInterop;
 
 namespace CulinaryCommand.Services
 {
-    /*
-     * This class holds the current location state of 
-     * the app, including the list of managed locations
-     * of the logged in user
-     *
-     *
-     *
-     */
     public class LocationState
     {
         private readonly IJSRuntime _js;
@@ -40,35 +32,50 @@ namespace CulinaryCommand.Services
                 NotifyStateChanged();
             }
         }
-
-        public async Task SetLocationsAsync(List<Location> locations)
+        public async Task SetLocationsAsync(List<Location>? locations)
         {
             ManagedLocations = locations ?? new List<Location>();
 
-            // Try to restore saved current location
-            var savedId = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_activeLocationId");
+            // Try to restore saved current location (but JS may not be ready during prerender)
+            string? savedId = null;
+            try
+            {
+                savedId = await _js.InvokeAsync<string?>("localStorage.getItem", "cc_activeLocationId");
+            }
+            catch (InvalidOperationException)
+            {
+                // JS not available yet (prerender). We'll just pick a default for now.
+            }
 
-            if (int.TryParse(savedId, out int id))
+            if (int.TryParse(savedId, out var id))
             {
                 CurrentLocation = ManagedLocations.FirstOrDefault(l => l.Id == id);
             }
 
-            // Default to first if invalid
+            // Default to first if invalid or not found
             CurrentLocation ??= ManagedLocations.FirstOrDefault();
 
             OnChange?.Invoke();
         }
 
-        public async Task SetCurrentLocationAsync(Location loc)
+        public async Task SetCurrentLocationAsync(Location? loc)
         {
             CurrentLocation = loc;
 
-            // Persist to localStorage
-            await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", loc.Id);
+            try
+            {
+                if (loc is null)
+                    await _js.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
+                else
+                    await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", loc.Id.ToString());
+            }
+            catch (InvalidOperationException)
+            {
+                // JS not available yet (prerender). It's fine; UI state still updates.
+            }
 
             // OnChange?.Invoke();
             NotifyStateChanged();
         }
     }
-
 }

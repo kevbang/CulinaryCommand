@@ -1,0 +1,79 @@
+@page "/post-login"
+@namespace CulinaryCommand.Components.Pages
+@layout CulinaryCommand.Components.Layout.PublicLayout
+@rendermode InteractiveServer
+
+@using CulinaryCommand.Services.UserContextSpace
+@using CulinaryCommand.Data.Entities
+
+@inject NavigationManager Nav
+@inject IUserContextService UserContext
+@inject CulinaryCommand.Services.LocationState LocationState
+
+<h3 style="text-align:center; margin-top:2rem;">Signing you in…</h3>
+<p style="text-align:center; color: rgba(0,0,0,.65);">@status</p>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="container mt-4">
+        <div class="alert alert-danger">
+            <strong>Post-login failed:</strong><br />
+            @error
+        </div>
+    </div>
+}
+
+@code {
+    private bool _ran;
+    private string status = "Initializing…";
+    private string? error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _ran) return;
+        _ran = true;
+
+        try
+        {
+            status = "Loading user context…";
+            StateHasChanged();
+
+            var ctx = await UserContext.RefreshAsync();
+
+            if (!ctx.IsAuthenticated)
+            {
+                status = "Not authenticated. Redirecting…";
+                StateHasChanged();
+                Nav.NavigateTo("/", replace: true);   // NO forceLoad
+                return;
+            }
+
+            if (ctx.User is null)
+            {
+                status = "No local user found (invite-only). Redirecting…";
+                StateHasChanged();
+                Nav.NavigateTo("/no-access", replace: true);
+                return;
+            }
+
+            status = "Loading locations…";
+            StateHasChanged();
+
+            // JS-safe now (we're in OnAfterRender)
+            await LocationState.SetLocationsAsync(ctx.AccessibleLocations);
+
+            var target = (ctx.AccessibleLocations?.Any() == true) ? "/dashboard" : "/onboarding";
+
+            status = $"Redirecting to {target}…";
+            StateHasChanged();
+
+            Nav.NavigateTo(target, replace: true);   // NO forceLoad
+        }
+        catch (Exception ex)
+        {
+            error = ex.ToString();
+            status = "Error occurred.";
+            StateHasChanged();
+        }
+    }
+}

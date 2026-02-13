@@ -1,86 +1,151 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+
 using CulinaryCommand.Data;
 using CulinaryCommand.Services;
 using CulinaryCommand.Inventory.Services;
 using CulinaryCommand.PurchaseOrder.Services;
 using CulinaryCommand.Inventory;
 using CulinaryCommand.Inventory.Services.Interfaces;
-using System; // for Version, TimeSpan
-using System.Linq;
-using CulinaryCommand.Components; // for args.Any
-using Google.GenAI;
+using CulinaryCommand.Components;
 using CulinaryCommandApp.AIDashboard.Services.Reporting;
+using Google.GenAI;
+using System;
+using CulinaryCommand.Services.UserContextSpace;
+using Amazon.CognitoIdentityProvider;
+using Amazon.Extensions.NETCore.Setup;
+using CulinaryCommandApp.Services;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// FORCE EF to load your config when running "dotnet ef"
-// builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-// builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
-
-// Add services to the container.
+//
+// =====================
+// UI
+// =====================
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Register Google GenAI client and AIReportingService so they can be injected.
-// The Client will pick up the GOOGLE_API_KEY from environment variables (set in deploy.yml).
-builder.Services.AddSingleton<Client>(_ => new Client());
-builder.Services.AddScoped<AIReportingService>();
+//
+// =====================
+// Cognito Authentication (MUST be before Build)
+// =====================
+// ===== Cognito Auth (OIDC) =====
+builder.Services
+  .AddAuthentication(options =>
+  {
+      options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+  })
+  .AddCookie()
+  .AddOpenIdConnect(options =>
+  {
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      var userPoolId = "us-east-2_SULe0c9vr";
+      var region = "us-east-2";
 
-// DB hookup
-// var conn = builder.Configuration.GetConnectionString("DefaultConnection");
-// if (string.IsNullOrWhiteSpace(conn))
-// {
-//     throw new InvalidOperationException("Missing connection string 'Default'. Set ConnectionStrings__Default via environment or config.");
-// }
-// Console.WriteLine("CONNECTION STRING FROM CONFIG:");
-// Console.WriteLine(conn);
+      options.Authority = $"https://cognito-idp.{region}.amazonaws.com/{userPoolId}";
+      options.MetadataAddress = $"{options.Authority}/.well-known/openid-configuration";
+
+      options.ClientId = "55joip0viah9qtj7dndhvma2gt";
+      var cognitoClientId = builder.Configuration["Authentication:Cognito:ClientId"];
+        var cognitoSecretFromEnv = Environment.GetEnvironmentVariable("COGNITO_CLIENT_SECRET");
+        var cognitoSecretFromConfig = builder.Configuration["Authentication:Cognito:ClientSecret"];
+
+        var cognitoClientSecret =
+            !string.IsNullOrWhiteSpace(cognitoSecretFromEnv) ? cognitoSecretFromEnv :
+            cognitoSecretFromConfig;
+
+        options.ClientId = cognitoClientId;
+        options.ClientSecret = cognitoClientSecret;
 
 
-// builder.Services.AddDbContext<AppDbContext>(opt =>
-//     opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36)),
-//         mySqlOptions => mySqlOptions.EnableRetryOnFailure()
-//     )
-// );
+      options.ResponseType = OpenIdConnectResponseType.Code;
+      options.SaveTokens = true;
 
-// DB hookup
+      options.CallbackPath = "/signin-oidc";
+      options.SignedOutCallbackPath = "/signout-callback-oidc";
+
+      options.RequireHttpsMetadata = true; // keep true
+
+      options.Scope.Clear();
+      options.Scope.Add("openid");
+      options.Scope.Add("email");
+      options.Scope.Add("profile");
+
+      options.TokenValidationParameters.NameClaimType = "cognito:username";
+      options.TokenValidationParameters.RoleClaimType = "cognito:groups";
+  });
+
+builder.Services.AddAuthorization();
+
+//
+// =====================
+// AI Services
+// =====================
+// builder.Services.AddSingleton<Client>(_ => new Client());
+// builder.Services.AddScoped<AIReportingService>();
+
+var googleKey =
+    Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+    ?? builder.Configuration["Google:ApiKey"]; // optional appsettings slot
+
+if (!string.IsNullOrWhiteSpace(googleKey))
+{
+    builder.Services.AddSingleton(_ => new Google.GenAI.Client(apiKey: googleKey));
+    builder.Services.AddScoped<AIReportingService>();
+    Console.WriteLine("✅ AI enabled (GOOGLE_API_KEY found).");
+}
+else
+{
+    Console.WriteLine("⚠️ GOOGLE_API_KEY not set; AI features disabled.");
+    // Do NOT register AIReportingService at all.
+}
+
+
+//
+// =====================
+// Database
+// =====================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(conn))
 {
-    throw new InvalidOperationException("Missing connection string 'DefaultConnection'. Set ConnectionStrings__DefaultConnection via environment or config.");
+    throw new InvalidOperationException(
+        "Missing connection string 'DefaultConnection'");
 }
-
-// Mask password for logs (primarily for debugging in the Lightsail instance)
-string MaskPwd(string s)
-{
-    if (string.IsNullOrEmpty(s)) return s;
-    var parts = s.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    for (int i = 0; i < parts.Length; i++)
-    {
-        if (parts[i].StartsWith("Pwd=", StringComparison.OrdinalIgnoreCase))
-            parts[i] = "Pwd=****";
-    }
-    return string.Join(';', parts);
-}
-Console.WriteLine($"[Startup] Using MySQL connection: {MaskPwd(conn)}");
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 36)), mySqlOpts =>
-    {
-        // Enable transient retry for RDS connectivity hiccups
-        mySqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
-    }));
+    opt.UseMySql(
+        conn,
+        new MySqlServerVersion(new Version(8, 0, 36)),
+        mySqlOpts => mySqlOpts.EnableRetryOnFailure()
+    )
+);
 
-// registers services with Scoped lifetime.
+//
+// =====================
+// Application Services
+// =====================
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserContextService, UserContextService>();
+
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
+builder.Services.AddScoped<CognitoProvisioningService>();
+
 builder.Services.AddScoped<RecipeService>();
 builder.Services.AddScoped<UnitService>();
 builder.Services.AddScoped<IngredientService>();
+builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<LocationState>();
-builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IInventoryTransactionService, InventoryTransactionService>();
@@ -90,27 +155,37 @@ builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddSingleton<EnumService>();
 
+//
+// =====================
+// Build App
+// =====================
 var app = builder.Build();
 
 // Determine whether the app should only run migrations and exit
 var migrateOnly = (Environment.GetEnvironmentVariable("MIGRATE_ONLY")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
                   || (args != null && args.Any(a => a.Equals("--migrate-only", StringComparison.OrdinalIgnoreCase)));
 
+//
+// =====================
 // Apply pending EF Core migrations at startup
+// =====================
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        database.Database.Migrate();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[Startup] Migration failed: {ex.GetType().Name} - {ex.Message}");
-        // Optionally: keep running without schema update; remove this catch to fail hard instead
+        Console.WriteLine($"[Startup] Migration warning: {ex.Message}");
     }
 }
 
+//
+// =====================
+// Middleware
+// =====================
 if (migrateOnly)
 {
     Console.WriteLine("[Startup] MIGRATE_ONLY set; exiting after applying migrations.");
@@ -127,10 +202,52 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Temporarily disable HTTPS redirect for development
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.UseAuthentication();
+app.UseAuthorization();
+  
+//
+// =====================
+// Routes
+// =====================
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/health", () => "OK");
+
+var cognitoDomain = builder.Configuration["Authentication:Cognito:Domain"];
+var clientId = builder.Configuration["Authentication:Cognito:ClientId"];
+var callbackPath = builder.Configuration["Authentication:Cognito:CallbackPath"] ?? "/signin-oidc";
+var logoutCallbackPath = builder.Configuration["Authentication:Cognito:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
+
+app.MapGet("/login", async (HttpContext ctx) =>
+{
+    await ctx.ChallengeAsync(
+        OpenIdConnectDefaults.AuthenticationScheme,
+        new AuthenticationProperties { RedirectUri = "/post-login" }
+    );
+});
+
+app.MapGet("/logout", async (HttpContext ctx, IConfiguration config) =>
+{
+    // Clear local cookie
+    await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+    var domain = config["Authentication:Cognito:Domain"]!.TrimEnd('/');
+    var clientId = config["Authentication:Cognito:ClientId"]!;
+
+    var postLogout = $"{ctx.Request.Scheme}://{ctx.Request.Host}/"; // must match allowed sign-out URL
+
+    var url = $"{domain}/logout" +
+              $"?client_id={Uri.EscapeDataString(clientId)}" +
+              $"&logout_uri={Uri.EscapeDataString(postLogout)}";
+
+    return Results.Redirect(url);
+});
+
+
 
 app.Run();

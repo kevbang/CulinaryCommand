@@ -2,17 +2,16 @@
 @implements IDisposable
 <div class="employee-dashboard">
     <h2 class="mb-4 text-warning">Employee Dashboard</h2>
-    <p>Welcome, @(Auth.CurrentUser?.Name ?? "User")!</p>
+    <p>Welcome, </p>
 
     <ul>
         <li>View your active tasks and prep items</li>
-        <li>Check your assigned location: @(LocationState.CurrentLocation?.Name ?? "Not assigned")</li>
+        <li>Check your assigned location: </li>
         <li>Submit updates to your manager</li>
     </ul>
 </div>
 
 @code {
-    [Inject] private CulinaryCommand.Services.AuthService Auth { get; set; } = default!;
     [Inject] private CulinaryCommand.Services.LocationState LocationState { get; set; } = default!;
 
     private async void HandleLocationStateChanged()

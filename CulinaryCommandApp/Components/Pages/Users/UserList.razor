@@ -1,10 +1,21 @@
-@using CulinaryCommand.Data.Entities
-@inject IUserService Users
-@inject AuthService Auth
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+@implements IDisposable
+
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject IUserService Users
+@inject IUserContextService UserCtx
+@inject LocationState LocationState
+@inject NavigationManager Nav
+
 <h3 class="mb-3">Users</h3>
-<button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
+
+@if (priv)
+{
+    <button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
+}
 
 @if (_users == null)
 {
@@ -29,7 +40,7 @@ else
                     <td>@u.Name</td>
                     <td>@u.Email</td>
                     <td>@u.Role</td>
-                    <td>@string.Join(", ", u.UserLocations.Select(x => x.Location.Name))</td>
+                    <td>@FormatLocations(u)</td>
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => Edit(u.Id)">Edit</button>
                         <button class="btn btn-danger" @onclick="() => Delete(u.Id)">Delete</button>
@@ -41,27 +52,68 @@ else
 }
 
 @code {
-    List<User>? _users;
+    private UserContext? _ctx;
+    private List<User>? _users;
+    private bool priv = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        _ctx = await UserCtx.GetAsync();
+
+        // If not authenticated, bounce to Cognito login
+        if (_ctx.IsAuthenticated != true)
         {
-            // Wait for JS + hydration
-            await Auth.EnsureHydratedAsync();
-
-            if (!Auth.IsSignedIn)
-            {
-                Nav.NavigateTo("/signin", replace: true);
-                return;
-            }
-
-            // Now safe to load data
-            @* _users = await Users.GetAllUsersAsync(); *@
-            _users = await Users.GetUsersByCompanyAsync(Auth.CurrentUser?.CompanyId ?? 0);
-
-            StateHasChanged();
+            Nav.NavigateTo("/login", true);
+            return;
         }
+
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        // Ensure LocationState has locations (same as RecipeList)
+        if (LocationState.ManagedLocations.Count == 0 && _ctx.AccessibleLocations.Any())
+            await LocationState.SetLocationsAsync(_ctx.AccessibleLocations);
+
+        UpdatePriv();
+
+        LocationState.OnChange += RefreshUsers;
+
+        await LoadUsersAsync();
+    }
+
+    private void UpdatePriv()
+    {
+        var role = _ctx?.User?.Role;
+        priv =
+            string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        var loc = LocationState.CurrentLocation;
+
+        if (loc == null)
+        {
+            _users = new List<User>();
+            return;
+        }
+
+        // ✅ only users for current location (and optionally filtered by company)
+        _users = await Users.GetUsersForLocationAsync(loc.Id, _ctx!.User!.CompanyId);
+    }
+
+    private void RefreshUsers()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadUsersAsync();
+            StateHasChanged();
+        });
     }
 
     void CreateUser() => Nav.NavigateTo("/users/create");
@@ -69,7 +121,25 @@ else
 
     async Task Delete(int id)
     {
+        if (!priv) return;
+
         await Users.DeleteUserAsync(id);
-        _users = await Users.GetAllUsersAsync();
+        await LoadUsersAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatLocations(User u)
+    {
+        var names = u.UserLocations?
+            .Select(x => x.Location?.Name)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList() ?? new List<string>();
+
+        return names.Count == 0 ? "-" : string.Join(", ", names);
+    }
+
+    public void Dispose()
+    {
+        LocationState.OnChange -= RefreshUsers;
     }
 }

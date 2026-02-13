@@ -1,12 +1,14 @@
 @page "/account/setup"
+@rendermode InteractiveServer
+
 @using CulinaryCommand.Data.Entities
 @using Microsoft.AspNetCore.WebUtilities
+
 @inject NavigationManager Nav
 @inject IUserService UserService
-@inject AuthService Auth
 @inject ILocationService locationService
 
-<h3>Set Your Password</h3>
+<h3>Activate Your Account</h3>
 
 @if (invalid)
 {
@@ -15,25 +17,27 @@
 else if (success)
 {
     <div class="alert alert-success">
-        Your account is now active! <a href="/signin">Sign In</a>
+        Your account is now active! <a href="/login">Continue to Sign In</a>
     </div>
 }
 else
 {
     <EditForm Model="@model" OnValidSubmit="Submit">
-        <DataAnnotationsValidator/>
+        <DataAnnotationsValidator />
 
         <div class="mb-3">
             <label class="form-label">New Password</label>
-            <InputText class="form-control" @bind-Value="model.Password" type="password"/>
+            <InputText class="form-control" @bind-Value="model.Password" type="password" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Confirm Password</label>
-            <InputText class="form-control" @bind-Value="model.ConfirmPassword" type="password"/>
+            <InputText class="form-control" @bind-Value="model.ConfirmPassword" type="password" />
         </div>
 
-        <button class="btn btn-success">Activate Account</button>
+        <button class="btn btn-success" disabled="@submitting">
+            @(submitting ? "Activating..." : "Activate Account")
+        </button>
     </EditForm>
 }
 
@@ -41,54 +45,74 @@ else
     private string? token;
     private bool invalid = false;
     private bool success = false;
+    private bool submitting = false;
 
     private PasswordModel model = new();
-
     private User? invitedUser;
 
     protected override async Task OnInitializedAsync()
     {
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
+
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("token", out var t))
         {
             token = t!;
             invitedUser = await UserService.GetUserByInviteTokenAsync(token);
 
             if (invitedUser == null)
-            {
                 invalid = true;
-            }
         }
-        else invalid = true;
+        else
+        {
+            invalid = true;
+        }
     }
 
     private async Task Submit()
     {
-        if (model.Password != model.ConfirmPassword)
+        if (submitting) return;
+        submitting = true;
+
+        try
         {
-            invalid = true;
-            return;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                invalid = true;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Password) ||
+                model.Password != model.ConfirmPassword)
+            {
+                invalid = true;
+                return;
+            }
+
+            // Activate in your DB (invite-only gate)
+            var ok = await UserService.ActivateUserAsync(token, model.Password);
+
+            if (!ok)
+            {
+                invalid = true;
+                return;
+            }
+
+            // Optional: if you still need any server-side prep, keep it.
+            // But DO NOT attempt Auth.SignInAsync here (Cognito owns login now).
+            if (invitedUser != null)
+            {
+                // If this method is safe/needed, keep it; otherwise remove.
+                await locationService.LoadAndPersistLocationsAsync(invitedUser.Id);
+            }
+
+            success = true;
+
+            // Send them into Cognito login. /post-login will hydrate user + locations.
+            Nav.NavigateTo("/login", true);
         }
-
-        bool ok = await UserService.ActivateUserAsync(token!, model.Password);
-
-        if (!ok)
+        finally
         {
-            invalid = true;
-            return;
-        }
-
-        if (invitedUser != null){
-            // Auto-login after activation
-            User freshUser = await UserService.GetUserByEmailAsync(invitedUser.Email!);
-            await Auth.SignInAsync(freshUser);
-
-            await locationService.LoadAndPersistLocationsAsync(invitedUser.Id);
-
-            Nav.NavigateTo("/");
-        }
-        else {
-            Nav.NavigateTo("/signIn", forceLoad: true);
+            submitting = false;
         }
     }
 

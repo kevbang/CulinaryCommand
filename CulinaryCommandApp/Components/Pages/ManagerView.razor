@@ -1,19 +1,34 @@
+@page "/manager"
 @rendermode InteractiveServer
-@inject IJSRuntime JS
-@inject ILocationService LocationService
-@inject LocationState LocationState
-@inject AuthService Auth
+
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services.UserContextSpace
+
+
+@inject NavigationManager Nav
+@inject IUserContextService UserCtx
+@inject LocationState LocationState
 
 <div class="manager-dashboard">
     <h2 class="mb-4 text-primary">Manager Dashboard</h2>
-    @if (LocationState.CurrentLocation is null)
+
+    @if (!_ready)
+    {
+        <div class="text-center mt-5">Loading...</div>
+    }
+    else if (!_allowed)
+    {
+        <div class="alert alert-warning mt-4">
+            You need manager or admin permissions to view this page.
+        </div>
+    }
+    else if (LocationState.CurrentLocation is null)
     {
         <p>You have no locations. Add a location in settings.</p>
     }
     else
     {
-        <p>Welcome, Manager of @LocationState.CurrentLocation.Name (@Auth.CompanyCode)</p>
+        <p>Welcome, Manager of @LocationState.CurrentLocation.Name (@companyCode)</p>
         <ul>
             <li>View and assign employee tasks</li>
             <li>Review daily summaries for your location</li>
@@ -24,19 +39,19 @@
             <div class="row g-5">
                 <div class="col-12 col-md-6">
                     <DashboardCard Title="Prep Items Needing Attention" Value="5 items" Color="#ffc107"
-                        IconClass="bi bi-exclamation-triangle" Link="/prep" />
+                                   IconClass="bi bi-exclamation-triangle" Link="/prep" />
                     <DashboardCard Title="Orders Pending Approval" Value="3 orders" Color="#688f72"
-                        IconClass="bi bi-file-earmark-check" Link="/orders" />
-                    <DashboardCard Title="Daily Summaries / Reports" Value="1" Color="#883ae1" IconClass="bi bi-file-text"
-                        Link="/reports" />
+                                   IconClass="bi bi-file-earmark-check" Link="/orders" />
+                    <DashboardCard Title="Daily Summaries / Reports" Value="1" Color="#883ae1"
+                                   IconClass="bi bi-file-text" Link="/reports" />
                 </div>
                 <div class="col-12 col-md-6">
-                    <DashboardCard Title="Active Tasks by Employee" Value="6 tasks" Color="#3662e3" IconClass="bi bi-people"
-                        Link="/tasks" />
-                    <DashboardCard Title="Low Stock Ingredients" Value="2" Color="#ca3a31" IconClass="bi bi-box-seam"
-                        Link="/inventory-management" />
-                    <DashboardCard Title="Manage Employees" Value="35" Color="#e28743" IconClass="bi bi-person-gear"
-                        Link="/employees" />
+                    <DashboardCard Title="Active Tasks by Employee" Value="6 tasks" Color="#3662e3"
+                                   IconClass="bi bi-people" Link="/assign-tasks" />
+                    <DashboardCard Title="Low Stock Ingredients" Value="2" Color="#ca3a31"
+                                   IconClass="bi bi-box-seam" Link="/inventory-management" />
+                    <DashboardCard Title="Manage Employees" Value="35" Color="#e28743"
+                                   IconClass="bi bi-person-gear" Link="/employees" />
                 </div>
             </div>
 
@@ -45,12 +60,12 @@
                     <div class="card shadow-sm d-flex flex-column py-3 px-4 mb-5">
                         <p class="fs-5 fw-semibold mb-3">Recent Activity</p>
                         <div class="activity-list">
-                            <ActivityCard Title="Sarah assigned 3 new prep tasks to kitchen staff" TimeInfo="10 minutes ago"
-                                IconClass="bi bi-people" />
-                            <ActivityCard Title="New order #1234 received from Table 7" TimeInfo="35 minutes ago"
-                                IconClass="bi bi-file-earmark-check" />
-                            <ActivityCard Title="Inventory alert: Tomatoes below threshold" TimeInfo="1 hour ago"
-                                IconClass="bi bi-box-seam" />
+                            <ActivityCard Title="Sarah assigned 3 new prep tasks to kitchen staff"
+                                          TimeInfo="10 minutes ago" IconClass="bi bi-people" />
+                            <ActivityCard Title="New order #1234 received from Table 7"
+                                          TimeInfo="35 minutes ago" IconClass="bi bi-file-earmark-check" />
+                            <ActivityCard Title="Inventory alert: Tomatoes below threshold"
+                                          TimeInfo="1 hour ago" IconClass="bi bi-box-seam" />
                         </div>
                     </div>
                 </div>
@@ -59,60 +74,38 @@
     }
 </div>
 
-
 @code {
-    private bool _initializedFromJS = false;
+    private bool _ready;
+    private bool _allowed;
+    private string companyCode = "";
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        var ctx = await UserCtx.GetAsync();
+
+        if (!ctx.IsAuthenticated)
         {
-            //hydrate from localStorage IMMEDIATELY
-            await LoadLocationFromLocalStorage();
-
-            //background refresh to sync/validate with server
-            _ = RefreshLocationFromServer();
-        }
-    }
-
-    private async Task LoadLocationFromLocalStorage()
-    {
-        string? idStr = await JS.InvokeAsync<string?>("localStorage.getItem", "cc_activeLocationId");
-
-        if (int.TryParse(idStr, out int id) && id > 0)
-        {
-            Location? cached = await LocationService.GetLocationByIdAsync(id);
-            await LocationState.SetCurrentLocationAsync(cached);
-        }
-        else
-        {
-            await LocationState.SetCurrentLocationAsync(null);
-        }
-
-        _initializedFromJS = true;
-        StateHasChanged(); // re-render after local hydration
-    }
-
-    private async Task RefreshLocationFromServer()
-    {
-        if (LocationState.CurrentLocation == null)
+            Nav.NavigateTo("/login", true);
             return;
-
-        int id = LocationState.CurrentLocation.Id;
-
-        var fresh = await LocationService.GetLocationByIdAsync(id);
-
-        if (fresh != null)
-        {
-            await LocationState.SetCurrentLocationAsync(fresh);
-        }
-        else
-        {
-            // Location removed or permission revoked
-            await JS.InvokeVoidAsync("localStorage.removeItem", "cc_activeLocationId");
-            await LocationState.SetCurrentLocationAsync(null!);
         }
 
-        StateHasChanged();
+        if (ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        _allowed =
+            string.Equals(ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+        // CompanyCode lives on Company
+        companyCode = ctx.User.Company?.CompanyCode ?? "";
+
+        // Ensure LocationState is hydrated if this page is hit directly
+        if (LocationState.ManagedLocations.Count == 0 && ctx.AccessibleLocations.Any())
+            await LocationState.SetLocationsAsync(ctx.AccessibleLocations);
+
+        _ready = true;
     }
 }

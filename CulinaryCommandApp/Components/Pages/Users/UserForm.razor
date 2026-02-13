@@ -31,7 +31,7 @@
 
         <div class="mb-3">
             <label class="form-label">Assigned Locations</label>
-            <UserLocationTagPicker AssignedIds="AssignedLocationIds" UserId="Model.Id" OnChanged="OnLocationChanged" />
+            <UserLocationTagPicker CompanyId="Model.CompanyId" AssignedIds="AssignedLocationIds" UserId="Model.Id" OnChanged="OnLocationChanged" />
         </div>
 
         <button class="btn btn-success" @onclick="Save">Save</button>

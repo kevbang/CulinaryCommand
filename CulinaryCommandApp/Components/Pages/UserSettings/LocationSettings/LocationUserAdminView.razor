@@ -1,81 +1,95 @@
+@rendermode InteractiveServer
+
 @using CulinaryCommand.Models
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services.UserContextSpace
+
 @inject IUserService UserService
 @inject ILocationService LocationService
-@inject AuthService Auth
+@inject IUserContextService UserCtx
 @inject NavigationManager Nav
 
 <div class="location-user-admin">
 
     <h4 class="mb-3">Users Assigned to This Location</h4>
 
-    <button class="btn btn-success mb-3" @onclick="ShowInviteForm">
-        <i class="bi bi-person-plus me-2"></i>Invite User
-    </button>
-
-    <button class="btn btn-outline-primary mb-3 ms-2" @onclick="ShowAddExistingForm">
-        <i class="bi bi-person-check me-2"></i>Add Existing User
-    </button>
-
-    @if (showInvite)
+    @if (!_ready)
     {
-        <InviteUserForm 
-            LocationId="LocationId"
-            OnClose="HideInviteForm"
-            OnInvited="ReloadUsers" />
+        <div>Loading...</div>
     }
-
-    @if (showAddExisting)
+    else if (!_allowed)
     {
-        <div class="card card-body mb-3">
-            <label class="form-label fw-semibold">Select Existing User</label>
-
-            <select class="form-select" @bind="selectedUserId">
-                <option value="">-- Select User --</option>
-                @foreach (var u in AvailableUsers)
-                {
-                    <option value="@u.Id">@u.Name (@u.Email)</option>
-                }
-            </select>
-
-            <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-success" @onclick="AddExistingUser"
-                        disabled="@(!CanAddExisting)">
-                    Add to Location
-                </button>
-
-                <button class="btn btn-outline-secondary" @onclick="HideAddExistingForm">
-                    Cancel
-                </button>
-            </div>
+        <div class="alert alert-warning">
+            You do not have permission to manage users for this location.
         </div>
-    }
-
-    @if (Users.Count == 0)
-    {
-        <div class="alert alert-info">No users assigned to this location yet.</div>
     }
     else
     {
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th style="width: 150px;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in Users)
-                {
-                    <tr>
-                        <td>@user.Name</td>
-                        <td>@user.Email</td>
-                        <td>@user.Role</td>
-                        <td class="text-end">
+        <button class="btn btn-success mb-3" @onclick="ShowInviteForm">
+            <i class="bi bi-person-plus me-2"></i>Invite User
+        </button>
 
-                            <div class="d-flex justify-content-end">
+        <button class="btn btn-outline-primary mb-3 ms-2" @onclick="ShowAddExistingForm">
+            <i class="bi bi-person-check me-2"></i>Add Existing User
+        </button>
+
+        @if (showInvite)
+        {
+            <InviteUserForm
+                LocationId="LocationId"
+                OnClose="HideInviteForm"
+                OnInvited="ReloadUsers" />
+        }
+
+        @if (showAddExisting)
+        {
+            <div class="card card-body mb-3">
+                <label class="form-label fw-semibold">Select Existing User</label>
+
+                <select class="form-select" @bind="selectedUserId">
+                    <option value="">-- Select User --</option>
+                    @foreach (var u in AvailableUsers)
+                    {
+                        <option value="@u.Id">@u.Name (@u.Email)</option>
+                    }
+                </select>
+
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-success" @onclick="AddExistingUser"
+                            disabled="@(!CanAddExisting)">
+                        Add to Location
+                    </button>
+
+                    <button class="btn btn-outline-secondary" @onclick="HideAddExistingForm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (Users.Count == 0)
+        {
+            <div class="alert alert-info">No users assigned to this location yet.</div>
+        }
+        else
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th style="width: 150px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Users)
+                    {
+                        <tr>
+                            <td>@user.Name</td>
+                            <td>@user.Email</td>
+                            <td>@user.Role</td>
+                            <td class="text-end">
                                 @if (user.Role == "Manager")
                                 {
                                     <button class="btn btn-warning btn-sm me-2"
@@ -83,26 +97,24 @@
                                         Demote
                                     </button>
                                 }
-                                else if (user.Role == "Employee")
+                                else
                                 {
                                     <button class="btn btn-primary btn-sm me-2"
                                             @onclick="() => Promote(user)">
                                         Promote
                                     </button>
                                 }
-                                @if (!(user.Role == "Admin" && user.Id == Auth.CurrentUser?.Id)) {
-                                    @* Admins shouldn't be able to remove themselves *@
-                                    <button class="btn btn-danger btn-sm"
-                                            @onclick="() => RemoveUser(user)">
-                                        Remove
-                                    </button>
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => RemoveUser(user)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     }
 
 </div>
@@ -110,34 +122,47 @@
 @code {
     [Parameter] public int LocationId { get; set; }
 
+    private UserContext? _ctx;
+
+    private bool _ready;
+    private bool _allowed;
+
     private bool showInvite = false;
     private bool showAddExisting = false;
-
-    private bool hydrated = false;
 
     private List<User> Users = new();
     private List<User> AvailableUsers = new();
 
     private string? selectedUserId; // dropdown binding
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender)
-            return;
+        _ctx = await UserCtx.GetAsync();
 
-        await Auth.EnsureHydratedAsync();
-
-        if (!Auth.IsSignedIn)
+        if (_ctx.IsAuthenticated != true)
         {
-            Nav.NavigateTo("/signin", replace: true);
+            Nav.NavigateTo("/login", true);
             return;
         }
 
-        await ReloadUsers();
-        await LoadAvailableUsers();
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
 
-        hydrated = true;
-        StateHasChanged();
+        // Gate: allow Admin/Manager to manage location users
+        _allowed =
+            string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+        if (_allowed)
+        {
+            await ReloadUsers();
+            await LoadAvailableUsers();
+        }
+
+        _ready = true;
     }
 
     private async Task ReloadUsers()
@@ -149,9 +174,9 @@
 
     private async Task LoadAvailableUsers()
     {
-        if (Auth.CompanyId == null) return;
+        if (_ctx?.User?.CompanyId is null) return;
 
-        var companyUsers = await UserService.GetUsersByCompanyAsync(Auth.CompanyId.Value);
+        var companyUsers = await UserService.GetUsersByCompanyAsync(_ctx.User.CompanyId.Value);
 
         var assignedIds = Users.Select(u => u.Id).ToHashSet();
 
@@ -176,6 +201,8 @@
 
     private async Task AddExistingUser()
     {
+        if (!_allowed) return;
+
         if (!int.TryParse(selectedUserId, out var userId))
             return;
 
@@ -196,14 +223,20 @@
     }
 
     // ---------------------------
-    // Existing logic unchanged
+    // Invite form
     // ---------------------------
 
     private void ShowInviteForm() => showInvite = true;
     private void HideInviteForm() => showInvite = false;
 
+    // ---------------------------
+    // Manage assignments/roles
+    // ---------------------------
+
     private async Task RemoveUser(User user)
     {
+        if (!_allowed) return;
+
         await LocationService.RemoveUserFromLocationAsync(LocationId, user.Id);
 
         if (user.Role == "Manager")
@@ -214,6 +247,8 @@
 
     private async Task Promote(User user)
     {
+        if (!_allowed) return;
+
         user.Role = "Manager";
         await UserService.UpdateUserAsync(user);
         await LocationService.AddManagerToLocationAsync(LocationId, user.Id);
@@ -222,6 +257,8 @@
 
     private async Task Demote(User user)
     {
+        if (!_allowed) return;
+
         user.Role = "Employee";
         await UserService.UpdateUserAsync(user);
         await LocationService.RemoveManagerFromLocationAsync(LocationId, user.Id);

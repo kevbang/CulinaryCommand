@@ -1,15 +1,24 @@
 @page "/users/edit/{id:int}"
-@using CulinaryCommand.Data.Entities
-@inject IUserService UserService
-@inject AuthService Auth
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject IUserService UserService
+@inject IUserContextService UserCtx
+@inject NavigationManager Nav
 
 <h3>Edit User</h3>
 
 @if (model == null)
 {
     <p>Loading...</p>
+}
+else if (!_allowed)
+{
+    <div class="alert alert-warning">
+        You do not have permission to edit users.
+    </div>
 }
 else
 {
@@ -18,28 +27,46 @@ else
 
 @code {
     [Parameter] public int id { get; set; }
+
     private User? model;
+    private bool _allowed;
+    private UserContext? _ctx;
 
     protected override async Task OnInitializedAsync()
     {
-        // Wait for hydration
-        await Auth.EnsureHydratedAsync();
+        _ctx = await UserCtx.GetAsync();
 
-        if (!Auth.IsSignedIn)
+        if (_ctx.IsAuthenticated != true)
         {
-            Nav.NavigateTo("/signin", replace: true);
+            Nav.NavigateTo("/login", true);
             return;
         }
 
-        // Safe to use Auth.UserId, Auth.UserRole, etc now
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        _allowed =
+            string.Equals(_ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+        // Load model either way so the page can show something (or you can early-return if you prefer)
         model = await UserService.GetUserByIdAsync(id);
     }
 
     private async Task Save(User u)
     {
+        if (!_allowed)
+            return;
+
         await UserService.UpdateUserAsync(u);
-        await UserService.AssignLocationsAsync(u.Id, u.UserLocations.Select(x => x.LocationId).ToList());
-       
+
+        // If UserLocations is null, don't blow up
+        var locIds = u.UserLocations?.Select(x => x.LocationId).ToList() ?? new List<int>();
+        await UserService.AssignLocationsAsync(u.Id, locIds);
+
         Nav.NavigateTo("/users");
     }
 }

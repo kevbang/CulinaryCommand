@@ -1,22 +1,12 @@
+@rendermode InteractiveServer
 @using CulinaryCommand.Data.Entities
-@inject AuthService Auth
+@using CulinaryCommand.Services.UserContextSpace
 
-@foreach (var loc in Locations)
-{
-    <div class="card shadow-sm p-3 mb-3">
-        <div class="d-flex justify-content-between">
-            <div>
-                <h5>@loc.Name</h5>
-                <p class="text-muted mb-1">@loc.Address</p>
-                <small>@loc.City, @loc.State @loc.ZipCode</small>
-            </div>
-        </div>
-    </div>
-}
+@inject IUserContextService UserCtx
 
-@* <div class="card shadow-sm p-3">
+<div class="card shadow-sm p-3">
 
-    <h4>@Auth.Company</h4>
+    <h4>@(CompanyDisplay ?? "Company")</h4>
 
     @if (Location == null)
     {
@@ -29,8 +19,21 @@
         <p class="mb-1">@Location.City, @Location.State @Location.ZipCode</p>
     }
 
-</div> *@
+</div>
 
 @code {
-    [Parameter] public List<Location> Locations { get; set; } = new List<Location>();
+    [Parameter] public Location? Location { get; set; }
+
+    private string? CompanyDisplay;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+
+        // Invite-only: ctx.User null means authenticated but not in DB
+        CompanyDisplay =
+            ctx.User?.Company?.Name
+            ?? ctx.User?.Company?.CompanyCode
+            ?? "Company";
+    }
 }

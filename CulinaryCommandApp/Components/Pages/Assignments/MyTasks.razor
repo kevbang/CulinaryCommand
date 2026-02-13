@@ -5,8 +5,9 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Data.Enums
 @using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
 
-@inject AuthService Auth
+@inject IUserContextService UserCtx
 @inject ITaskAssignmentService TaskService
 @inject LocationState LocationState
 @inject NavigationManager Nav
@@ -22,7 +23,7 @@
         <div class="mt-5">Loading your tasks...</div>
     </div>
 }
-else if (!Auth.IsSignedIn)
+else if (_ctx?.IsAuthenticated != true)
 {
     <div class="container mt-4">
         <div class="alert alert-warning mt-4">
@@ -51,6 +52,8 @@ else
 }
 
 @code {
+    private UserContext? _ctx;
+
     private bool ready;
     private string username = "Cook";
 
@@ -60,22 +63,31 @@ else
 
     private bool _isLoadingTasks = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
+        _ctx = await UserCtx.GetAsync();
 
-        await Auth.EnsureHydratedAsync();
-
-        if (!Auth.IsSignedIn)
+        // If not authenticated, bounce to Cognito login
+        if (_ctx.IsAuthenticated != true)
         {
-            ready = true;
-            StateHasChanged();
+            Nav.NavigateTo("/login", true);
             return;
         }
 
-        username = Auth.CurrentUser?.Name
-            ?? Auth.UserEmail
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        username = _ctx.User.Name
+            ?? _ctx.Email
             ?? "Cook";
+
+        // If user deep-linked here, ensure LocationState is hydrated
+        if (LocationState.ManagedLocations.Count == 0 && _ctx.AccessibleLocations.Any())
+            await LocationState.SetLocationsAsync(_ctx.AccessibleLocations);
 
         selectedLocationId = LocationState.CurrentLocation?.Id;
 
@@ -85,7 +97,6 @@ else
         await LoadTasksAsync();
 
         ready = true;
-        StateHasChanged();
     }
 
     private async Task LoadTasksAsync()
@@ -95,14 +106,15 @@ else
         _isLoadingTasks = true;
         try
         {
-            if (!Auth.UserId.HasValue)
+            var userId = _ctx?.User?.Id;
+            if (userId is null)
             {
                 allTasks = new();
                 prepTasks = new();
                 return;
             }
 
-            allTasks = await TaskService.GetForUserAsync(Auth.UserId.Value, selectedLocationId);
+            allTasks = await TaskService.GetForUserAsync(userId.Value, selectedLocationId);
 
             prepTasks = allTasks
                 @* .Where(t => t.Kind == WorkTaskKind.PrepFromRecipe) *@
@@ -133,9 +145,9 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleLocationStateChanged()
+    private void HandleLocationStateChanged()
     {
-        await InvokeAsync(async () =>
+        _ = InvokeAsync(async () =>
         {
             selectedLocationId = LocationState.CurrentLocation?.Id ?? selectedLocationId;
             await LoadTasksAsync();

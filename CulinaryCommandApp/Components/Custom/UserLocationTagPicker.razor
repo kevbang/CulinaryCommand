@@ -1,6 +1,5 @@
 @using CulinaryCommand.Data.Entities
 @inject ILocationService LocationService
-@inject AuthService Auth
 @rendermode InteractiveServer
 
 <div class="tag-picker">
@@ -38,6 +37,7 @@
 @code {
     [Parameter]
     public int UserId { get; set; }
+    [Parameter] public int? CompanyId { get; set; }
 
     [Parameter]
     public List<int> AssignedIds { get; set; } = new();
@@ -49,11 +49,29 @@
     private List<Location> AssignedLocations = new();
     private List<Location> UnassignedLocations = new();
 
+    private int? _loadedCompanyId;
+
     private bool IsMenuOpen = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        AllLocations = await LocationService.GetLocationsByCompanyAsync(Auth.CurrentUser?.CompanyId);
+        // Parent hasn't provided CompanyId yet
+        if (CompanyId is null)
+        {
+            AllLocations.Clear();
+            RefreshLists(); // will show just the assigned tags (if any exist in AssignedIds)
+            return;
+        }
+
+        // Avoid reloading every render
+        if (_loadedCompanyId == CompanyId && AllLocations.Count > 0)
+        {
+            RefreshLists();
+            return;
+        }
+
+        _loadedCompanyId = CompanyId;
+        AllLocations = await LocationService.GetLocationsByCompanyAsync(CompanyId.Value);
         RefreshLists();
     }
 
@@ -61,7 +79,6 @@
     {
         AssignedLocations = AllLocations.Where(l => AssignedIds.Contains(l.Id)).ToList();
         UnassignedLocations = AllLocations.Where(l => !AssignedIds.Contains(l.Id)).ToList();
-        StateHasChanged();
     }
 
     private async Task AddLocation(int id)

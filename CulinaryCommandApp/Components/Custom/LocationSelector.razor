@@ -1,50 +1,43 @@
-@using CulinaryCommand.Models
 @using CulinaryCommand.Services
 @using CulinaryCommand.Data.Entities
-@using System.Xml
 @using System.Text.Json
-
-@inject AuthService Auth
+@using CulinaryCommand.Services.UserContextSpace
 
 @inject ILocationService LocationService
 @inject LocationState LocationState
-@inject IJSRuntime JS
-
-
+@inject IUserContextService UserCtx
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 
 <!-- Location Dropdown -->
 <div class="dropdown me-3">
     <button class="btn btn-light dropdown-toggle d-flex align-items-center py-2 pe-3" type="button" id="businessMenu"
-        data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;" title="View and edit restaurants">
+            data-bs-toggle="dropdown" aria-expanded="false" style="height:3rem;" title="View and edit restaurants">
 
         <div class="icon-box d-flex align-items-center justify-content-center me-2"
-            style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
+             style="background-color:#d3ddd5; width:2.5rem; height:2.5rem; border-radius:0.45rem;">
             <i class="bi bi-building fs-4" style="color:#688f72;"></i>
         </div>
+
         <span>@(LocationState.CurrentLocation?.Name ?? "Select Location")</span>
     </button>
 
     <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="businessMenu">
         @if (ManagedLocations.Any())
         {
-            <li>
-                <h6 class="dropdown-header">Locations</h6>
-            </li>
+            <li><h6 class="dropdown-header">Locations</h6></li>
 
-
-            @foreach (Location location in ManagedLocations ?? Enumerable.Empty<Location>())
+            @foreach (var location in ManagedLocations)
             {
                 <li>
-                    <div
-                        class="dropdown-item d-flex justify-content-between align-items-center @(LocationState.CurrentLocation == location ? "active" : "")">
+                    <div class="dropdown-item d-flex justify-content-between align-items-center @(LocationState.CurrentLocation?.Id == location.Id ? "active" : "")">
                         <span class="flex-grow-1" style="cursor: pointer;"
-                            @onclick="() => SetLocation(location)">
+                              @onclick="() => SetLocation(location)">
                             @location.Name
                         </span>
+
                         <button class="btn btn-link p-0 ms-2 edit-btn" title="Edit @location.Name"
-                            @onclick="() => EditLocation(location)" @onclick:stopPropagation="true">
+                                @onclick="() => EditLocation(location)" @onclick:stopPropagation="true">
                             <i class="bi bi-pencil-fill fs-9 text-muted"></i>
                         </button>
                     </div>
@@ -55,80 +48,84 @@
         {
             <li>
                 <div class="d-flex justify-content-between align-items-center"
-                    style="padding: 0.5rem 1rem;  font-size: 0.95rem;">
-                    <span class="flex-grow-1" style="cursor: pointer;">
-                        No locations.
-                    </span>
-                    @* <button class="btn btn-link p-0 ms-2 edit-btn" 
-                        @onclick="() => AddRestaurant()" @onclick:stopPropagation="true">
-                        <i class="bi bi-plus-square-fill fs-9 text-active"></i>
-                    </button> *@
+                     style="padding: 0.5rem 1rem; font-size: 0.95rem;">
+                    <span class="flex-grow-1">No locations.</span>
                 </div>
             </li>
         }
-
     </ul>
 </div>
 
 @code {
     private List<Location> ManagedLocations { get; set; } = new();
-    private bool hydrated = false;
+    private bool _loadedOnce;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            // Wait for auth hydration
-            await Auth.EnsureHydratedAsync();
+        if (!firstRender || _loadedOnce) return;
+        _loadedOnce = true;
 
-            if (!Auth.IsSignedIn)
-            {
-                // Do NOT redirect here — navbar dropdown is visible on all pages,
-                // so returning silently is correct
-                return;
-            }
+        // 1) Load cached instantly (never fails hard)
+        ManagedLocations = await LoadCachedLocationsAsync();
+        if (LocationState.CurrentLocation == null && ManagedLocations.Any())
+            await LocationState.SetCurrentLocationAsync(ManagedLocations.First());
 
-            // 1. Load cached instantly
-            ManagedLocations = await LoadCachedLocationsAsync();
+        StateHasChanged();
 
-            // 2. Load fresh server data
-            await LoadLocationsFromServerAsync();
+        // 2) Load fresh server data if we can resolve user context
+        await LoadLocationsFromServerAsync();
 
-            hydrated = true;
-
-            StateHasChanged();
-        }
+        StateHasChanged();
     }
-
 
     private async Task<List<Location>> LoadCachedLocationsAsync()
     {
-        var json = await JS.InvokeAsync<string>("localStorage.getItem", "cc_locations");
-        return string.IsNullOrWhiteSpace(json)
-        ? new List<Location>()
-        : (JsonSerializer.Deserialize<List<Location>>(json) ?? new List<Location>());
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", "cc_locations");
+            return string.IsNullOrWhiteSpace(json)
+                ? new List<Location>()
+                : (JsonSerializer.Deserialize<List<Location>>(json) ?? new List<Location>());
+        }
+        catch
+        {
+            return new List<Location>();
+        }
     }
 
     private async Task LoadLocationsFromServerAsync()
     {
-        if (Auth.UserRole == "Admin")
+        var ctx = await UserCtx.GetAsync();
+
+        // If not authenticated / not linked to DB user yet, do nothing.
+        if (ctx.User?.Id is null) return;
+
+        List<Location> fresh;
+
+        if (ctx.User?.Role == "Admin")
         {
-            ManagedLocations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId!.Value);
+            if (ctx.User.CompanyId is null) return;
+            fresh = await LocationService.GetLocationsByCompanyAsync(ctx.User?.CompanyId.Value);
         }
-        else if (Auth.UserRole == "Manager") 
+        else if (ctx.User?.Role == "Manager")
         {
-            ManagedLocations = await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value);
+            fresh = await LocationService.GetLocationsByManagerAsync(ctx.User?.Id);
         }
-        else {
-            ManagedLocations = await LocationService.GetLocationsByEmployeeAsync(Auth.UserId!.Value);
+        else
+        {
+            fresh = await LocationService.GetLocationsByEmployeeAsync(ctx.User?.Id);
         }
 
-        // Update localStorage
-        await JS.InvokeAsync<object>("localStorage.setItem",
-        "cc_locations",
-        JsonSerializer.Serialize(ManagedLocations));
+        ManagedLocations = fresh ?? new List<Location>();
 
-        // Set a default current location if none
+        // Cache
+        try
+        {
+            await JS.InvokeAsync<object>("localStorage.setItem", "cc_locations", JsonSerializer.Serialize(ManagedLocations));
+        }
+        catch { /* ignore caching failures */ }
+
+        // Default current location
         if (LocationState.CurrentLocation == null && ManagedLocations.Any())
             await LocationState.SetCurrentLocationAsync(ManagedLocations.First());
     }

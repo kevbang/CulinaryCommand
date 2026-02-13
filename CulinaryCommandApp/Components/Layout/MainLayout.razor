@@ -1,45 +1,29 @@
 @inherits LayoutComponentBase
-@using CulinaryCommand.Models
-@using CulinaryCommand.Services
-@inject CulinaryCommand.Services.AuthService Auth
-@inject NavigationManager Nav
-@inject LocationState LocationState
-@using System.Threading.Tasks
-@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
 
+<AuthorizeView>
+    <Authorized>
+        <div class="page">
+            <div class="sidebar">
+                <NavMenu />
+            </div>
 
-<div class="page">
-  <div class="sidebar"><NavMenu /></div>
+            <main>
+                <div class="top-row px-4 d-flex justify-content-end align-items-center">
+                    <LocationSelector />
+                    <ProfileDropdown />
+                </div>
 
-  <main>
-    <div class="top-row px-4 d-flex justify-content-end align-items-center">
-        <LocationSelector />
-        <ProfileDropdown />
-    </div>
+                <article class="content px-4">
+                    @Body
+                </article>
+            </main>
+        </div>
+    </Authorized>
 
-    <article class="content px-4">
-      @Body
-    </article>
-  </main>
-</div>
-
-@code {
-  private bool _hydrated;
-
-  protected override async Task OnAfterRenderAsync(bool firstRender)
-  {
-      if (!firstRender || _hydrated)
-          return;
-
-      await LocationState.HydrateAsync();
-      
-      var path = Nav.Uri.ToLowerInvariant();
-      if (!path.Contains("/signin") && !path.Contains("/signup") && !path.Contains("/adminsignup"))
-      {
-          await Auth.EnsureHydratedAsync();
-      }
-
-      _hydrated = true;
-      StateHasChanged();
-  }
-}
+    <NotAuthorized>
+        <main class="public-page">
+            @Body
+        </main>
+    </NotAuthorized>
+</AuthorizeView>

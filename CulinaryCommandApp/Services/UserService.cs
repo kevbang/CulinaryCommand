@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using CulinaryCommand.Models;
+using CulinaryCommandApp.Services;
 
 namespace CulinaryCommand.Services
 {
@@ -35,12 +36,14 @@ namespace CulinaryCommand.Services
         private readonly PasswordHasher<User> _passwordHasher = new();
         private readonly AppDbContext _context;
         private readonly IEmailSender _emailSender;
+        private readonly CognitoProvisioningService _cognito;
 
 
-        public UserService(AppDbContext context, IEmailSender emailSender)
+        public UserService(AppDbContext context, IEmailSender emailSender, CognitoProvisioningService cognito)
         {
             _context = context;
             _emailSender = emailSender;
+            _cognito = cognito;
         }
 
         public async Task<User> CreateUserAsync(User user)
@@ -255,79 +258,118 @@ namespace CulinaryCommand.Services
 
         public async Task<User> CreateAdminWithCompanyAndLocationAsync(SignupRequest req)
         {
-            if (req == null) throw new ArgumentNullException(nameof(req));
-            if (req.Admin == null) throw new Exception("Admin information is required.");
+            if (req?.Admin == null) throw new Exception("Admin information is required.");
             if (req.Company == null) throw new Exception("Company information is required.");
-            if (req.Location == null) throw new Exception("Location information is required.");
+            if (req.Locations == null || req.Locations.Count == 0) throw new Exception("At least one location is required.");
 
-            // Check if email already exists
-            if (await _context.Users.AnyAsync(u => u.Email == req.Admin.Email))
+            var email = req.Admin.Email.Trim().ToLowerInvariant();
+
+            if (await _context.Users.AnyAsync(u => u.Email == email))
                 throw new Exception("A user with this email already exists.");
 
-            // 1) Create Company
-            var company = new Company
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
             {
-                Name = req.Company.Name,
-                CompanyCode = req.Company.CompanyCode,
-                Address = req.Company.Address,
-                City = req.Company.City,
-                State = req.Company.State,
-                ZipCode = req.Company.ZipCode,
-                Phone = req.Company.Phone,
-                Email = req.Company.Email,
-                Description = req.Company.Description,
-                LLCName = req.Company.LLCName,
-                TaxId = req.Company.TaxId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                await using var tx = await _context.Database.BeginTransactionAsync();
 
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
+                try
+                {
+                    var company = new Company
+                    {
+                        Name = req.Company.Name.Trim(),
+                        CompanyCode = GenerateCompanyCode(req.Company.Name),
+                        Address = req.Company.Address,
+                        City = req.Company.City,
+                        State = req.Company.State,
+                        ZipCode = req.Company.ZipCode,
+                        Phone = req.Company.Phone,
+                        Email = req.Company.Email,
+                        Description = req.Company.Description,
+                        LLCName = req.Company.LLCName,
+                        TaxId = req.Company.TaxId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
 
-            // 2) Create Location
-            var location = new Location
-            {
-                Name = req.Company.Name,
-                Address = req.Company.Address,
-                City = req.Company.City,
-                State = req.Company.State,
-                ZipCode = req.Company.ZipCode,
-                MarginEdgeKey = req.Location.MarginEdgeKey,
-                CompanyId = company.Id
-            };
+                    _context.Companies.Add(company);
+                    await _context.SaveChangesAsync();
 
-            _context.Locations.Add(location);
-            await _context.SaveChangesAsync();
+                    var createdLocations = new List<Location>();
 
-            // 3) Create Admin User
-            var admin = new User
-            {
-                Name = req.Admin.Name,
-                Email = req.Admin.Email,
-                Password = HashPassword(req.Admin.Password),
-                Phone = req.Admin.Phone,
-                Role = "Admin",
-                CompanyId = company.Id,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                    foreach (var loc in req.Locations)
+                    {
+                        var location = new Location
+                        {
+                            Name = loc.Name.Trim(),
+                            Address = loc.Address.Trim(),
+                            City = loc.City.Trim(),
+                            State = loc.State.Trim(),
+                            ZipCode = loc.ZipCode.Trim(),
+                            MarginEdgeKey = loc.MarginEdgeKey,
+                            CompanyId = company.Id
+                        };
 
-            _context.Users.Add(admin);
-            await _context.SaveChangesAsync();
+                        _context.Locations.Add(location);
+                        createdLocations.Add(location);
+                    }
 
-            // 4) Link Admin to Location (UserLocation table)
-            var link = new UserLocation
-            {
-                UserId = admin.Id,
-                LocationId = location.Id
-            };
+                    await _context.SaveChangesAsync();
 
-            _context.UserLocations.Add(link);
-            await _context.SaveChangesAsync();
+                    var admin = new User
+                    {
+                        Name = req.Admin.Name?.Trim(),
+                        Email = email,
+                        Password = HashPassword(req.Admin.Password),
+                        Phone = req.Admin.Phone,
+                        Role = "Admin",
+                        CompanyId = company.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        IsActive = true,
+                        EmailConfirmed = true
+                    };
 
-            return admin;
+                    _context.Users.Add(admin);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var loc in createdLocations)
+                    {
+                        _context.UserLocations.Add(new UserLocation
+                        {
+                            UserId = admin.Id,
+                            LocationId = loc.Id
+                        });
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    // NOTE: if this throws, the DB transaction will roll back.
+                    await _cognito.CreateUserWithPasswordAsync(email, admin.Name ?? email, req.Admin.Password);
+
+                    await tx.CommitAsync();
+                    return admin;
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
         }
+
+
+
+        private static string GenerateCompanyCode(string companyName)
+        {
+            var cleaned = new string(companyName.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+            if (cleaned.Length > 8) cleaned = cleaned[..8];
+            if (cleaned.Length < 4) cleaned = cleaned.PadRight(4, 'X');
+
+            var suffix = RandomNumberGenerator.GetInt32(1000, 9999);
+            return $"{cleaned}{suffix}";
+        }
+
 
         public async Task<User> CreateInvitedUserForLocationAsync(CreateUserForLocationRequest request, int companyId, int createdByUserId)
         {

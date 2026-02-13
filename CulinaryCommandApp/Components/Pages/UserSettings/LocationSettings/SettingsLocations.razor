@@ -1,28 +1,37 @@
-@inject AuthService Auth
-@inject ILocationService LocationService
-@inject NavigationManager Nav
+@rendermode InteractiveServer
+
 @using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
 @using CulinaryCommand.Data.Entities
-@rendermode InteractiveServer
+@using CulinaryCommand.Services.UserContextSpace
+
+@inject ILocationService LocationService
+@inject IUserContextService UserCtx
+@inject NavigationManager Nav
 
 <div>
     @if (!hydrated)
     {
         <p>Loading locations...</p>
     }
+    else if (!_allowed)
+    {
+        <div class="alert alert-warning">
+            You need to be signed in and assigned to a company to manage locations.
+        </div>
+    }
     else
     {
-        @if (Auth.UserRole == "Admin")
+        @if (IsAdmin)
         {
-            <LocationAdminView 
+            <LocationAdminView
                 Locations="locations"
                 OnCreate="Create"
                 OnEdit="Update"
                 OnDelete="Delete" />
         }
-        else if (Auth.UserRole == "Manager")
+        else if (IsManager)
         {
-            <LocationManagerView 
+            <LocationManagerView
                 Locations="locations"
                 OnEdit="Update" />
         }
@@ -38,47 +47,70 @@
     private Location? employeeLocation;
     private bool hydrated = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private UserContext? _ctx;
+    private bool _allowed;
+
+    private bool IsAdmin => string.Equals(_ctx?.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+    private bool IsManager => string.Equals(_ctx?.User?.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
+        _ctx = await UserCtx.GetAsync();
 
-        // 1. Hydrate Auth first
-        await Auth.EnsureHydratedAsync();
-
-        if (!Auth.IsSignedIn)
+        // Not authenticated => go to Cognito login route
+        if (_ctx.IsAuthenticated != true)
         {
-            Nav.NavigateTo("/signin", replace: true);
+            Nav.NavigateTo("/login", true);
             return;
         }
 
-        // 2. Load location data AFTER hydration
-        await LoadLocations();
+        // Invite-only: authenticated but not in DB
+        if (_ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        // Must have company to manage locations (admins/managers/employees)
+        _allowed = _ctx.User.CompanyId is not null;
+
+        if (_allowed)
+            await LoadLocations();
 
         hydrated = true;
-        StateHasChanged();
     }
 
     private async Task LoadLocations()
     {
-        if (Auth.UserRole == "Admin")
+        if (_ctx?.User is null) return;
+
+        if (IsAdmin)
         {
-            locations = await LocationService.GetLocationsByCompanyAsync(Auth.CompanyId!.Value);
+            if (_ctx.User.CompanyId is null) { locations = new(); return; }
+            locations = await LocationService.GetLocationsByCompanyAsync(_ctx.User.CompanyId.Value);
+            employeeLocation = null;
         }
-        else if (Auth.UserRole == "Manager")
+        else if (IsManager)
         {
-            locations = await LocationService.GetLocationsByManagerAsync(Auth.UserId!.Value);
+            locations = await LocationService.GetLocationsByManagerAsync(_ctx.User.Id);
+            employeeLocation = null;
         }
         else
         {
-            locations = await LocationService.GetLocationsByEmployeeAsync(Auth.UserId!.Value);
-
+            employeeLocation = (await LocationService.GetLocationsByEmployeeAsync(_ctx.User.Id)).FirstOrDefault();
+            locations = new();
         }
     }
 
     private async Task Create(Location loc)
     {
-        loc.CompanyId = Auth.CompanyId!.Value;
-        await LocationService.CreateLocationAsync(loc, Auth.UserId!.Value);
+        if (_ctx?.User?.CompanyId is null) return;
+
+        loc.CompanyId = _ctx.User.CompanyId.Value;
+
+        // CreateLocationAsync(loc, createdByUserId)
+        await LocationService.CreateLocationAsync(loc, _ctx.User.Id);
+
         await LoadLocations();
         StateHasChanged();
     }
