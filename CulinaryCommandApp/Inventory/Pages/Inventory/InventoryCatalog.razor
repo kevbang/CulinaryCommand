@@ -2,6 +2,98 @@
 
 @using CulinaryCommand.Inventory.DTOs
 
-<div>
-hi there, this is the inventory catalog.
-</div>
+
+
+<button class="btn" @onclick="OpenItemAddForm"> Add Item</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>ITEM NAME</th>
+            <th>SKU</th>
+            <th>CATEGORY</th>
+            <th>UNIT OF MEASURE</th>
+            <th>COST PER UNIT</th>
+            <th>SUPPLIER</th>
+            <th>NOTES</th>
+            <th>ACTIONS</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var inventoryItem in itemCatalog)
+        {
+            <tr>
+                <td>@inventoryItem.ItemName</td>
+                <td>@inventoryItem.SKU</td>
+                <td>@inventoryItem.Category</td>
+                <td>@inventoryItem.Unit</td>
+                <td>@inventoryItem.PricePerUnit</td>
+                <td>@inventoryItem.Supplier</td>
+                <td>@inventoryItem.Notes</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (showAddItemForm) {
+    <dialog open>
+        <div>
+            <h4>Add Item</h4>
+            <div>
+                <label>Item Name</label>
+                <input @bind="newItem.ItemName" />
+            </div>
+            <div>
+                <label>SKU</label>
+                <input @bind="newItem.SKU" />
+            </div>
+            <div>
+                <label>Category</label>
+                <input @bind="newItem.Category" />
+            </div>
+            <div>
+                <label>Unit</label>
+                <input @bind="newItem.Unit" />
+            </div>
+            <div>
+                <label>Price Per Unit</label>
+                <input type="number" step="0.01" @bind="newItem.PricePerUnit" />
+            </div>
+            <div>
+                <label>Supplier</label>
+                <input type="number" step="0.01" @bind="newItem.Supplier" />
+            </div>
+            <div>
+                <label>Notes</label>
+                <input @bind="newItem.Notes" />
+            </div>
+            <div>
+                <button @onclick="ConfirmAddItem">Confirm</button>
+                <button @onclick="CancelAddItem">Cancel</button>
+            </div>
+        </div>
+    </dialog>
+}
+
+
+
+@code {
+    private List<InventoryCatalogDTO> itemCatalog = new List<InventoryCatalogDTO>();
+    private InventoryCatalogDTO newItem = new InventoryCatalogDTO();
+    private bool showAddItemForm;
+
+    private void OpenItemAddForm() {
+        newItem = new InventoryCatalogDTO();
+        showAddItemForm = true;
+    }
+
+    private void ConfirmAddItem() {
+        itemCatalog.Add(newItem);
+        newItem = new InventoryCatalogDTO();
+        showAddItemForm = false;
+    }
+
+    private void CancelAddItem() {
+        showAddItemForm = false;
+    }
+}

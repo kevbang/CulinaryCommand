@@ -10,6 +10,7 @@ namespace CulinaryCommand.Inventory.DTOs
         public string Category { get; set; } = string.Empty;
         public string Unit { get; set; } = "count";
         public decimal PricePerUnit { get; set; }
+        public decimal Supplier { get; set; }
         public string? Notes { get; set; }
     }
 }
