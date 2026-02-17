@@ -3,175 +3,140 @@
 
 @using CulinaryCommand.Inventory.DTOs
 @using Microsoft.JSInterop
-@using CulinaryCommand.Inventory.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
 @using System.Threading.Tasks
 
 <div class="inventory-container">
     <div class="inventory-header">
-        <h1>Inventory</h1>
-        <div class="header-actions">
-            <button class="btn btn-success" @onclick="ShowAddItemModal">
+        <div class="header-text">
+            <h1>Inventory Management</h1>
+            <p>Manage your stock</p>
+        </div>
+    </div>
+
+    <div class="inventory-toolbar">
+        <div class="search-bar">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search Ingredients by name, category, or supplier..." @bind="SearchTerm" @bind:event="oninput" />
+        </div>
+        <div class="toolbar-actions">
+            <button class="icon-btn" @onclick="ExportInventory" title="Export">
+                <i class="bi bi-download"></i>
+            </button>
+            <button class="icon-btn" @onclick="RefreshInventory" title="Refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="icon-btn" @onclick="ToggleQuickFilter" title="Quick filter">
+                <i class="bi bi-funnel"></i>
+            </button>
+            <div class="select-wrap">
+                <select class="form-select" @bind="SelectedCategory">
+                    <option value="">All Categories</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+            <div class="select-wrap">
+                <select class="form-select" @bind="StockStatus">
+                    <option value="">Stock Status</option>
+                    <option value="low">Low Stock</option>
+                    <option value="out">Out of Stock</option>
+                    <option value="sufficient">In Stock</option>
+                </select>
+            </div>
+            <button class="btn-add" @onclick="ShowAddItemModal">
                 <i class="bi bi-plus-lg"></i> Add Item
             </button>
-            @* <button class="btn btn-primary" @onclick="ExportInventory">
-                <i class="bi bi-download"></i> Export
-            </button> *@
         </div>
     </div>
 
-    <!-- Filter Tabs -->
-    <div class="filter-tabs">
+    <div class="tab-row">
         <button class="tab-btn @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
-            All
+            All Items (@inventoryItems.Count)
         </button>
-        <button class="tab-btn @(activeTab == "dry" ? "active" : "")" @onclick='() => SetActiveTab("dry")'>
-            Dry Items
+        <button class="tab-btn @(activeTab == "low" ? "active" : "")" @onclick='() => SetActiveTab("low")'>
+            Low Stock (@inventoryItems.Count(i => i.IsLowStock))
         </button>
-        <button class="tab-btn @(activeTab == "arriving" ? "active" : "")" @onclick='() => SetActiveTab("arriving")'>
-            Arriving Soon
-        </button>
-        <button class="tab-btn @(activeTab == "ordered" ? "active" : "")" @onclick='() => SetActiveTab("ordered")'>
-            Ordered
-        </button>
-        <button class="btn-filter-list" @onclick="ToggleFilterPanel">
-            <i class="bi bi-funnel"></i> Filter List
+        <button class="tab-btn @(activeTab == "out" ? "active" : "")" @onclick='() => SetActiveTab("out")'>
+            Out of Stock (@inventoryItems.Count(i => i.CurrentQuantity <= 0))
         </button>
     </div>
 
-    <!-- Advanced Filter Panel -->
-    @if (showFilterPanel)
-    {
-        <div class="filter-panel">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Search</label>
-                    <input type="text" class="form-control" @bind="searchTerm" @bind:event="oninput" placeholder="Search by name or SKU..." />
-                </div>
-                <div class="filter-group">
-                    <label>Category</label>
-                    <select class="form-control" @bind="selectedCategory">
-                        <option value="">All Categories</option>
-                        @foreach (var category in categories)
-                        {
-                            <option value="@category">@category</option>
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Stock Status</label>
-                    <select class="form-control" @bind="stockStatus">
-                        <option value="">All</option>
-                        <option value="low">Low Stock</option>
-                        <option value="out">Out of Stock</option>
-                        <option value="sufficient">Sufficient</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <button class="btn btn-secondary" @onclick="ClearFilters">Clear Filters</button>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Inventory Table -->
     <div class="inventory-table-container">
         <table class="inventory-table">
             <thead>
                 <tr>
-                    <th @onclick='() => SortBy("name")'>
-                        Name <i class="bi bi-arrow-down-up"></i>
+                    <th class="checkbox-col">
+                        <input type="checkbox" checked="@IsPageSelected" @onchange="ToggleSelectAll" />
                     </th>
-                    <th @onclick='() => SortBy("sku")'>
-                        SKU <i class="bi bi-arrow-down-up"></i>
-                    </th>
-                    <th @onclick='() => SortBy("currentQty")'>
-                        Current Qty <i class="bi bi-arrow-down-up"></i>
-                    </th>
-                    <th @onclick='() => SortBy("outOfStock")'>
-                        Out of Stock <i class="bi bi-arrow-down-up"></i>
-                    </th>
-                    <th @onclick='() => SortBy("lastOrder")'>
-                        Last Order <i class="bi bi-arrow-down-up"></i>
-                    </th>
-                    <th @onclick='() => SortBy("price")'>
-                        Price <i class="bi bi-arrow-down-up"></i>
-                    </th>
-                    <th>Actions</th>
+                    <th @onclick='() => SortBy("name")'>Name <i class="bi bi-arrow-down-up"></i></th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th @onclick='() => SortBy("currentQty")'>Current Stock <i class="bi bi-arrow-down-up"></i></th>
+                    <th @onclick='() => SortBy("expires")'>Expires <i class="bi bi-arrow-down-up"></i></th>
+                    <th @onclick='() => SortBy("price")'>Cost/Unit <i class="bi bi-arrow-down-up"></i></th>
+                    <th>Location</th>
+                    <th @onclick='() => SortBy("lastUpdated")'>Last Updated <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="actions-col">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @if (isLoading)
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="10" class="text-center py-4">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </td>
                     </tr>
                 }
-                else if (!filteredItems.Any())
+                else if (!pagedItems.Any())
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="10" class="text-center py-4">
                             <p class="text-muted">No items found</p>
                         </td>
                     </tr>
                 }
                 else
                 {
-                    @foreach (var item in filteredItems)
+                    @foreach (var item in pagedItems)
                     {
-                        <tr class="@GetRowClass(item)">
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" checked="@selectedIds.Contains(item.Id)" @onchange="(e) => ToggleSelection(item.Id, e)" />
+                            </td>
                             <td>
-                                <div class="item-name">
-                                    @item.Name
-                                    @if (item.IsLowStock)
+                                <div class="name-cell">
+                                    <div class="item-name">@item.Name</div>
+                                    <div class="item-sku">SKU: @item.SKU</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="category-pill @GetCategoryClass(item.Category)">@item.Category</span>
+                            </td>
+                            <td>@item.Unit</td>
+                            <td>
+                                <div class="stock-cell">
+                                    <span class="stock-value">@item.CurrentQuantity</span>
+                                    @if (item.CurrentQuantity <= 0)
                                     {
-                                        <span class="badge bg-warning ms-2">Low</span>
+                                        <span class="stock-indicator out"><i class="bi bi-x-circle"></i></span>
+                                    }
+                                    else if (item.IsLowStock)
+                                    {
+                                        <span class="stock-indicator low"><i class="bi bi-exclamation-triangle"></i></span>
                                     }
                                 </div>
                             </td>
-                            <td>@item.SKU</td>
-                            <td>
-                                <div class="qty-control">
-                                    <button class="qty-btn" @onclick="() => DecrementQuantity(item)">
-                                        <i class="bi bi-dash"></i>
-                                    </button>
-                                    <span class="qty-value">@item.CurrentQuantity @item.Unit</span>
-                                    <button class="qty-btn" @onclick="() => IncrementQuantity(item)">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                            </td>
-                            <td>
-                                @if (item.OutOfStockDate.HasValue)
-                                {
-                                    <span class="@(IsDateCritical(item.OutOfStockDate.Value) ? "text-danger fw-bold" : "")">
-                                        @item.OutOfStockDate.Value.ToString("MM/dd/yy")
-                                        @if (IsDateCritical(item.OutOfStockDate.Value))
-                                        {
-                                            <i class="bi bi-exclamation-triangle-fill ms-1"></i>
-                                        }
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">-</span>
-                                }
-                            </td>
-                            <td>
-                                @if (item.LastOrderDate.HasValue)
-                                {
-                                    @item.LastOrderDate.Value.ToString("MM/dd/yy")
-                                }
-                                else
-                                {
-                                    <span class="text-muted">-</span>
-                                }
-                            </td>
+                            <td>@(item.OutOfStockDate.HasValue ? item.OutOfStockDate.Value.ToString("M/d/yy") : "-")</td>
                             <td>$@item.Price.ToString("F2")</td>
-                            <td>
+                            <td>@GetLocation(item.Id)</td>
+                            <td>@(item.LastOrderDate.HasValue ? item.LastOrderDate.Value.ToString("M/d/yy") : "-")</td>
+                            <td class="actions-col">
                                 <div class="action-buttons">
                                     <button class="btn-action" @onclick="() => EditItem(item)" title="Edit">
                                         <i class="bi bi-pencil"></i>
@@ -179,7 +144,7 @@
                                     <button class="btn-action" @onclick="() => OrderItem(item)" title="Order">
                                         <i class="bi bi-cart-plus"></i>
                                     </button>
-                                    <button class="btn-action text-danger" @onclick="() => DeleteItem(item)" title="Delete">
+                                    <button class="btn-action delete" @onclick="() => DeleteItem(item)" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -189,25 +154,27 @@
                 }
             </tbody>
         </table>
-    </div>
-
-    <!-- Summary Stats -->
-    <div class="inventory-stats">
-        <div class="stat-card">
-            <div class="stat-label">Total Items</div>
-            <div class="stat-value">@inventoryItems.Count</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Low Stock</div>
-            <div class="stat-value text-warning">@inventoryItems.Count(i => i.IsLowStock)</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Out of Stock</div>
-            <div class="stat-value text-danger">@inventoryItems.Count(i => i.CurrentQuantity <= 0)</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Value</div>
-            <div class="stat-value">$@inventoryItems.Sum(i => i.CurrentQuantity * i.Price).ToString("F2")</div>
+        <div class="table-footer">
+            <div class="footer-count">Showing @GetStartIndex()-@GetEndIndex() of @filteredItems.Count Ingredients</div>
+            <div class="pagination">
+                <button class="page-nav" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                @foreach (var pageNum in pageButtons)
+                {
+                    if (pageNum < 0)
+                    {
+                        <span class="page-ellipsis">...</span>
+                    }
+                    else
+                    {
+                        <button class="page-btn @(currentPage == pageNum ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                    }
+                }
+                <button class="page-nav" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -278,6 +245,24 @@
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Expires</label>
+                            <InputDate class="form-control" @bind-Value="modalItem.OutOfStockDate" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Last Updated</label>
+                            <InputDate class="form-control" @bind-Value="modalItem.LastOrderDate" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Location</label>
+                    <input type="text" class="form-control" @bind="modalLocation" />
+                </div>
             </div>
             <div class="modal-footer-custom">
                 <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
@@ -292,20 +277,27 @@
 @code {
     private List<InventoryItemDTO> inventoryItems = new();
     private List<InventoryItemDTO> filteredItems = new();
+    private List<InventoryItemDTO> pagedItems = new();
     private bool isLoading = true;
     private string activeTab = "all";
-    private bool showFilterPanel = false;
     private string searchTerm = "";
     private string selectedCategory = "";
     private string stockStatus = "";
     private string sortColumn = "";
     private bool sortAscending = true;
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private List<int> pageButtons = new();
+    private HashSet<int> selectedIds = new();
 
-    private List<string> categories = new() { "Produce", "Dairy", "Meat", "Dry Goods", "Beverages", "Condiments", "Spices" };
+    private readonly Dictionary<int, string> itemLocations = new();
+    private List<string> categories = new() { "Vegetables", "Dairy", "Meat & Poultry", "Grains & Pasta", "Oils & Sauces" };
 
     private bool showModal = false;
     private InventoryItemDTO modalItem = new();
     private InventoryItemDTO? editingItem = null;
+    private string modalLocation = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -316,19 +308,40 @@
     {
         isLoading = true;
 
-        // Load real data from the inventory service instead of static mock data
-        try
+        inventoryItems = new List<InventoryItemDTO>
         {
-            inventoryItems = await InventorySvc.GetAllItemsAsync();
-        }
-        catch (Exception ex)
+            new InventoryItemDTO { Id = 1, Name = "Pasta", SKU = "123", Category = "Grains & Pasta", Unit = "lbs", CurrentQuantity = 10, Price = 5, ReorderLevel = 15, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
+            new InventoryItemDTO { Id = 2, Name = "Milk", SKU = "321", Category = "Dairy", Unit = "mL", CurrentQuantity = 20, Price = 8, ReorderLevel = 25, OutOfStockDate = new DateTime(2026, 1, 1), LastOrderDate = new DateTime(2026, 2, 10) },
+            new InventoryItemDTO { Id = 3, Name = "Heavy Cream", SKU = "456", Category = "Dairy", Unit = "L", CurrentQuantity = 35, Price = 10, ReorderLevel = 20, OutOfStockDate = new DateTime(2026, 2, 5), LastOrderDate = new DateTime(2026, 2, 8) },
+            new InventoryItemDTO { Id = 4, Name = "Olive Oil", SKU = "654", Category = "Oils & Sauces", Unit = "L", CurrentQuantity = 45, Price = 8, ReorderLevel = 30, OutOfStockDate = new DateTime(2026, 6, 22), LastOrderDate = new DateTime(2026, 2, 1) },
+            new InventoryItemDTO { Id = 5, Name = "Potatoes", SKU = "789", Category = "Vegetables", Unit = "lbs", CurrentQuantity = 150, Price = 9, ReorderLevel = 40, OutOfStockDate = new DateTime(2026, 1, 5), LastOrderDate = new DateTime(2026, 2, 11) },
+            new InventoryItemDTO { Id = 6, Name = "Basil", SKU = "987", Category = "Vegetables", Unit = "bunch", CurrentQuantity = 25, Price = 3, ReorderLevel = 20, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
+            new InventoryItemDTO { Id = 7, Name = "Beef", SKU = "012", Category = "Meat & Poultry", Unit = "lbs", CurrentQuantity = 150, Price = 25, ReorderLevel = 60, OutOfStockDate = new DateTime(2026, 2, 26), LastOrderDate = new DateTime(2026, 1, 21) },
+            new InventoryItemDTO { Id = 8, Name = "Mozzarella", SKU = "677", Category = "Dairy", Unit = "lbs", CurrentQuantity = 75, Price = 25, ReorderLevel = 80, OutOfStockDate = new DateTime(2026, 2, 26), LastOrderDate = new DateTime(2026, 2, 11) },
+            new InventoryItemDTO { Id = 9, Name = "Jasmine Rice", SKU = "962", Category = "Grains & Pasta", Unit = "lbs", CurrentQuantity = 150, Price = 25, ReorderLevel = 90, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
+            new InventoryItemDTO { Id = 10, Name = "Green Peppers", SKU = "832", Category = "Vegetables", Unit = "lbs", CurrentQuantity = 0, Price = 25, ReorderLevel = 30, OutOfStockDate = new DateTime(2026, 1, 1), LastOrderDate = new DateTime(2026, 2, 11) }
+        };
+
+        itemLocations.Clear();
+        itemLocations[1] = "Dry Storage";
+        itemLocations[2] = "Walk-in";
+        itemLocations[3] = "Walk-in";
+        itemLocations[4] = "Dry Storage";
+        itemLocations[5] = "Dry Storage";
+        itemLocations[6] = "Walk-in";
+        itemLocations[7] = "Walk-in Freezer";
+        itemLocations[8] = "Walk-in";
+        itemLocations[9] = "Dry Storage";
+        itemLocations[10] = "Walk-in";
+
+        foreach (var item in inventoryItems)
         {
-            Console.Error.WriteLine($"Failed to load inventory items: {ex}");
-            inventoryItems = new List<InventoryItemDTO>();
+            item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel && item.CurrentQuantity > 0;
         }
 
         FilterItems();
         isLoading = false;
+        await Task.CompletedTask;
     }
 
     private void SetActiveTab(string tab)
@@ -337,21 +350,16 @@
         FilterItems();
     }
 
-    private void ToggleFilterPanel()
-    {
-        showFilterPanel = !showFilterPanel;
-    }
-
     private void FilterItems()
     {
+        currentPage = 1;
         filteredItems = inventoryItems.Where(item =>
         {
             // Tab filter
             bool tabMatch = activeTab switch
             {
-                "dry" => item.Category == "Dry Goods",
-                "arriving" => item.OutOfStockDate.HasValue && item.OutOfStockDate.Value <= DateTime.Now.AddDays(7) && item.OutOfStockDate.Value >= DateTime.Now,
-                "ordered" => item.LastOrderDate.HasValue && item.LastOrderDate.Value >= DateTime.Now.AddDays(-7),
+                "low" => item.IsLowStock,
+                "out" => item.CurrentQuantity <= 0,
                 _ => true
             };
 
@@ -377,14 +385,7 @@
         }).ToList();
 
         ApplySorting();
-    }
-
-    private void ClearFilters()
-    {
-        searchTerm = "";
-        selectedCategory = "";
-        stockStatus = "";
-        FilterItems();
+        UpdatePagination();
     }
 
     private void SortBy(string column)
@@ -399,6 +400,7 @@
             sortAscending = true;
         }
         ApplySorting();
+        UpdatePagination();
     }
 
     private void ApplySorting()
@@ -406,52 +408,173 @@
         filteredItems = sortColumn switch
         {
             "name" => sortAscending ? filteredItems.OrderBy(i => i.Name).ToList() : filteredItems.OrderByDescending(i => i.Name).ToList(),
-            "sku" => sortAscending ? filteredItems.OrderBy(i => i.SKU).ToList() : filteredItems.OrderByDescending(i => i.SKU).ToList(),
             "currentQty" => sortAscending ? filteredItems.OrderBy(i => i.CurrentQuantity).ToList() : filteredItems.OrderByDescending(i => i.CurrentQuantity).ToList(),
-            "outOfStock" => sortAscending ? filteredItems.OrderBy(i => i.OutOfStockDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.OutOfStockDate ?? DateTime.MinValue).ToList(),
-            "lastOrder" => sortAscending ? filteredItems.OrderBy(i => i.LastOrderDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.LastOrderDate ?? DateTime.MinValue).ToList(),
+            "expires" => sortAscending ? filteredItems.OrderBy(i => i.OutOfStockDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.OutOfStockDate ?? DateTime.MinValue).ToList(),
+            "lastUpdated" => sortAscending ? filteredItems.OrderBy(i => i.LastOrderDate ?? DateTime.MaxValue).ToList() : filteredItems.OrderByDescending(i => i.LastOrderDate ?? DateTime.MinValue).ToList(),
             "price" => sortAscending ? filteredItems.OrderBy(i => i.Price).ToList() : filteredItems.OrderByDescending(i => i.Price).ToList(),
             _ => filteredItems
         };
     }
 
-    private string GetRowClass(InventoryItemDTO item)
+    private string GetCategoryClass(string category)
     {
-        if (item.CurrentQuantity <= 0) return "row-out-of-stock";
-        if (item.IsLowStock) return "row-low-stock";
-        return "";
-    }
-
-    private bool IsDateCritical(DateTime date)
-    {
-        return date <= DateTime.Now.AddDays(3);
-    }
-
-    private async Task IncrementQuantity(InventoryItemDTO item)
-    {
-        item.CurrentQuantity++;
-        item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel;
-        // TODO
-        //Call service to update quantity
-        StateHasChanged();
-    }
-
-    private async Task DecrementQuantity(InventoryItemDTO item)
-    {
-        if (item.CurrentQuantity > 0)
+        return category switch
         {
-            item.CurrentQuantity--;
-            item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel;
-            // TODO 
-            // Call service to update quantity
-            StateHasChanged();
+            "Grains & Pasta" => "category-grains",
+            "Dairy" => "category-dairy",
+            "Oils & Sauces" => "category-oils",
+            "Vegetables" => "category-vegetables",
+            "Meat & Poultry" => "category-meat",
+            _ => "category-default"
+        };
+    }
+
+    private string GetLocation(int id)
+    {
+        return itemLocations.TryGetValue(id, out var location) ? location : "-";
+    }
+
+    private bool IsPageSelected => pagedItems.Count > 0 && pagedItems.All(i => selectedIds.Contains(i.Id));
+
+    private void ToggleSelection(int id, ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool boolValue && boolValue;
+        if (!isChecked && args.Value is string textValue)
+        {
+            bool.TryParse(textValue, out isChecked);
         }
+
+        if (isChecked)
+        {
+            selectedIds.Add(id);
+        }
+        else
+        {
+            selectedIds.Remove(id);
+        }
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool boolValue && boolValue;
+        if (!isChecked && args.Value is string textValue)
+        {
+            bool.TryParse(textValue, out isChecked);
+        }
+
+        if (isChecked)
+        {
+            foreach (var item in pagedItems)
+            {
+                selectedIds.Add(item.Id);
+            }
+        }
+        else
+        {
+            foreach (var item in pagedItems)
+            {
+                selectedIds.Remove(item.Id);
+            }
+        }
+    }
+
+    private void UpdatePagination()
+    {
+        totalPages = Math.Max(1, (int)Math.Ceiling(filteredItems.Count / (double)pageSize));
+        currentPage = Math.Min(currentPage, totalPages);
+        pagedItems = filteredItems
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        pageButtons = BuildPageButtons();
+    }
+
+    private List<int> BuildPageButtons()
+    {
+        var buttons = new List<int>();
+        if (totalPages <= 1)
+        {
+            buttons.Add(1);
+            return buttons;
+        }
+
+        if (totalPages <= 5)
+        {
+            for (var i = 1; i <= totalPages; i++)
+            {
+                buttons.Add(i);
+            }
+            return buttons;
+        }
+
+        buttons.Add(1);
+
+        if (currentPage > 3)
+        {
+            buttons.Add(-1);
+        }
+
+        var start = Math.Max(2, currentPage - 1);
+        var end = Math.Min(totalPages - 1, currentPage + 1);
+        for (var i = start; i <= end; i++)
+        {
+            buttons.Add(i);
+        }
+
+        if (currentPage < totalPages - 2)
+        {
+            buttons.Add(-1);
+        }
+
+        buttons.Add(totalPages);
+        return buttons;
+    }
+
+    private void GoToPage(int page)
+    {
+        currentPage = page;
+        UpdatePagination();
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private int GetStartIndex()
+    {
+        if (filteredItems.Count == 0)
+        {
+            return 0;
+        }
+
+        return ((currentPage - 1) * pageSize) + 1;
+    }
+
+    private int GetEndIndex()
+    {
+        return Math.Min(currentPage * pageSize, filteredItems.Count);
     }
 
     private void ShowAddItemModal()
     {
         editingItem = null;
         modalItem = new InventoryItemDTO();
+        modalLocation = "";
         showModal = true;
     }
 
@@ -467,8 +590,11 @@
             CurrentQuantity = item.CurrentQuantity,
             Unit = item.Unit,
             Price = item.Price,
-            ReorderLevel = item.ReorderLevel
+            ReorderLevel = item.ReorderLevel,
+            OutOfStockDate = item.OutOfStockDate,
+            LastOrderDate = item.LastOrderDate
         };
+        modalLocation = itemLocations.TryGetValue(item.Id, out var location) ? location : "";
         showModal = true;
     }
 
@@ -476,44 +602,29 @@
     {
         try
         {
+            modalItem.IsLowStock = modalItem.CurrentQuantity <= modalItem.ReorderLevel && modalItem.CurrentQuantity > 0;
             if (editingItem != null)
             {
-                // Persist changes via service
-                var updated = await InventorySvc.UpdateItemAsync(modalItem);
-                if (updated != null)
+                var idx = inventoryItems.FindIndex(i => i.Id == modalItem.Id);
+                if (idx >= 0)
                 {
-                    var idx = inventoryItems.FindIndex(i => i.Id == updated.Id);
-                    if (idx >= 0)
-                        inventoryItems[idx] = updated;
-                    else
-                        inventoryItems.Add(updated);
-
-                    editingItem = inventoryItems.First(i => i.Id == updated.Id);
+                    inventoryItems[idx] = modalItem;
                 }
                 else
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", "Failed to update item.");
+                    inventoryItems.Add(modalItem);
                 }
             }
             else
             {
-                // Create new ingredient via service
-                var dto = new CreateIngredientDTO
-                {
-                    Name = modalItem.Name,
-                    SKU = string.IsNullOrWhiteSpace(modalItem.SKU) ? null : modalItem.SKU,
-                    CurrentQuantity = modalItem.CurrentQuantity,
-                    Price = modalItem.Price,
-                    Category = modalItem.Category,
-                    ReorderLevel = modalItem.ReorderLevel,
-                    UnitId = 1 // TODO: wire a real unit selector; use sensible default for now
-                };
+                modalItem.Id = inventoryItems.Any() ? inventoryItems.Max(i => i.Id) + 1 : 1;
+                inventoryItems.Add(modalItem);
+                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "Dry Storage" : modalLocation.Trim();
+            }
 
-                var created = await InventorySvc.AddItemAsync(dto);
-                if (created != null)
-                {
-                    inventoryItems.Add(created);
-                }
+            if (editingItem != null)
+            {
+                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "-" : modalLocation.Trim();
             }
 
             CloseModal();
@@ -534,9 +645,7 @@
 
     private async Task OrderItem(InventoryItemDTO item)
     {
-        //TODO
-        // Implement some  type of order functionality
-        Console.WriteLine($"Ordering {item.Name}");
+        await JSRuntime.InvokeVoidAsync("alert", $"Ordering {item.Name} coming soon.");
     }
 
     private async Task DeleteItem(InventoryItemDTO item)
@@ -545,33 +654,58 @@
         {
             return;
         }
-        try {
-            var success = await InventorySvc.DeleteItemAsync(item.Id);
+        inventoryItems.Remove(item);
+        FilterItems();
+    }
 
-            if (success) {
-                inventoryItems.Remove(item);
-                FilterItems();
-            }
-            else {
-                await JSRuntime.InvokeVoidAsync("alert", $"Failed to delete {item.Name}.");
-            }
-        }
-        catch (Exception ex) {
-            Console.Error.WriteLine($"Failed to delete item: {ex}");
-            await JSRuntime.InvokeVoidAsync("alert", "An error occurred while deleting the item.");
-        }
-    }
-/*
-     // If needed immplement CSV/Excel export
-    private void ExportInventory()
+    private async Task ExportInventory()
     {
-        Console.WriteLine("Exporting inventory...");
+        await JSRuntime.InvokeVoidAsync("alert", "Export coming soon.");
     }
-*/
+
+    private async Task RefreshInventory()
+    {
+        await LoadInventoryData();
+        await JSRuntime.InvokeVoidAsync("console.log", "Inventory refreshed");
+    }
+
+    private void ToggleQuickFilter()
+    {
+        stockStatus = stockStatus == "low" ? "" : "low";
+        FilterItems();
+    }
+
+    private string SearchTerm
+    {
+        get => searchTerm;
+        set
+        {
+            searchTerm = value;
+            FilterItems();
+        }
+    }
+
+    private string SelectedCategory
+    {
+        get => selectedCategory;
+        set
+        {
+            selectedCategory = value;
+            FilterItems();
+        }
+    }
+
+    private string StockStatus
+    {
+        get => stockStatus;
+        set
+        {
+            stockStatus = value;
+            FilterItems();
+        }
+    }
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
-    [Inject]
-    private IInventoryManagementService InventorySvc { get; set; } = default!;
 }

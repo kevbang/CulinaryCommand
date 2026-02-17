@@ -7,7 +7,8 @@
     <Found Context="routeData">
         @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn)
         || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp)
-        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.AdminSignUp))
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.AdminSignUp)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.Home))
         {
             <RouteView RouteData="@routeData" />
         }
