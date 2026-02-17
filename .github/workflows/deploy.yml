@@ -128,6 +128,10 @@ jobs:
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
                   GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+                  COGNITO_CLIENT_SECRET=${{ secrets.COGNITO_CLIENT_SECRET }}
+                  Authentication__Cognito__ClientId=${{ secrets.COGNITO_CLIENT_ID }}
+                  Authentication__Cognito__ClientSecret=${{ secrets.COGNITO_CLIENT_SECRET }}
+                  Authentication__Cognito__Domain=${{ secrets.COGNITO_DOMAIN }}
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env
                   sudo chmod 640 /var/www/culinarycommand/.env
@@ -137,6 +141,10 @@ jobs:
                   ASPNETCORE_URLS=http://0.0.0.0:5000
                   export ConnectionStrings__DefaultConnection="Server=${{ secrets.RDS_HOST }};Port=3306;Database=${{ secrets.RDS_DB_NAME }};Uid=${{ secrets.RDS_DB_USER }};Pwd=${{ secrets.RDS_DB_PASSWORD }};SslMode=Required;"
                   export GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
+                  export COGNITO_CLIENT_SECRET="${{ secrets.COGNITO_CLIENT_SECRET }}"
+                  export Authentication__Cognito__ClientId="${{ secrets.COGNITO_CLIENT_ID }}"
+                  export Authentication__Cognito__ClientSecret="${{ secrets.COGNITO_CLIENT_SECRET }}"
+                  export Authentication__Cognito__Domain="${{ secrets.COGNITO_DOMAIN }}"
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env.export
                   sudo chmod 640 /var/www/culinarycommand/.env.export
