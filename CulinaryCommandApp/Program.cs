@@ -3,14 +3,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-
 using CulinaryCommand.Data;
 using CulinaryCommand.Services;
 using CulinaryCommand.Inventory.Services;
 using CulinaryCommand.PurchaseOrder.Services;
+using CulinaryCommand.Components;
 using CulinaryCommand.Inventory;
 using CulinaryCommand.Inventory.Services.Interfaces;
-using CulinaryCommand.Components;
 using CulinaryCommandApp.AIDashboard.Services.Reporting;
 using Google.GenAI;
 using System;

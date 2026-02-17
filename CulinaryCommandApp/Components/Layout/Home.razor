@@ -1,8 +1,10 @@
 ﻿@page "/"
 @namespace CulinaryCommand.Components.Pages
 @layout CulinaryCommand.Components.Layout.PublicLayout
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+
+@inject NavigationManager Nav
+@inject CulinaryCommand.Services.UserContextSpace.IUserContextService UserCtx
 
 <div class="cc-hero">
     <div class="cc-shell">
@@ -222,4 +224,14 @@
     private const string signIn = "/login";
     private const string adminSignup = "/adminsignup";
     private const string invite = "/invite";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // If already signed in, go straight to dashboard.
+        var ctx = await UserCtx.GetAsync();
+        if (ctx.User?.Id != null)
+        {
+            Nav.NavigateTo("/dashboard", forceLoad: true);
+        }
+    }
 }

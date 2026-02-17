@@ -3,11 +3,22 @@
 
 <Router AppAssembly="@typeof(CulinaryCommand.Components.Pages.SignIn).Assembly" PreferExactMatches="true">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        @if (routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignIn)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.SignUp)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.AdminSignUp)
+        || routeData.PageType == typeof(CulinaryCommand.Components.Pages.Home))
+        {
+            <RouteView RouteData="@routeData" />
+        }
+        else
+        {
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        }
     </Found>
     <NotFound>
         <LayoutView Layout="@typeof(Layout.MainLayout)">
             <p>Sorry, nothing found at this address.</p>
         </LayoutView>
     </NotFound>
+
 </Router>
