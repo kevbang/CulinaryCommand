@@ -15,7 +15,6 @@ namespace CulinaryCommand.Services
     public class LocationState
     {
         private readonly IJSRuntime _js;
-
         public List<Location> ManagedLocations { get; private set; } = new();
         public Location? CurrentLocation { get; private set; }
 
@@ -24,6 +23,22 @@ namespace CulinaryCommand.Services
         public LocationState(IJSRuntime js)
         {
             _js = js;
+        }
+
+        private void NotifyStateChanged() => OnChange?.Invoke();
+
+        public async Task HydrateAsync()
+        {
+            if (CurrentLocation != null) return; // Already have it
+
+            var savedId = await _js.InvokeAsync<string>("localStorage.getItem", "cc_selected_location_id");
+            
+            if (!string.IsNullOrEmpty(savedId) && int.TryParse(savedId, out int id))
+            {
+                // Assuming you've loaded your ManagedLocations list already
+                CurrentLocation = ManagedLocations.FirstOrDefault(l => l.Id == id);
+                NotifyStateChanged();
+            }
         }
 
         public async Task SetLocationsAsync(List<Location> locations)
@@ -51,7 +66,8 @@ namespace CulinaryCommand.Services
             // Persist to localStorage
             await _js.InvokeVoidAsync("localStorage.setItem", "cc_activeLocationId", loc.Id);
 
-            OnChange?.Invoke();
+            // OnChange?.Invoke();
+            NotifyStateChanged();
         }
     }
 

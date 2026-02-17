@@ -1,5 +1,6 @@
 @using CulinaryCommand.Data.Entities
 @inject ILocationService LocationService
+@inject AuthService Auth
 @rendermode InteractiveServer
 
 <div class="tag-picker">
@@ -52,7 +53,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AllLocations = await LocationService.GetAllLocationsAsync();
+        AllLocations = await LocationService.GetLocationsByCompanyAsync(Auth.CurrentUser?.CompanyId);
         RefreshLists();
     }
 

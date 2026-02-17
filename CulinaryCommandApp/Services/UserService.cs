@@ -86,7 +86,10 @@ namespace CulinaryCommand.Services
 
         public async Task UpdateUserAsync(User user)
         {
-            var existing = await _context.Users.FindAsync(user.Id);
+            var existing = await _context.Users
+            .Include(u => u.UserLocations)
+            .Include(u => u.ManagerLocations)
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
             if (existing == null) return;
 
             existing.Name = user.Name;
@@ -94,6 +97,43 @@ namespace CulinaryCommand.Services
             existing.Role = user.Role;
             existing.Phone = user.Phone;
             existing.UpdatedAt = DateTime.UtcNow;
+
+            // get the list of IDs from the incoming model
+            var newUserLocationIds = user.UserLocations.Select(ul => ul.LocationId).ToList();
+
+            // sync user-locations (general access)
+            var toRemoveUL = existing.UserLocations.Where(ul => !newUserLocationIds.Contains(ul.LocationId)).ToList();
+            foreach (var ul in toRemoveUL) existing.UserLocations.Remove(ul);
+
+            foreach (var locId in newUserLocationIds)
+            {
+                if (!existing.UserLocations.Any(ul => ul.LocationId == locId))
+                {
+                    existing.UserLocations.Add(new UserLocation { UserId = user.Id, LocationId = locId });
+                }
+            }
+
+            // sync manager-locations (manager access)
+            if (string.Equals(existing.Role, "Manager", StringComparison.OrdinalIgnoreCase))
+            {
+                // remove manager records for locations no longer assigned
+                var toRemoveML = existing.ManagerLocations.Where(ml => !newUserLocationIds.Contains(ml.LocationId)).ToList();
+                foreach (var ml in toRemoveML) existing.ManagerLocations.Remove(ml);
+
+                // add manager records for new locations
+                foreach (var locId in newUserLocationIds)
+                {
+                    if (!existing.ManagerLocations.Any(ml => ml.LocationId == locId))
+                    {
+                        existing.ManagerLocations.Add(new ManagerLocation { UserId = user.Id, LocationId = locId });
+                    }
+                }
+            }
+            else
+            {
+                // if role was changed from Manager to something else, wipe manager entries
+                existing.ManagerLocations.Clear();
+            }
 
             await _context.SaveChangesAsync();
         }

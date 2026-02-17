@@ -58,7 +58,14 @@
 
     async Task Save()
     {
-        await OnValidSubmit.InvokeAsync(Model);
+        // force the sync from the list of IDs into the model's collection
+        Model.UserLocations = AssignedLocationIds.Select(id => new UserLocation 
+        { 
+            UserId = Model.Id, 
+            LocationId = id 
+        }).ToList();
+
+            await OnValidSubmit.InvokeAsync(Model);
     }
 
     void Cancel() => Nav.NavigateTo("/users");

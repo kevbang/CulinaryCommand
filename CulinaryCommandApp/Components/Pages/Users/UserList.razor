@@ -57,7 +57,8 @@ else
             }
 
             // Now safe to load data
-            _users = await Users.GetAllUsersAsync();
+            @* _users = await Users.GetAllUsersAsync(); *@
+            _users = await Users.GetUsersByCompanyAsync(Auth.CurrentUser?.CompanyId ?? 0);
 
             StateHasChanged();
         }

@@ -39,6 +39,7 @@ else
     {
         await UserService.UpdateUserAsync(u);
         await UserService.AssignLocationsAsync(u.Id, u.UserLocations.Select(x => x.LocationId).ToList());
+       
         Nav.NavigateTo("/users");
     }
 }

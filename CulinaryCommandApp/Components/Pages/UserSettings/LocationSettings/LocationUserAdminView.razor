@@ -75,25 +75,29 @@
                         <td>@user.Role</td>
                         <td class="text-end">
 
-                            @if (user.Role == "Manager")
-                            {
-                                <button class="btn btn-warning btn-sm me-2"
-                                        @onclick="() => Demote(user)">
-                                    Demote
-                                </button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-primary btn-sm me-2"
-                                        @onclick="() => Promote(user)">
-                                    Promote
-                                </button>
-                            }
-
-                            <button class="btn btn-danger btn-sm"
-                                    @onclick="() => RemoveUser(user)">
-                                Remove
-                            </button>
+                            <div class="d-flex justify-content-end">
+                                @if (user.Role == "Manager")
+                                {
+                                    <button class="btn btn-warning btn-sm me-2"
+                                            @onclick="() => Demote(user)">
+                                        Demote
+                                    </button>
+                                }
+                                else if (user.Role == "Employee")
+                                {
+                                    <button class="btn btn-primary btn-sm me-2"
+                                            @onclick="() => Promote(user)">
+                                        Promote
+                                    </button>
+                                }
+                                @if (!(user.Role == "Admin" && user.Id == Auth.CurrentUser?.Id)) {
+                                    @* Admins shouldn't be able to remove themselves *@
+                                    <button class="btn btn-danger btn-sm"
+                                            @onclick="() => RemoveUser(user)">
+                                        Remove
+                                    </button>
+                                }
+                            </div>
                         </td>
                     </tr>
                 }
@@ -175,7 +179,17 @@
         if (!int.TryParse(selectedUserId, out var userId))
             return;
 
-        await LocationService.AddUserToLocationAsync(LocationId, userId);
+        var UserToAdd = AvailableUsers.FirstOrDefault(u =>  u.Id == userId);
+
+        if (UserToAdd != null) {
+            // add to general user mapping
+            await LocationService.AddUserToLocationAsync(LocationId, userId);
+
+            // add to manager list if user is manager
+            if (UserToAdd.Role == "Manager") {
+                await LocationService.AddManagerToLocationAsync(LocationId, userId);
+            }
+        }
 
         await ReloadUsers();
         HideAddExistingForm();
