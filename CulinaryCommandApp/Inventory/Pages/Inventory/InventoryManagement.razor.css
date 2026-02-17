@@ -66,12 +66,12 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 1 1 320px;
+    flex: 2 1 520px;
     background: #f9fafb;
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px 14px;
-    min-width: 260px;
+    min-width: 360px;
 }
 
 .search-bar i {
@@ -97,19 +97,28 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    border: 1px solid #d1fae5;
-    background: #ecfdf3;
+    border: 1px solid var(--green);
+    background: var(--green);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--green);
+    color: var(--ink);
     transition: all 0.2s ease;
+    font-weight: 600;
 }
 
 .icon-btn:hover {
-    color: #ffffff;
-    border-color: var(--green);
+    color: var(--ink);
+    border-color: var(--green-dark);
+    background: var(--green-dark);
+    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.25);
+}
+
+.icon-btn.selected,
+.icon-btn.active {
     background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.3);
 }
 
 .select-wrap {
@@ -126,7 +135,7 @@
 
 .btn-add {
     background: var(--green);
-    color: #ffffff;
+    color: var(--ink);
     border: none;
     padding: 9px 14px;
     border-radius: 10px;
@@ -151,13 +160,13 @@
 }
 
 .tab-btn {
-    border: 1px solid #d1fae5;
-    background: #f0fdf4;
+    border: 1px solid var(--green);
+    background: #ffffff;
     padding: 8px 14px;
     border-radius: 999px;
     font-weight: 600;
     font-size: 0.9rem;
-    color: var(--green);
+    color: var(--ink);
     transition: all 0.2s ease;
 }
 
@@ -165,12 +174,15 @@
     background: var(--green);
     color: #ffffff;
     border-color: var(--green);
+    box-shadow: 0 4px 12px rgba(10, 143, 60, 0.2);
 }
 
-.tab-btn.active {
+.tab-btn.active,
+.tab-btn.selected {
     background: var(--green);
-    color: #ffffff;
+    color: var(--ink);
     border-color: var(--green);
+    box-shadow: 0 4px 12px rgba(10, 143, 60, 0.25);
 }
 
 .inventory-table-container {
@@ -189,7 +201,7 @@
 
 .inventory-table thead {
     background: var(--green);
-    color: #ffffff;
+    color: var(--ink);
 }
 
 .inventory-table thead th {
@@ -244,36 +256,42 @@
 .category-pill {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     background: var(--pill);
-    color: var(--ink);
+    color: #1f2a37;
 }
 
 .category-grains {
-    background: #f6c97a;
+    background: #fbbf24;
+    color: #78350f;
 }
 
 .category-dairy {
-    background: #c8a6ff;
+    background: #a855f7;
+    color: #fafafa;
 }
 
 .category-oils {
-    background: #f1d06f;
+    background: #eab308;
+    color: #713f12;
 }
 
 .category-vegetables {
-    background: #78c58a;
+    background: #22c55e;
+    color: #fafafa;
 }
 
 .category-meat {
-    background: #f28a8a;
+    background: #ef4444;
+    color: #fafafa;
 }
 
 .category-default {
-    background: #d5d7dc;
+    background: #6b7280;
+    color: #ffffff;
 }
 
 .stock-cell {
@@ -307,28 +325,51 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    border: 1px solid #e0f2fe;
-    background: #eff6ff;
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #2563eb;
+    color: var(--ink);
     transition: all 0.2s ease;
+    font-weight: 600;
 }
 
 .btn-action:hover {
-    color: #ffffff;
-    border-color: #2563eb;
-    background: #2563eb;
+    color: var(--ink);
+    border-color: #9ca3af;
+    background: #e5e7eb;
     transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 6px 12px rgba(107, 114, 128, 0.2);
+}
+
+.btn-action.delete {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: var(--ink);
 }
 
 .btn-action.delete:hover {
-    color: #ffffff;
-    border-color: #ef4444;
-    background: #ef4444;
-    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.2);
+    color: var(--ink);
+    border-color: #dc2626;
+    background: #dc2626;
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-action.selected,
+.btn-action.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--ink);
+    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.3);
+}
+
+.btn-action.delete.selected,
+.btn-action.delete.active {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: var(--ink);
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.3);
 }
 
 .table-footer {
@@ -356,12 +397,14 @@
     height: 32px;
     border-radius: 8px;
     border: 1px solid #d1fae5;
-    background: #f0fdf4;
+    background: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--green);
     font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .page-btn:hover,
@@ -369,13 +412,15 @@
     background: var(--green);
     color: #ffffff;
     border-color: var(--green);
-    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.18);
+    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.25);
 }
 
-.page-btn.active {
+.page-btn.active,
+.page-btn.selected {
     background: var(--green);
     border-color: var(--green);
     color: #ffffff;
+    box-shadow: 0 6px 12px rgba(10, 143, 60, 0.25);
 }
 
 .page-ellipsis {
@@ -416,7 +461,7 @@
 .modal-header-custom {
     padding: 18px 22px;
     background: var(--green);
-    color: #ffffff;
+    color: var(--ink);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -429,8 +474,8 @@
 
 .btn-close-custom {
     border: none;
-    background: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    background: rgba(31, 42, 55, 0.1);
+    color: var(--ink);
     width: 32px;
     height: 32px;
     border-radius: 10px;
@@ -441,6 +486,31 @@
 
 .modal-body-custom {
     padding: 22px;
+}
+
+.modal-body-custom label {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.modal-body-custom .form-control,
+.modal-body-custom .form-select {
+    border: 2px solid #6b7280;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background-color: #ffffff;
+}
+
+.modal-body-custom .form-control:focus,
+.modal-body-custom .form-select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(10, 143, 60, 0.1);
+    outline: none;
 }
 
 .modal-footer-custom {
@@ -461,7 +531,7 @@
 .modal-footer-custom .btn-secondary {
     background: #e5e7eb;
     border-color: #e5e7eb;
-    color: #111827;
+    color: var(--ink);
 }
 
 .modal-footer-custom .btn-secondary:hover {
@@ -472,11 +542,13 @@
 .modal-footer-custom .btn-success {
     background: var(--green);
     border-color: var(--green);
+    color: var(--ink);
 }
 
 .modal-footer-custom .btn-success:hover {
     background: var(--green-dark);
     border-color: var(--green-dark);
+    color: var(--ink);
 }
 
 /* Loading Spinner */

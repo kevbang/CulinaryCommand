@@ -3,6 +3,7 @@
 
 @using CulinaryCommand.Inventory.DTOs
 @using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
 @using System.Threading.Tasks
 
 <div class="inventory-container">
@@ -244,6 +245,24 @@
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Expires</label>
+                            <InputDate class="form-control" @bind-Value="modalItem.OutOfStockDate" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Last Updated</label>
+                            <InputDate class="form-control" @bind-Value="modalItem.LastOrderDate" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Location</label>
+                    <input type="text" class="form-control" @bind="modalLocation" />
+                </div>
             </div>
             <div class="modal-footer-custom">
                 <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
@@ -278,6 +297,7 @@
     private bool showModal = false;
     private InventoryItemDTO modalItem = new();
     private InventoryItemDTO? editingItem = null;
+    private string modalLocation = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -554,6 +574,7 @@
     {
         editingItem = null;
         modalItem = new InventoryItemDTO();
+        modalLocation = "";
         showModal = true;
     }
 
@@ -569,8 +590,11 @@
             CurrentQuantity = item.CurrentQuantity,
             Unit = item.Unit,
             Price = item.Price,
-            ReorderLevel = item.ReorderLevel
+            ReorderLevel = item.ReorderLevel,
+            OutOfStockDate = item.OutOfStockDate,
+            LastOrderDate = item.LastOrderDate
         };
+        modalLocation = itemLocations.TryGetValue(item.Id, out var location) ? location : "";
         showModal = true;
     }
 
@@ -595,7 +619,12 @@
             {
                 modalItem.Id = inventoryItems.Any() ? inventoryItems.Max(i => i.Id) + 1 : 1;
                 inventoryItems.Add(modalItem);
-                itemLocations[modalItem.Id] = "Dry Storage";
+                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "Dry Storage" : modalLocation.Trim();
+            }
+
+            if (editingItem != null)
+            {
+                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "-" : modalLocation.Trim();
             }
 
             CloseModal();
