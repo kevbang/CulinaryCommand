@@ -45,33 +45,49 @@ builder.Services
   .AddCookie()
   .AddOpenIdConnect(options =>
   {
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-      var userPoolId = "us-east-2_SULe0c9vr";
-      var region = "us-east-2";
+      options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+      // ---- Read Cognito config (env/appsettings) ----
+      var region =
+          builder.Configuration["AWS:Region"]
+          ?? builder.Configuration["AWS_REGION"]
+          ?? builder.Configuration["Authentication:Cognito:Region"]; // optional
+
+      var userPoolId = builder.Configuration["Authentication:Cognito:UserPoolId"];
+      var clientId = builder.Configuration["Authentication:Cognito:ClientId"];
+
+      // client secret can come from either config or a raw env var
+      var clientSecret =
+          Environment.GetEnvironmentVariable("COGNITO_CLIENT_SECRET")
+          ?? builder.Configuration["Authentication:Cognito:ClientSecret"];
+
+      // Fail fast if missing (prevents weird half-working deploys)
+      if (string.IsNullOrWhiteSpace(region))
+          throw new InvalidOperationException("Missing config: AWS:Region (or AWS_REGION).");
+      if (string.IsNullOrWhiteSpace(userPoolId))
+          throw new InvalidOperationException("Missing config: Authentication:Cognito:UserPoolId");
+      if (string.IsNullOrWhiteSpace(clientId))
+          throw new InvalidOperationException("Missing config: Authentication:Cognito:ClientId");
+      if (string.IsNullOrWhiteSpace(clientSecret))
+          throw new InvalidOperationException("Missing config: Authentication:Cognito:ClientSecret (or COGNITO_CLIENT_SECRET).");
 
       options.Authority = $"https://cognito-idp.{region}.amazonaws.com/{userPoolId}";
       options.MetadataAddress = $"{options.Authority}/.well-known/openid-configuration";
 
-      options.ClientId = "55joip0viah9qtj7dndhvma2gt";
-      var cognitoClientId = builder.Configuration["Authentication:Cognito:ClientId"];
-        var cognitoSecretFromEnv = Environment.GetEnvironmentVariable("COGNITO_CLIENT_SECRET");
-        var cognitoSecretFromConfig = builder.Configuration["Authentication:Cognito:ClientSecret"];
-
-        var cognitoClientSecret =
-            !string.IsNullOrWhiteSpace(cognitoSecretFromEnv) ? cognitoSecretFromEnv :
-            cognitoSecretFromConfig;
-
-        options.ClientId = cognitoClientId;
-        options.ClientSecret = cognitoClientSecret;
-
+      options.ClientId = clientId;
+      options.ClientSecret = clientSecret;
 
       options.ResponseType = OpenIdConnectResponseType.Code;
       options.SaveTokens = true;
 
-      options.CallbackPath = "/signin-oidc";
-      options.SignedOutCallbackPath = "/signout-callback-oidc";
+      // Use config if present, else default
+      options.CallbackPath =
+          builder.Configuration["Authentication:Cognito:CallbackPath"] ?? "/signin-oidc";
 
-      options.RequireHttpsMetadata = true; // keep true
+      options.SignedOutCallbackPath =
+          builder.Configuration["Authentication:Cognito:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
+
+      options.RequireHttpsMetadata = true;
 
       options.Scope.Clear();
       options.Scope.Add("openid");
@@ -80,9 +96,17 @@ builder.Services
 
       options.TokenValidationParameters.NameClaimType = "cognito:username";
       options.TokenValidationParameters.RoleClaimType = "cognito:groups";
+      options.Events.OnRedirectToIdentityProvider = ctx =>
+        {
+            // Forces correct scheme/host behind nginx
+            ctx.ProtocolMessage.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
+            return Task.CompletedTask;
+        };
+
   });
 
 builder.Services.AddAuthorization();
+
 
 //
 // =====================
@@ -90,23 +114,6 @@ builder.Services.AddAuthorization();
 // =====================
 builder.Services.AddSingleton<Client>(_ => new Client());
 builder.Services.AddScoped<AIReportingService>();
-
-// var googleKey =
-//     Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
-//     ?? builder.Configuration["Google:ApiKey"]; // optional appsettings slot
-
-// if (!string.IsNullOrWhiteSpace(googleKey))
-// {
-//     builder.Services.AddSingleton(_ => new Google.GenAI.Client(apiKey: googleKey));
-//     builder.Services.AddScoped<AIReportingService>();
-//     Console.WriteLine("✅ AI enabled (GOOGLE_API_KEY found).");
-// }
-// else
-// {
-//     Console.WriteLine("⚠️ GOOGLE_API_KEY not set; AI features disabled.");
-//     // Do NOT register AIReportingService at all.
-// }
-
 
 //
 // =====================
@@ -159,10 +166,15 @@ builder.Services.AddSingleton<EnumService>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
-    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
     o.KnownNetworks.Clear();
     o.KnownProxies.Clear();
 });
+
 
 
 //

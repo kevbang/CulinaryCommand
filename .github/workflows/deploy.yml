@@ -132,6 +132,8 @@ jobs:
                   Authentication__Cognito__ClientId=${{ secrets.COGNITO_CLIENT_ID }}
                   Authentication__Cognito__ClientSecret=${{ secrets.COGNITO_CLIENT_SECRET }}
                   Authentication__Cognito__Domain=${{ secrets.COGNITO_DOMAIN }}
+                  Authentication__Cognito__UserPoolId=${{ secrets.COGNITO_USER_POOL_ID }}
+                  AWS__Region=${{ env.AWS_REGION }}
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env
                   sudo chmod 640 /var/www/culinarycommand/.env
@@ -145,6 +147,8 @@ jobs:
                   export Authentication__Cognito__ClientId="${{ secrets.COGNITO_CLIENT_ID }}"
                   export Authentication__Cognito__ClientSecret="${{ secrets.COGNITO_CLIENT_SECRET }}"
                   export Authentication__Cognito__Domain="${{ secrets.COGNITO_DOMAIN }}"
+                  export Authentication__Cognito__UserPoolId="${{ secrets.COGNITO_USER_POOL_ID }}"
+                  export AWS__Region="${{ env.AWS_REGION }}"
                 EOF
                   sudo chown ${{ secrets.LIGHTSAIL_USER }}:${{ secrets.LIGHTSAIL_USER }} /var/www/culinarycommand/.env.export
                   sudo chmod 640 /var/www/culinarycommand/.env.export
