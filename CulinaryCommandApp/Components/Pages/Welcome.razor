@@ -1,0 +1,183 @@
+@page "/welcome"
+@namespace CulinaryCommand.Components.Pages
+@layout CulinaryCommand.Components.Layout.PublicLayout
+
+<PageTitle>Culinary Command - Product Overview</PageTitle>
+
+<div class="welcome">
+    <nav class="welcome-nav">
+        <div class="nav-brand">
+            Culinary Command
+        </div>
+        <div class="nav-pill">
+            <a class="active" href="#features">Features</a>
+            <a href="#how">How It Works</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">About</a>
+        </div>
+        <a class="btn-cta" href="/signin">Get Started <i class="bi bi-arrow-right"></i></a>
+    </nav>
+
+    <section class="hero-banner">
+        <div class="hero-image">
+            <div class="hero-overlay">
+                <div class="hero-badge">Built for independent restaurants and multi-location operators</div>
+                <h1>
+                    Run Your Restaurant With
+                    <span>Precision.</span>
+                </h1>
+                <p>
+                    Culinary Command gives you complete control over inventory, ingredients,
+                    recipes, staff, and cost management - all in one intelligent dashboard.
+                </p>
+                <div class="hero-social">
+                    <a class="social-btn" href="https://facebook.com" aria-label="Facebook">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a class="social-btn" href="https://instagram.com" aria-label="Instagram">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <a class="social-btn" href="https://twitter.com" aria-label="Twitter">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                </div>
+                <a class="btn-cta" href="/signin">Get Started <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="hero-stats">
+                <h3>Trusted by the biggest restaurants</h3>
+                <div class="stats-row">
+                    <div>
+                        <strong>500+</strong>
+                        <span>Happy Users</span>
+                    </div>
+                    <div>
+                        <strong>32 Hrs+</strong>
+                        <span>Time Saved</span>
+                    </div>
+                    <div>
+                        <strong>1000+</strong>
+                        <span>Sales</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="welcome-section" id="features">
+        <div class="section-header">
+            <p class="section-kicker">Core Features</p>
+            <h2>Full visibility across every station.</h2>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Inventory Intelligence</h3>
+                <p>Track stock, receive reorder alerts, and sync usage across locations.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Recipe Standardization</h3>
+                <p>Keep prep consistent with costed recipes and smart yield tracking.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Task Command</h3>
+                <p>Assign tasks, monitor completion, and automate daily checklists.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Team Visibility</h3>
+                <p>Know who is on shift, what is done, and what needs attention.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="welcome-section" id="how">
+        <div class="section-header">
+            <p class="section-kicker">How It Works</p>
+            <h2>Set up once. Run with confidence every service.</h2>
+        </div>
+        <div class="steps">
+            <div class="step-card">
+                <span class="step-number">01</span>
+                <h3>Connect your locations</h3>
+                <p>Import inventory, create recipes, and invite managers in minutes.</p>
+            </div>
+            <div class="step-card">
+                <span class="step-number">02</span>
+                <h3>Automate the playbook</h3>
+                <p>Set reorder levels, task cadences, and prep workflows.</p>
+            </div>
+            <div class="step-card">
+                <span class="step-number">03</span>
+                <h3>Track results</h3>
+                <p>See waste reduction, time saved, and team performance instantly.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="welcome-section" id="pricing">
+        <div class="section-header">
+            <p class="section-kicker">Pricing</p>
+            <h2>Plans designed for growing kitchens.</h2>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Starter</h3>
+                <div class="price">$49<span>/mo</span></div>
+                <ul>
+                    <li>1 location</li>
+                    <li>Inventory + recipes</li>
+                    <li>Email support</li>
+                </ul>
+                <a class="btn-ghost" href="/signin">Start now</a>
+            </div>
+            <div class="pricing-card featured">
+                <div class="featured-tag">Most Popular</div>
+                <h3>Growth</h3>
+                <div class="price">$129<span>/mo</span></div>
+                <ul>
+                    <li>Up to 5 locations</li>
+                    <li>Tasks + automation</li>
+                    <li>Priority support</li>
+                </ul>
+                <a class="btn-primary" href="/signin">Get Started</a>
+            </div>
+            <div class="pricing-card">
+                <h3>Enterprise</h3>
+                <div class="price">Custom</div>
+                <ul>
+                    <li>Unlimited locations</li>
+                    <li>Dedicated success team</li>
+                    <li>Custom integrations</li>
+                </ul>
+                <a class="btn-ghost" href="/signin">Talk to sales</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="welcome-section" id="faq">
+        <div class="section-header">
+            <p class="section-kicker">FAQ</p>
+            <h2>Quick answers to common questions.</h2>
+        </div>
+        <div class="faq-grid">
+            <div class="faq-card">
+                <h3>Does it work for multiple locations?</h3>
+                <p>Yes. Monitor inventory, tasks, and costs across every location in one view.</p>
+            </div>
+            <div class="faq-card">
+                <h3>How fast can we get started?</h3>
+                <p>Most teams are live within a day. Import inventory and invite staff in minutes.</p>
+            </div>
+            <div class="faq-card">
+                <h3>Can we customize workflows?</h3>
+                <p>Absolutely. Build checklists, reorder points, and roles to match your operation.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="welcome-cta">
+        <div>
+            <h2>Ready to run service with clarity?</h2>
+            <p>Sign in and launch your command center.</p>
+        </div>
+        <a class="btn-primary" href="/signin">Get Started</a>
+    </section>
+</div>
