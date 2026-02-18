@@ -18,8 +18,7 @@ using Amazon.CognitoIdentityProvider;
 using Amazon.Extensions.NETCore.Setup;
 using CulinaryCommandApp.Services;
 using Microsoft.AspNetCore.HttpOverrides;
-
-
+using Microsoft.AspNetCore.DataProtection;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -175,6 +174,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+builder.Services.AddDataProtection()
+  .PersistKeysToFileSystem(new DirectoryInfo("/var/www/culinarycommand/dpkeys"))
+  .SetApplicationName("CulinaryCommand");
 
 
 //
