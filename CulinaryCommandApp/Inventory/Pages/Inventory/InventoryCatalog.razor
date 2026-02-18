@@ -1,0 +1,441 @@
+@page "/inventory-catalog"
+@rendermode InteractiveServer
+
+@using CulinaryCommand.Inventory.DTOs
+
+<div class="inventory-container">
+    <div class="inventory-header">
+        <div class="header-text">
+            <h1>Inventory Catalog</h1>
+            <p>Manage your ingredient catalog</p>
+        </div>
+    </div>
+
+    <div class="inventory-toolbar">
+        <div class="search-bar">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search catalog by name, category, or supplier..." @bind="SearchTerm" @bind:event="oninput" />
+        </div>
+        <div class="toolbar-actions">
+            <button class="icon-btn" @onclick="RefreshCatalog" title="Refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <div class="select-wrap">
+                <select class="form-select" @bind="SelectedCategory">
+                    <option value="">All Categories</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+            <button class="btn-add" @onclick="ShowAddItemModal">
+                <i class="bi bi-plus-lg"></i> Add Item
+            </button>
+        </div>
+    </div>
+
+    <div class="tab-row">
+        <button class="tab-btn active">
+            All Items (@filteredItems.Count)
+        </button>
+    </div>
+
+    <div class="inventory-table-container">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-col">
+                        <input type="checkbox" checked="@IsPageSelected" @onchange="ToggleSelectAll" />
+                    </th>
+                    <th @onclick='() => SortBy("name")'>Item Name <i class="bi bi-arrow-down-up"></i></th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th @onclick='() => SortBy("price")'>Cost/Unit <i class="bi bi-arrow-down-up"></i></th>
+                    <th @onclick='() => SortBy("supplier")'>Supplier <i class="bi bi-arrow-down-up"></i></th>
+                    <th>Notes</th>
+                    <th class="actions-col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (isLoading)
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else if (!pagedItems.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <p class="text-muted">No items found</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in pagedItems)
+                    {
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" checked="@selectedIds.Contains(item.Id)" @onchange="(e) => ToggleSelection(item.Id, e)" />
+                            </td>
+                            <td>
+                                <div class="name-cell">
+                                    <div class="item-name">@item.ItemName</div>
+                                    <div class="item-sku">SKU: @item.SKU</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="category-pill @GetCategoryClass(item.Category)">@item.Category</span>
+                            </td>
+                            <td>@item.Unit</td>
+                            <td>$@item.PricePerUnit.ToString("F2")</td>
+                            <td>@item.Supplier</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Notes) ? "-" : item.Notes)</td>
+                            <td class="actions-col">
+                                <div class="action-buttons">
+                                    <button class="btn-action" @onclick="() => EditItem(item)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn-action delete" @onclick="() => DeleteItem(item)" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <div class="table-footer">
+            <div class="footer-count">Showing @GetStartIndex()-@GetEndIndex() of @filteredItems.Count Items</div>
+            <div class="pagination">
+                <button class="page-nav" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                @foreach (var pageNum in pageButtons)
+                {
+                    if (pageNum < 0)
+                    {
+                        <span class="page-ellipsis">...</span>
+                    }
+                    else
+                    {
+                        <button class="page-btn @(currentPage == pageNum ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                    }
+                }
+                <button class="page-nav" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Item Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+    <div class="modal-dialog-custom">
+        <div class="modal-content-custom">
+            <div class="modal-header-custom">
+                <h3>@(editingItem == null ? "Add New Item" : "Edit Item")</h3>
+                <button class="btn-close-custom" @onclick="CloseModal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="form-group mb-3">
+                    <label>Item Name</label>
+                    <input type="text" class="form-control" @bind="modalItem.ItemName" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>SKU</label>
+                    <input type="text" class="form-control" @bind="modalItem.SKU" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Category</label>
+                    <select class="form-control" @bind="modalItem.Category">
+                        <option value="">Select Category</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Unit</label>
+                            <select class="form-control" @bind="modalItem.Unit">
+                                <option value="count">count</option>
+                                <option value="gallons">gallons</option>
+                                <option value="lbs">lbs</option>
+                                <option value="oz">oz</option>
+                                <option value="kg">kg</option>
+                                <option value="L">L</option>
+                                <option value="mL">mL</option>
+                                <option value="bunch">bunch</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Cost Per Unit ($)</label>
+                            <input type="number" step="0.01" class="form-control" @bind="modalItem.PricePerUnit" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Supplier</label>
+                    <input type="number" step="0.01" class="form-control" @bind="modalItem.Supplier" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Notes</label>
+                    <input type="text" class="form-control" @bind="modalItem.Notes" />
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-success" @onclick="SaveItem">
+                    @(editingItem == null ? "Add Item" : "Save Changes")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<InventoryCatalogDTO> itemCatalog = new();
+    private List<InventoryCatalogDTO> filteredItems = new();
+    private List<InventoryCatalogDTO> pagedItems = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string selectedCategory = "";
+    private string sortColumn = "";
+    private bool sortAscending = true;
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private List<int> pageButtons = new();
+    private HashSet<int> selectedIds = new();
+
+    private List<string> categories = new() { "Vegetables", "Dairy", "Meat & Poultry", "Grains & Pasta", "Oils & Sauces" };
+
+    private bool showModal = false;
+    private InventoryCatalogDTO modalItem = new();
+    private InventoryCatalogDTO? editingItem = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCatalogData();
+    }
+
+    private async Task LoadCatalogData()
+    {
+        isLoading = true;
+
+        itemCatalog = new List<InventoryCatalogDTO>
+        {
+            new InventoryCatalogDTO { Id = 1, ItemName = "Pasta", SKU = "123", Category = "Grains & Pasta", Unit = "lbs", PricePerUnit = 5.00m, Supplier = 1, Notes = "Dry pasta" },
+            new InventoryCatalogDTO { Id = 2, ItemName = "Milk", SKU = "321", Category = "Dairy", Unit = "mL", PricePerUnit = 8.00m, Supplier = 2, Notes = "" },
+            new InventoryCatalogDTO { Id = 3, ItemName = "Heavy Cream", SKU = "456", Category = "Dairy", Unit = "L", PricePerUnit = 10.00m, Supplier = 2, Notes = "" },
+            new InventoryCatalogDTO { Id = 4, ItemName = "Olive Oil", SKU = "654", Category = "Oils & Sauces", Unit = "L", PricePerUnit = 8.00m, Supplier = 3, Notes = "Extra virgin" },
+            new InventoryCatalogDTO { Id = 5, ItemName = "Potatoes", SKU = "789", Category = "Vegetables", Unit = "lbs", PricePerUnit = 9.00m, Supplier = 4, Notes = "" },
+        };
+
+        FilterItems();
+        isLoading = false;
+        await Task.CompletedTask;
+    }
+
+    private void FilterItems()
+    {
+        currentPage = 1;
+        filteredItems = itemCatalog.Where(item =>
+        {
+            bool searchMatch = string.IsNullOrWhiteSpace(searchTerm) ||
+                item.ItemName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                item.SKU.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                item.Category.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+
+            bool categoryMatch = string.IsNullOrWhiteSpace(selectedCategory) ||
+                item.Category == selectedCategory;
+
+            return searchMatch && categoryMatch;
+        }).ToList();
+
+        ApplySorting();
+        UpdatePagination();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+            sortAscending = !sortAscending;
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplySorting();
+        UpdatePagination();
+    }
+
+    private void ApplySorting()
+    {
+        filteredItems = sortColumn switch
+        {
+            "name" => sortAscending ? filteredItems.OrderBy(i => i.ItemName).ToList() : filteredItems.OrderByDescending(i => i.ItemName).ToList(),
+            "price" => sortAscending ? filteredItems.OrderBy(i => i.PricePerUnit).ToList() : filteredItems.OrderByDescending(i => i.PricePerUnit).ToList(),
+            "supplier" => sortAscending ? filteredItems.OrderBy(i => i.Supplier).ToList() : filteredItems.OrderByDescending(i => i.Supplier).ToList(),
+            _ => filteredItems
+        };
+    }
+
+    private string GetCategoryClass(string category) => category switch
+    {
+        "Grains & Pasta" => "category-grains",
+        "Dairy" => "category-dairy",
+        "Oils & Sauces" => "category-oils",
+        "Vegetables" => "category-vegetables",
+        "Meat & Poultry" => "category-meat",
+        _ => "category-default"
+    };
+
+    private bool IsPageSelected => pagedItems.Count > 0 && pagedItems.All(i => selectedIds.Contains(i.Id));
+
+    private void ToggleSelection(int id, ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool b && b;
+        if (!isChecked && args.Value is string s) bool.TryParse(s, out isChecked);
+        if (isChecked) selectedIds.Add(id);
+        else selectedIds.Remove(id);
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool b && b;
+        if (!isChecked && args.Value is string s) bool.TryParse(s, out isChecked);
+        if (isChecked)
+            foreach (var item in pagedItems) selectedIds.Add(item.Id);
+        else
+            foreach (var item in pagedItems) selectedIds.Remove(item.Id);
+    }
+
+    private void UpdatePagination()
+    {
+        totalPages = Math.Max(1, (int)Math.Ceiling(filteredItems.Count / (double)pageSize));
+        currentPage = Math.Min(currentPage, totalPages);
+        pagedItems = filteredItems.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+        pageButtons = BuildPageButtons();
+    }
+
+    private List<int> BuildPageButtons()
+    {
+        var buttons = new List<int>();
+        if (totalPages <= 5)
+        {
+            for (var i = 1; i <= totalPages; i++) buttons.Add(i);
+            return buttons;
+        }
+        buttons.Add(1);
+        if (currentPage > 3) buttons.Add(-1);
+        var start = Math.Max(2, currentPage - 1);
+        var end = Math.Min(totalPages - 1, currentPage + 1);
+        for (var i = start; i <= end; i++) buttons.Add(i);
+        if (currentPage < totalPages - 2) buttons.Add(-1);
+        buttons.Add(totalPages);
+        return buttons;
+    }
+
+    private void GoToPage(int page) { currentPage = page; UpdatePagination(); }
+    private void PreviousPage() { if (currentPage > 1) { currentPage--; UpdatePagination(); } }
+    private void NextPage() { if (currentPage < totalPages) { currentPage++; UpdatePagination(); } }
+
+    private int GetStartIndex() => filteredItems.Count == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    private int GetEndIndex() => Math.Min(currentPage * pageSize, filteredItems.Count);
+
+    private void ShowAddItemModal()
+    {
+        editingItem = null;
+        modalItem = new InventoryCatalogDTO();
+        showModal = true;
+    }
+
+    private void EditItem(InventoryCatalogDTO item)
+    {
+        editingItem = item;
+        modalItem = new InventoryCatalogDTO
+        {
+            Id = item.Id,
+            ItemName = item.ItemName,
+            SKU = item.SKU,
+            Category = item.Category,
+            Unit = item.Unit,
+            PricePerUnit = item.PricePerUnit,
+            Supplier = item.Supplier,
+            Notes = item.Notes
+        };
+        showModal = true;
+    }
+
+    private void SaveItem()
+    {
+        try
+        {
+            if (editingItem != null)
+            {
+                var idx = itemCatalog.FindIndex(i => i.Id == modalItem.Id);
+                if (idx >= 0) itemCatalog[idx] = modalItem;
+                else itemCatalog.Add(modalItem);
+            }
+            else
+            {
+                modalItem.Id = itemCatalog.Any() ? itemCatalog.Max(i => i.Id) + 1 : 1;
+                itemCatalog.Add(modalItem);
+            }
+            CloseModal();
+            FilterItems();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to save item: {ex}");
+        }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        modalItem = new();
+        editingItem = null;
+    }
+
+    private void DeleteItem(InventoryCatalogDTO item)
+    {
+        itemCatalog.Remove(item);
+        FilterItems();
+    }
+
+    private async Task RefreshCatalog()
+    {
+        await LoadCatalogData();
+    }
+
+    private string SearchTerm
+    {
+        get => searchTerm;
+        set { searchTerm = value; FilterItems(); }
+    }
+
+    private string SelectedCategory
+    {
+        get => selectedCategory;
+        set { selectedCategory = value; FilterItems(); }
+    }
+}
