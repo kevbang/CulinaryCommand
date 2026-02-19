@@ -1,0 +1,493 @@
+@page "/settings/locations/configure/{LocationId:int}"
+@rendermode InteractiveServer
+@using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Vendor.Entities
+@using CulinaryCommand.Vendor.Services
+@using CulinaryCommand.Services
+@using CulinaryCommand.Services.UserContextSpace
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Json
+@using System.Text.Json
+@attribute [Authorize]
+
+@inject IVendorService VendorService
+@inject ILocationService LocationService
+@inject IUserContextService UserCtx
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@inject IHttpClientFactory HttpFactory
+@inject LogoDevService LogoDev
+
+<PageTitle>Configure Location – Culinary Command</PageTitle>
+
+<div class="container py-4" style="max-width: 800px;">
+
+    @if (!_hydrated)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading…</span>
+            </div>
+        </div>
+    }
+    else if (_location is null)
+    {
+        <div class="alert alert-danger">Location not found or you don't have access to it.</div>
+        <a href="/settings/locations" class="btn btn-secondary">← Back to Locations</a>
+    }
+    else
+    {
+        <!-- Header -->
+        <div class="d-flex align-items-center mb-4 gap-3">
+            <a href="/settings/locations" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back
+            </a>
+            <div>
+                <h3 class="mb-0">Configure Restaurant</h3>
+                <span class="text-muted fs-6">@_location.Name · @_location.City, @_location.State</span>
+            </div>
+        </div>
+
+        <!-- Vendors Section -->
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Vendors</h5>
+                <button class="btn btn-success btn-sm" @onclick="OpenAddVendorModal">
+                    <i class="bi bi-plus-circle me-1"></i>Add Vendor
+                </button>
+            </div>
+
+            <div class="card-body p-0">
+                @if (!_companyVendors.Any())
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-truck fs-2 d-block mb-2"></i>
+                        No vendors found for your company. Add one to get started.
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Vendor</th>
+                                <th>Contact</th>
+                                <th>Email / Phone</th>
+                                <th class="text-center">Enabled for this location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var vendor in _companyVendors)
+                            {
+                                var isEnabled = _selectedVendorIds.Contains(vendor.Id);
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (!string.IsNullOrEmpty(vendor.LogoUrl))
+                                            {
+                                                <img src="@vendor.LogoUrl" alt="@vendor.Name"
+                                                     style="width:32px;height:32px;object-fit:contain;border-radius:4px;flex-shrink:0;" />
+                                            }
+                                            <div>
+                                                <strong>@vendor.Name</strong>
+                                                @if (!string.IsNullOrWhiteSpace(vendor.Notes))
+                                                {
+                                                    <br /><small class="text-muted">@vendor.Notes</small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>@(vendor.ContactName ?? "—")</td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(vendor.Email))
+                                        {
+                                            <span>@vendor.Email</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vendor.Phone))
+                                        {
+                                            <br /><small class="text-muted">@vendor.Phone</small>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vendor.Email) && string.IsNullOrWhiteSpace(vendor.Phone))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   checked="@isEnabled"
+                                                   @onchange="() => ToggleVendor(vendor.Id)"
+                                                   style="cursor:pointer; width:2.5em; height:1.4em;" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+
+            @if (_companyVendors.Any())
+            {
+                <div class="card-footer d-flex justify-content-end gap-2">
+                    @if (_saveSuccess)
+                    {
+                        <span class="text-success align-self-center me-2">
+                            <i class="bi bi-check-circle me-1"></i>Saved!
+                        </span>
+                    }
+                    <button class="btn btn-primary" @onclick="SaveVendors" disabled="@_saving">
+                        @if (_saving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Save Changes
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Add Vendor Modal -->
+@if (_showAddVendorModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Vendor</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddVendorModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_newVendor" OnValidSubmit="CreateVendor">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" />
+
+                        <!-- Logo.dev search -->
+                        <div class="mb-3 position-relative">
+                            <label class="form-label">Search for a company</label>
+                            <div class="input-group">
+                                <input class="form-control"
+                                       placeholder="e.g. US Foods, Sysco..."
+                                       value="@_searchQuery"
+                                       @oninput="OnSearchInput"
+                                       @onkeydown="OnSearchKeyDown"
+                                       autocomplete="off" />
+                                @if (_searching)
+                                {
+                                    <span class="input-group-text">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(_selectedLogoUrl) && !_searching)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            title="Clear selection"
+                                            @onclick="ClearSelection">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                }
+                            </div>
+
+                            @if (_searchResults.Any())
+                            {
+                                <ul class="list-group position-absolute w-100 shadow-sm"
+                                    style="z-index:1060; top:100%; max-height:220px; overflow-y:auto;">
+                                    @for (int i = 0; i < _searchResults.Count; i++)
+                                    {
+                                        var result = _searchResults[i];
+                                        var index = i;
+                                        var isActive = index == _searchActiveIndex;
+                                        <li class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 @(isActive ? "active" : "")"
+                                            style="cursor:pointer;"
+                                            @onclick="() => SelectSearchResult(result)">
+                                            <img src="@(result.Logo_Url ?? BuildLogoUrl(result.Domain))"
+                                                 alt="@result.Name"
+                                                 style="width:28px;height:28px;object-fit:contain;border-radius:4px;background:#f8f8f8;"
+                                                 onerror="this.style.display='none'" />
+                                            <div>
+                                                <div class="fw-semibold small">@result.Name</div>
+                                                <div class="text-muted" style="font-size:0.75rem;">@result.Domain</div>
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+
+                            @if (!string.IsNullOrEmpty(_selectedLogoUrl))
+                            {
+                                <div class="d-flex align-items-center gap-3 mt-2 p-2 border rounded bg-light">
+                                    <img src="@_selectedLogoUrl"
+                                         alt="@_newVendor.Name"
+                                         style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:white;padding:4px;border:1px solid #dee2e6;" />
+                                    <div>
+                                        <div class="fw-semibold">@_newVendor.Name</div>
+                                        <div class="text-muted small">@_newVendor.Website</div>
+                                    </div>
+                                    <i class="bi bi-check-circle-fill text-success ms-auto fs-5"></i>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Vendor Name <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_newVendor.Name" placeholder="e.g. US Foods" />
+                            <ValidationMessage For="() => _newVendor.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contact Name</label>
+                            <InputText class="form-control" @bind-Value="_newVendor.ContactName" placeholder="e.g. Jane Smith" />
+                        </div>
+                        <div class="row">
+                            <div class="col mb-3">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="_newVendor.Email" placeholder="contact@vendor.com" />
+                            </div>
+                            <div class="col mb-3">
+                                <label class="form-label">Phone</label>
+                                <InputText class="form-control" @bind-Value="_newVendor.Phone" placeholder="555-123-4567" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Website</label>
+                            <InputText class="form-control" @bind-Value="_newVendor.Website" placeholder="https://vendor.com" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <InputTextArea class="form-control" @bind-Value="_newVendor.Notes" rows="2" placeholder="Optional notes..." />
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <InputCheckbox class="form-check-input" id="autoAssign" @bind-Value="_autoAssignToLocation" />
+                            <label class="form-check-label" for="autoAssign">
+                                Also enable this vendor for <strong>@(_location?.Name ?? "this location")</strong>
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseAddVendorModal">Cancel</button>
+                            <button type="submit" class="btn btn-success" disabled="@_creatingVendor">
+                                @if (_creatingVendor)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                Create Vendor
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int LocationId { get; set; }
+
+    private Location? _location;
+    private List<Vendor> _companyVendors = new();
+    private HashSet<int> _selectedVendorIds = new();
+
+    private bool _hydrated;
+    private bool _saving;
+    private bool _saveSuccess;
+    private bool _showAddVendorModal;
+    private bool _creatingVendor;
+    private bool _autoAssignToLocation = true;
+
+    private Vendor _newVendor = new();
+    private int? _companyId;
+
+    private string _searchQuery = string.Empty;
+    private bool _searching;
+    private List<LogoDevResult> _searchResults = new();
+    private int _searchActiveIndex = -1;
+    private string? _selectedLogoUrl;
+    private CancellationTokenSource? _searchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+
+        if (ctx.IsAuthenticated != true || ctx.User is null)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        var role = ctx.User.Role ?? string.Empty;
+        var isAdminOrManager = role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                            || role.Equals("Manager", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdminOrManager)
+        {
+            Nav.NavigateTo("/settings/locations", forceLoad: false);
+            return;
+        }
+
+        _companyId = ctx.User.CompanyId;
+
+        // Load the location and verify it belongs to the user's company
+        var allLocations = _companyId.HasValue
+            ? await LocationService.GetLocationsByCompanyAsync(_companyId.Value)
+            : new List<Location>();
+
+        _location = allLocations.FirstOrDefault(l => l.Id == LocationId);
+
+        if (_location is not null && _companyId.HasValue)
+        {
+            _companyVendors = await VendorService.GetVendorsByCompanyAsync(_companyId.Value);
+            var locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
+            _selectedVendorIds = locationVendors.Select(v => v.Id).ToHashSet();
+        }
+
+        _hydrated = true;
+    }
+
+    private void ToggleVendor(int vendorId)
+    {
+        if (_selectedVendorIds.Contains(vendorId))
+            _selectedVendorIds.Remove(vendorId);
+        else
+            _selectedVendorIds.Add(vendorId);
+
+        _saveSuccess = false;
+    }
+
+    private async Task SaveVendors()
+    {
+        _saving = true;
+        _saveSuccess = false;
+
+        await VendorService.SetLocationVendorsAsync(LocationId, _selectedVendorIds);
+
+        _saving = false;
+        _saveSuccess = true;
+        StateHasChanged();
+
+        // Auto-hide success message after 3 seconds
+        await Task.Delay(3000);
+        _saveSuccess = false;
+        StateHasChanged();
+    }
+
+    private void OpenAddVendorModal()
+    {
+        _newVendor = new Vendor();
+        _searchQuery = string.Empty;
+        _searchResults = new();
+        _searchActiveIndex = -1;
+        _selectedLogoUrl = null;
+        _autoAssignToLocation = true;
+        _showAddVendorModal = true;
+    }
+
+    private void CloseAddVendorModal()
+    {
+        _searchCts?.Cancel();
+        _showAddVendorModal = false;
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? string.Empty;
+        _searchActiveIndex = -1;
+
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        if (_searchQuery.Length < 2)
+        {
+            _searchResults = new();
+            return;
+        }
+
+        _searching = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(300, token);
+            _searchResults = await LogoDev.SearchAsync(_searchQuery, token);
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            _searching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (!_searchResults.Any()) return;
+
+        if (e.Key == "ArrowDown")
+        {
+            _searchActiveIndex = Math.Min(_searchActiveIndex + 1, _searchResults.Count - 1);
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _searchActiveIndex = Math.Max(_searchActiveIndex - 1, 0);
+        }
+        else if (e.Key == "Enter" && _searchActiveIndex >= 0)
+        {
+            await SelectSearchResult(_searchResults[_searchActiveIndex]);
+        }
+        else if (e.Key == "Escape")
+        {
+            _searchResults = new();
+        }
+    }
+
+    private Task SelectSearchResult(LogoDevResult result)
+    {
+        _newVendor.Name = result.Name;
+        _newVendor.Website = $"https://{result.Domain}";
+        _selectedLogoUrl = result.Logo_Url ?? BuildLogoUrl(result.Domain);
+        _searchQuery = result.Name;
+        _searchResults = new();
+        return Task.CompletedTask;
+    }
+
+    private void ClearSelection()
+    {
+        _selectedLogoUrl = null;
+        _searchQuery = string.Empty;
+        _newVendor.Name = string.Empty;
+        _newVendor.Website = string.Empty;
+        _searchResults = new();
+    }
+
+    private string BuildLogoUrl(string domain)
+    {
+        var publishableKey = Config["LogoDev:PublishableKey"] ?? string.Empty;
+        return LogoDev.BuildLogoUrl(domain, publishableKey);
+    }
+
+    private async Task CreateVendor()
+    {
+        if (_companyId is null) return;
+
+        _creatingVendor = true;
+
+        _newVendor.CompanyId = _companyId.Value;
+        _newVendor.LogoUrl = _selectedLogoUrl;
+        var created = await VendorService.CreateVendorAsync(_newVendor);
+
+        if (_autoAssignToLocation)
+        {
+            _selectedVendorIds.Add(created.Id);
+            await VendorService.AddVendorToLocationAsync(LocationId, created.Id);
+        }
+
+        _companyVendors = await VendorService.GetVendorsByCompanyAsync(_companyId.Value);
+
+        _creatingVendor = false;
+        _showAddVendorModal = false;
+        StateHasChanged();
+    }
+}

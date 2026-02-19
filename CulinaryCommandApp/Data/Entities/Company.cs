@@ -57,5 +57,7 @@ namespace CulinaryCommand.Data.Entities
         public ICollection<Location>? Locations { get; set; }
         [JsonIgnore]
         public ICollection<User>? Employees { get; set; }
+        [JsonIgnore]
+        public ICollection<CulinaryCommand.Vendor.Entities.Vendor>? Vendors { get; set; }
     }
 }

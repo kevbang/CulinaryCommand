@@ -1,5 +1,6 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Components.Pages.UserSettings.LocationSettings
+@inject NavigationManager Nav
 @inherits ComponentBase
 
 <div class="location-admin-view">
@@ -31,9 +32,14 @@
                         Delete
                     </button>
 
-                    <button class="btn btn-outline-secondary btn-sm"
+                    <button class="btn btn-outline-secondary btn-sm me-2"
                             @onclick="() => ToggleUsers(loc.Id)">
                         Manage Users
+                    </button>
+
+                    <button class="btn btn-outline-dark btn-sm"
+                            @onclick='() => Nav.NavigateTo($"/settings/locations/configure/{loc.Id}")'>
+                        <i class="bi bi-gear me-1"></i>Configure Restaurant
                     </button>
                 </div>
             </div>

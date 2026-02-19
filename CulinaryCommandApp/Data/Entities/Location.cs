@@ -50,6 +50,9 @@ namespace CulinaryCommand.Data.Entities
                 [JsonIgnore]
                 public IEnumerable<User> Employees => UserLocations.Select(ul => ul.User);
 
+                [JsonIgnore]
+                public ICollection<CulinaryCommand.Vendor.Entities.LocationVendor> LocationVendors { get; set; } = new List<CulinaryCommand.Vendor.Entities.LocationVendor>();
+
         }
 
 }

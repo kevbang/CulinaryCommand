@@ -18,6 +18,8 @@ using Amazon.CognitoIdentityProvider;
 using Amazon.Extensions.NETCore.Setup;
 using CulinaryCommandApp.Services;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
+using CulinaryCommand.Vendor.Services;
 
 
 
@@ -87,7 +89,7 @@ builder.Services
       options.SignedOutCallbackPath =
           builder.Configuration["Authentication:Cognito:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
 
-      options.RequireHttpsMetadata = true;
+      options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
 
       options.Scope.Clear();
       options.Scope.Add("openid");
@@ -96,12 +98,22 @@ builder.Services
 
       options.TokenValidationParameters.NameClaimType = "cognito:username";
       options.TokenValidationParameters.RoleClaimType = "cognito:groups";
-      options.Events.OnRedirectToIdentityProvider = ctx =>
-        {
-            // Forces correct scheme/host behind nginx
-            ctx.ProtocolMessage.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
-            return Task.CompletedTask;
-        };
+
+      options.Events = new Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectEvents
+      {
+          OnRedirectToIdentityProvider = ctx =>
+          {
+              // Forces correct scheme/host behind nginx or locally
+              ctx.ProtocolMessage.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
+              return Task.CompletedTask;
+          },
+          OnAuthorizationCodeReceived = ctx =>
+          {
+              // Ensure the redirect_uri used during token exchange matches the one sent in the auth request
+              ctx.TokenEndpointRequest!.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
+              return Task.CompletedTask;
+          }
+      };
 
   });
 
@@ -161,7 +173,10 @@ builder.Services.AddScoped<IInventoryManagementService, InventoryManagementServi
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<LogoDevService>();
 builder.Services.AddSingleton<EnumService>();
+builder.Services.AddHttpClient();
 
 
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
@@ -175,6 +190,15 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+var env = builder.Environment;
+
+if (builder.Environment.IsDevelopment())
+{
+    var dp = Path.Combine(builder.Environment.ContentRootPath, ".dpkeys");
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dp))
+        .SetApplicationName("CulinaryCommand");
+}
 
 
 //
