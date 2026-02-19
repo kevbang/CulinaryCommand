@@ -1,10 +1,23 @@
-@page "/inventory-management"
+@page "/inventory-management/{LocationId:int}"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @using CulinaryCommand.Inventory.DTOs
+@using CulinaryCommand.Inventory.Entities
+@using CulinaryCommand.Inventory.Services
+@using CulinaryCommand.Inventory.Services.Interfaces
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
-@using System.Threading.Tasks
+
+@using CulinaryCommand.Vendor.Services
+@using CulinaryCommand.Vendor.Entities
+@using CulinaryCommand.Services
+
+@inject IInventoryManagementService InventoryService
+@inject IUnitService UnitService
+@inject IVendorService VendorService
+@inject LocationState LocationState
+@inject NavigationManager Nav
 
 <div class="inventory-container">
     <div class="inventory-header">
@@ -77,6 +90,7 @@
                     <th @onclick='() => SortBy("currentQty")'>Current Stock <i class="bi bi-arrow-down-up"></i></th>
                     <th @onclick='() => SortBy("expires")'>Expires <i class="bi bi-arrow-down-up"></i></th>
                     <th @onclick='() => SortBy("price")'>Cost/Unit <i class="bi bi-arrow-down-up"></i></th>
+                    <th>Supplier</th>
                     <th>Location</th>
                     <th @onclick='() => SortBy("lastUpdated")'>Last Updated <i class="bi bi-arrow-down-up"></i></th>
                     <th class="actions-col">Actions</th>
@@ -134,6 +148,22 @@
                             </td>
                             <td>@(item.OutOfStockDate.HasValue ? item.OutOfStockDate.Value.ToString("M/d/yy") : "-")</td>
                             <td>$@item.Price.ToString("F2")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.VendorLogoUrl))
+                                {
+                                    <img src="@item.VendorLogoUrl" alt="@item.VendorName"
+                                         title="@item.VendorName"
+                                         style="width:28px;height:28px;object-fit:contain;border-radius:4px;" />
+                                }
+                                else if (!string.IsNullOrEmpty(item.VendorName))
+                                {
+                                    <span class="text-muted small">@item.VendorName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
                             <td>@GetLocation(item.Id)</td>
                             <td>@(item.LastOrderDate.HasValue ? item.LastOrderDate.Value.ToString("M/d/yy") : "-")</td>
                             <td class="actions-col">
@@ -220,13 +250,12 @@
                     <div class="col-md-6">
                         <div class="form-group mb-3">
                             <label>Unit</label>
-                            <select class="form-control" @bind="modalItem.Unit">
-                                <option value="count">count</option>
-                                <option value="gallons">gallons</option>
-                                <option value="lbs">lbs</option>
-                                <option value="oz">oz</option>
-                                <option value="kg">kg</option>
-                                <option value="liters">liters</option>
+                            <select class="form-control" @bind="modalUnitId">
+                                <option value="0">-- Select Unit --</option>
+                                @foreach (var unit in availableUnits)
+                                {
+                                    <option value="@unit.Id">@unit.Name (@unit.Abbreviation)</option>
+                                }
                             </select>
                         </div>
                     </div>
@@ -260,8 +289,32 @@
                     </div>
                 </div>
                 <div class="form-group mb-3">
-                    <label>Location</label>
-                    <input type="text" class="form-control" @bind="modalLocation" />
+                    <label>Notes</label>
+                    <input type="text" class="form-control" @bind="modalItem.Notes" />
+                </div>
+                <div class="form-group mb-3">
+                    <label>Supplier</label>
+                    <select class="form-control" @bind="modalVendorId">
+                        <option value="0">-- No Supplier --</option>
+                        @foreach (var vendor in locationVendors)
+                        {
+                            <option value="@vendor.Id">
+                                @vendor.Name
+                            </option>
+                        }
+                    </select>
+                    @if (modalVendorId > 0)
+                    {
+                        var selectedVendor = locationVendors.FirstOrDefault(v => v.Id == modalVendorId);
+                        @if (selectedVendor?.LogoUrl is not null)
+                        {
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                                <img src="@selectedVendor.LogoUrl" alt="@selectedVendor.Name"
+                                     style="width:32px;height:32px;object-fit:contain;border-radius:4px;" />
+                                <span class="small text-muted">@selectedVendor.Name</span>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
             <div class="modal-footer-custom">
@@ -275,9 +328,13 @@
 }
 
 @code {
+    [Parameter] public int LocationId { get; set; }
+
     private List<InventoryItemDTO> inventoryItems = new();
     private List<InventoryItemDTO> filteredItems = new();
     private List<InventoryItemDTO> pagedItems = new();
+    private List<Unit> availableUnits = new();
+    private List<Vendor> locationVendors = new();
     private bool isLoading = true;
     private string activeTab = "all";
     private string searchTerm = "";
@@ -291,57 +348,54 @@
     private List<int> pageButtons = new();
     private HashSet<int> selectedIds = new();
 
-    private readonly Dictionary<int, string> itemLocations = new();
-    private List<string> categories = new() { "Vegetables", "Dairy", "Meat & Poultry", "Grains & Pasta", "Oils & Sauces" };
+    private List<string> categories = new();
 
     private bool showModal = false;
     private InventoryItemDTO modalItem = new();
     private InventoryItemDTO? editingItem = null;
-    private string modalLocation = "";
+    private int modalUnitId = 0;
+    private int modalVendorId = 0;
 
     protected override async Task OnInitializedAsync()
     {
+        availableUnits = await UnitService.GetAllAsync();
+        locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
         await LoadInventoryData();
+
+        LocationState.OnChange += HandleLocationChange;
+    }
+
+    private void HandleLocationChange()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            var newLocId = LocationState.CurrentLocation?.Id;
+            if (newLocId.HasValue && newLocId.Value != LocationId)
+            {
+                Nav.NavigateTo($"/inventory-management/{newLocId.Value}");
+            }
+            else
+            {
+                // Same location — just refresh the data
+                await LoadInventoryData();
+                locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
+                StateHasChanged();
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        LocationState.OnChange -= HandleLocationChange;
     }
 
     private async Task LoadInventoryData()
     {
         isLoading = true;
-
-        inventoryItems = new List<InventoryItemDTO>
-        {
-            new InventoryItemDTO { Id = 1, Name = "Pasta", SKU = "123", Category = "Grains & Pasta", Unit = "lbs", CurrentQuantity = 10, Price = 5, ReorderLevel = 15, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
-            new InventoryItemDTO { Id = 2, Name = "Milk", SKU = "321", Category = "Dairy", Unit = "mL", CurrentQuantity = 20, Price = 8, ReorderLevel = 25, OutOfStockDate = new DateTime(2026, 1, 1), LastOrderDate = new DateTime(2026, 2, 10) },
-            new InventoryItemDTO { Id = 3, Name = "Heavy Cream", SKU = "456", Category = "Dairy", Unit = "L", CurrentQuantity = 35, Price = 10, ReorderLevel = 20, OutOfStockDate = new DateTime(2026, 2, 5), LastOrderDate = new DateTime(2026, 2, 8) },
-            new InventoryItemDTO { Id = 4, Name = "Olive Oil", SKU = "654", Category = "Oils & Sauces", Unit = "L", CurrentQuantity = 45, Price = 8, ReorderLevel = 30, OutOfStockDate = new DateTime(2026, 6, 22), LastOrderDate = new DateTime(2026, 2, 1) },
-            new InventoryItemDTO { Id = 5, Name = "Potatoes", SKU = "789", Category = "Vegetables", Unit = "lbs", CurrentQuantity = 150, Price = 9, ReorderLevel = 40, OutOfStockDate = new DateTime(2026, 1, 5), LastOrderDate = new DateTime(2026, 2, 11) },
-            new InventoryItemDTO { Id = 6, Name = "Basil", SKU = "987", Category = "Vegetables", Unit = "bunch", CurrentQuantity = 25, Price = 3, ReorderLevel = 20, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
-            new InventoryItemDTO { Id = 7, Name = "Beef", SKU = "012", Category = "Meat & Poultry", Unit = "lbs", CurrentQuantity = 150, Price = 25, ReorderLevel = 60, OutOfStockDate = new DateTime(2026, 2, 26), LastOrderDate = new DateTime(2026, 1, 21) },
-            new InventoryItemDTO { Id = 8, Name = "Mozzarella", SKU = "677", Category = "Dairy", Unit = "lbs", CurrentQuantity = 75, Price = 25, ReorderLevel = 80, OutOfStockDate = new DateTime(2026, 2, 26), LastOrderDate = new DateTime(2026, 2, 11) },
-            new InventoryItemDTO { Id = 9, Name = "Jasmine Rice", SKU = "962", Category = "Grains & Pasta", Unit = "lbs", CurrentQuantity = 150, Price = 25, ReorderLevel = 90, OutOfStockDate = new DateTime(2026, 1, 2), LastOrderDate = new DateTime(2026, 2, 11) },
-            new InventoryItemDTO { Id = 10, Name = "Green Peppers", SKU = "832", Category = "Vegetables", Unit = "lbs", CurrentQuantity = 0, Price = 25, ReorderLevel = 30, OutOfStockDate = new DateTime(2026, 1, 1), LastOrderDate = new DateTime(2026, 2, 11) }
-        };
-
-        itemLocations.Clear();
-        itemLocations[1] = "Dry Storage";
-        itemLocations[2] = "Walk-in";
-        itemLocations[3] = "Walk-in";
-        itemLocations[4] = "Dry Storage";
-        itemLocations[5] = "Dry Storage";
-        itemLocations[6] = "Walk-in";
-        itemLocations[7] = "Walk-in Freezer";
-        itemLocations[8] = "Walk-in";
-        itemLocations[9] = "Dry Storage";
-        itemLocations[10] = "Walk-in";
-
-        foreach (var item in inventoryItems)
-        {
-            item.IsLowStock = item.CurrentQuantity <= item.ReorderLevel && item.CurrentQuantity > 0;
-        }
-
+        inventoryItems = await InventoryService.GetItemsByLocationAsync(LocationId);
+        categories = await InventoryService.GetCategoriesByLocationAsync(LocationId);
         FilterItems();
         isLoading = false;
-        await Task.CompletedTask;
     }
 
     private void SetActiveTab(string tab)
@@ -429,10 +483,7 @@
         };
     }
 
-    private string GetLocation(int id)
-    {
-        return itemLocations.TryGetValue(id, out var location) ? location : "-";
-    }
+    private string GetLocation(int id) => "-"; // location is now the page itself
 
     private bool IsPageSelected => pagedItems.Count > 0 && pagedItems.All(i => selectedIds.Contains(i.Id));
 
@@ -574,7 +625,8 @@
     {
         editingItem = null;
         modalItem = new InventoryItemDTO();
-        modalLocation = "";
+        modalUnitId = 0;
+        modalVendorId = 0;
         showModal = true;
     }
 
@@ -592,9 +644,12 @@
             Price = item.Price,
             ReorderLevel = item.ReorderLevel,
             OutOfStockDate = item.OutOfStockDate,
-            LastOrderDate = item.LastOrderDate
+            LastOrderDate = item.LastOrderDate,
+            Notes = item.Notes
         };
-        modalLocation = itemLocations.TryGetValue(item.Id, out var location) ? location : "";
+        // Find the unit by name to restore the dropdown selection
+        modalUnitId = availableUnits.FirstOrDefault(u => u.Name == item.Unit)?.Id ?? 0;
+        modalVendorId = item.VendorId ?? 0;
         showModal = true;
     }
 
@@ -602,30 +657,38 @@
     {
         try
         {
-            modalItem.IsLowStock = modalItem.CurrentQuantity <= modalItem.ReorderLevel && modalItem.CurrentQuantity > 0;
             if (editingItem != null)
             {
-                var idx = inventoryItems.FindIndex(i => i.Id == modalItem.Id);
-                if (idx >= 0)
+                // Update existing
+                modalItem.IsLowStock = modalItem.CurrentQuantity <= modalItem.ReorderLevel && modalItem.CurrentQuantity > 0;
+                var updated = await InventoryService.UpdateItemAsync(modalItem);
+                if (updated is not null)
                 {
-                    inventoryItems[idx] = modalItem;
-                }
-                else
-                {
-                    inventoryItems.Add(modalItem);
+                    var idx = inventoryItems.FindIndex(i => i.Id == updated.Id);
+                    if (idx >= 0) inventoryItems[idx] = updated;
                 }
             }
             else
             {
-                modalItem.Id = inventoryItems.Any() ? inventoryItems.Max(i => i.Id) + 1 : 1;
-                inventoryItems.Add(modalItem);
-                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "Dry Storage" : modalLocation.Trim();
+                // Create new
+                var dto = new CreateIngredientDTO
+                {
+                    Name = modalItem.Name,
+                    SKU = modalItem.SKU,
+                    Category = modalItem.Category,
+                    CurrentQuantity = modalItem.CurrentQuantity,
+                    Price = modalItem.Price,
+                    ReorderLevel = modalItem.ReorderLevel,
+                    UnitId = modalUnitId > 0 ? modalUnitId : 1,
+                    LocationId = LocationId,
+                    VendorId = modalVendorId > 0 ? modalVendorId : null
+                };
+                var created = await InventoryService.AddItemAsync(dto);
+                inventoryItems.Add(created);
             }
 
-            if (editingItem != null)
-            {
-                itemLocations[modalItem.Id] = string.IsNullOrWhiteSpace(modalLocation) ? "-" : modalLocation.Trim();
-            }
+            // Refresh categories from DB in case a new one was entered
+            categories = await InventoryService.GetCategoriesByLocationAsync(LocationId);
 
             CloseModal();
             FilterItems();
@@ -641,6 +704,8 @@
         showModal = false;
         modalItem = new();
         editingItem = null;
+        modalUnitId = 0;
+        modalVendorId = 0;
     }
 
     private async Task OrderItem(InventoryItemDTO item)
@@ -654,6 +719,7 @@
         {
             return;
         }
+        await InventoryService.DeleteItemAsync(item.Id);
         inventoryItems.Remove(item);
         FilterItems();
     }
@@ -665,8 +731,16 @@
 
     private async Task RefreshInventory()
     {
+        // If the user switched locations in the header, navigate to the correct page
+        var currentLocId = LocationState.CurrentLocation?.Id;
+        if (currentLocId.HasValue && currentLocId.Value != LocationId)
+        {
+            Nav.NavigateTo($"/inventory-management/{currentLocId.Value}");
+            return;
+        }
+
         await LoadInventoryData();
-        await JSRuntime.InvokeVoidAsync("console.log", "Inventory refreshed");
+        locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
     }
 
     private void ToggleQuickFilter()

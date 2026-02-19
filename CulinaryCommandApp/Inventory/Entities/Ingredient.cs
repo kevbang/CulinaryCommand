@@ -1,4 +1,5 @@
 using System;
+using CulinaryCommand.Data.Entities;
 
 namespace CulinaryCommand.Inventory.Entities
 {
@@ -8,6 +9,14 @@ namespace CulinaryCommand.Inventory.Entities
 
         // display name of the ingredient (ex: "flour", "eggs")
         public string Name { get; set; } = string.Empty;
+
+        // fk to the location this ingredient belongs to
+        public int LocationId { get; set; }
+        public Location? Location { get; set; }
+
+        // optional fk to the vendor that supplies this ingredient
+        public int? VendorId { get; set; }
+        public CulinaryCommand.Vendor.Entities.Vendor? Vendor { get; set; }
 
         // fk to the unit used to track stock (ex: g, kg, each).
         public int UnitId { get; set; }
@@ -39,5 +48,4 @@ namespace CulinaryCommand.Inventory.Entities
         // optional, used to describe any details about the ingredient
         public string? Notes { get; set; }
     }
-    
 }

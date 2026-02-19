@@ -16,5 +16,8 @@ namespace CulinaryCommand.Inventory.DTOs
         public DateTime? OutOfStockDate { get; set; }
         public DateTime? LastOrderDate { get; set; }
         public string? Notes { get; set; }
+        public int? VendorId { get; set; }
+        public string? VendorName { get; set; }
+        public string? VendorLogoUrl { get; set; }
     }
 }

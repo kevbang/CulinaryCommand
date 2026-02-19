@@ -79,6 +79,21 @@ namespace CulinaryCommand.Data
                 .WithMany(l => l.ManagerLocations)
                 .HasForeignKey(ml => ml.LocationId);
 
+            // Ingredient belongs to a Location
+            modelBuilder.Entity<CulinaryCommand.Inventory.Entities.Ingredient>()
+                .HasOne(i => i.Location)
+                .WithMany()
+                .HasForeignKey(i => i.LocationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Ingredient optionally belongs to a Vendor
+            modelBuilder.Entity<CulinaryCommand.Inventory.Entities.Ingredient>()
+                .HasOne(i => i.Vendor)
+                .WithMany()
+                .HasForeignKey(i => i.VendorId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
             // Vendor belongs to a Company
             modelBuilder.Entity<V.Vendor>()
                 .HasOne(v => v.Company)

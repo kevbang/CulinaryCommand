@@ -19,6 +19,7 @@ namespace CulinaryCommand.Inventory.Services
         public async Task<List<InventoryItemDTO>> GetAllItemsAsync()
         {
             return await _db.Ingredients
+                .Include(i => i.Unit)
                 .Select(ingredient => new InventoryItemDTO
                 {
                     Id = ingredient.Id,
@@ -26,15 +27,51 @@ namespace CulinaryCommand.Inventory.Services
                     Category = ingredient.Category,
                     CurrentQuantity = ingredient.StockQuantity,
                     Unit = ingredient.Unit != null ? ingredient.Unit.Name : "count",
-                    // fields that aren't on ingredient yet
                     SKU = ingredient.Sku ?? "",
                     Price = ingredient.Price ?? 0m,
                     ReorderLevel = ingredient.ReorderLevel,
-                    IsLowStock = ingredient.StockQuantity <= ingredient.ReorderLevel,
+                    IsLowStock = ingredient.StockQuantity <= ingredient.ReorderLevel && ingredient.StockQuantity > 0,
                     OutOfStockDate = null,
                     LastOrderDate = null,
                     Notes = ingredient.Notes ?? ""
                 })
+                .ToListAsync();
+        }
+
+        public async Task<List<InventoryItemDTO>> GetItemsByLocationAsync(int locationId)
+        {
+            return await _db.Ingredients
+                .Include(i => i.Unit)
+                .Include(i => i.Vendor)
+                .Where(i => i.LocationId == locationId)
+                .Select(ingredient => new InventoryItemDTO
+                {
+                    Id = ingredient.Id,
+                    Name = ingredient.Name,
+                    Category = ingredient.Category,
+                    CurrentQuantity = ingredient.StockQuantity,
+                    Unit = ingredient.Unit != null ? ingredient.Unit.Name : "count",
+                    SKU = ingredient.Sku ?? "",
+                    Price = ingredient.Price ?? 0m,
+                    ReorderLevel = ingredient.ReorderLevel,
+                    IsLowStock = ingredient.StockQuantity <= ingredient.ReorderLevel && ingredient.StockQuantity > 0,
+                    OutOfStockDate = null,
+                    LastOrderDate = null,
+                    Notes = ingredient.Notes ?? "",
+                    VendorId = ingredient.VendorId,
+                    VendorName = ingredient.Vendor != null ? ingredient.Vendor.Name : null,
+                    VendorLogoUrl = ingredient.Vendor != null ? ingredient.Vendor.LogoUrl : null
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<string>> GetCategoriesByLocationAsync(int locationId)
+        {
+            return await _db.Ingredients
+                .Where(i => i.LocationId == locationId && !string.IsNullOrEmpty(i.Category))
+                .Select(i => i.Category)
+                .Distinct()
+                .OrderBy(c => c)
                 .ToListAsync();
         }
 
@@ -43,9 +80,12 @@ namespace CulinaryCommand.Inventory.Services
                 Name = dto.Name,
                 Sku = dto.SKU,
                 Price = dto.Price,
+                Category = dto.Category ?? string.Empty,
                 StockQuantity = dto.CurrentQuantity,
                 ReorderLevel = dto.ReorderLevel,
                 UnitId = dto.UnitId,
+                LocationId = dto.LocationId,
+                VendorId = dto.VendorId,
                 CreatedAt = DateTime.UtcNow
             };
             _db.Ingredients.Add(entity);

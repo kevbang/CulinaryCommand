@@ -5,6 +5,9 @@
 @using CulinaryCommand.Components.Custom
 @using CulinaryCommand.Services
 @inject IUserContextService UserCtx
+@inject LocationState LocationState
+@inject NavigationManager Nav
+@implements IDisposable
 @rendermode InteractiveServer
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -36,9 +39,10 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/inventory-management">
+            <a class="nav-link @(Nav.Uri.Contains("/inventory-management") ? "active" : "")"
+               href="#" @onclick="async () => await GoToInventory()" @onclick:preventDefault="true">
                 <span class="bi bi-box-seam nav-icon" aria-hidden="true"></span> Inventory
-            </NavLink>
+            </a>
         </div>
 
         @if (_role == "Admin")
@@ -82,12 +86,6 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="/inventory-management">
-                    <span class="bi bi-box-seam nav-icon"></span> Inventory
-                </NavLink>
-            </div>
-
-            <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/inventory-catalog">
                     <span class="bi bi-card-list nav-icon" aria-hidden="true"></span> Inventory Catalog
                 </NavLink>
@@ -109,9 +107,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Compile-safe even if auth isn't working yet:
-        // - If not authenticated or DB user not found, _role stays null.
         var ctx = await UserCtx.GetAsync();
         _role = ctx.User?.Role;
+
+        LocationState.OnChange += HandleLocationChange;
+    }
+
+    private async Task GoToInventory()
+    {
+        var locId = LocationState.CurrentLocation?.Id;
+
+        if (!locId.HasValue)
+        {
+            var ctx = await UserCtx.GetAsync();
+            locId = ctx.AccessibleLocations.FirstOrDefault()?.Id;
+        }
+
+        var href = locId.HasValue
+            ? $"/inventory-management/{locId.Value}"
+            : "/inventory-management";
+
+        Nav.NavigateTo(href);
+    }
+
+    private void HandleLocationChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LocationState.OnChange -= HandleLocationChange;
     }
 }
