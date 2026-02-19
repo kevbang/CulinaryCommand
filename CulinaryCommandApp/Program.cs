@@ -20,6 +20,7 @@ using CulinaryCommandApp.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using CulinaryCommand.Vendor.Services;
+using System.IO;
 
 
 
@@ -89,7 +90,7 @@ builder.Services
       options.SignedOutCallbackPath =
           builder.Configuration["Authentication:Cognito:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
 
-      options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+      options.RequireHttpsMetadata = true;
 
       options.Scope.Clear();
       options.Scope.Add("openid");
@@ -98,22 +99,12 @@ builder.Services
 
       options.TokenValidationParameters.NameClaimType = "cognito:username";
       options.TokenValidationParameters.RoleClaimType = "cognito:groups";
-
-      options.Events = new Microsoft.AspNetCore.Authentication.OpenIdConnect.OpenIdConnectEvents
-      {
-          OnRedirectToIdentityProvider = ctx =>
-          {
-              // Forces correct scheme/host behind nginx or locally
-              ctx.ProtocolMessage.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
-              return Task.CompletedTask;
-          },
-          OnAuthorizationCodeReceived = ctx =>
-          {
-              // Ensure the redirect_uri used during token exchange matches the one sent in the auth request
-              ctx.TokenEndpointRequest!.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
-              return Task.CompletedTask;
-          }
-      };
+      options.Events.OnRedirectToIdentityProvider = ctx =>
+        {
+            // Forces correct scheme/host behind nginx
+            ctx.ProtocolMessage.RedirectUri = $"{ctx.Request.Scheme}://{ctx.Request.Host}{options.CallbackPath}";
+            return Task.CompletedTask;
+        };
 
   });
 
@@ -173,10 +164,7 @@ builder.Services.AddScoped<IInventoryManagementService, InventoryManagementServi
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
-builder.Services.AddScoped<IVendorService, VendorService>();
-builder.Services.AddScoped<LogoDevService>();
 builder.Services.AddSingleton<EnumService>();
-builder.Services.AddHttpClient();
 
 
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
@@ -199,7 +187,6 @@ if (builder.Environment.IsDevelopment())
         .PersistKeysToFileSystem(new DirectoryInfo(dp))
         .SetApplicationName("CulinaryCommand");
 }
-
 
 //
 // =====================
