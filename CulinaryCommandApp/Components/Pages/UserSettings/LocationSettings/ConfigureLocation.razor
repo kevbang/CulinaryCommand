@@ -58,7 +58,7 @@
             </div>
 
             <div class="card-body p-0">
-                @if (!_companyVendors.Any())
+                @if (!_locationVendors.Any())
                 {
                     <div class="text-center text-muted py-4">
                         <i class="bi bi-truck fs-2 d-block mb-2"></i>
@@ -73,13 +73,12 @@
                                 <th>Vendor</th>
                                 <th>Contact</th>
                                 <th>Email / Phone</th>
-                                <th class="text-center">Enabled for this location</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var vendor in _companyVendors)
+                            @foreach (var vendor in _locationVendors)
                             {
-                                var isEnabled = _selectedVendorIds.Contains(vendor.Id);
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
@@ -112,14 +111,12 @@
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
-                                    <td class="text-center">
-                                        <div class="form-check form-switch d-flex justify-content-center">
-                                            <input class="form-check-input"
-                                                   type="checkbox"
-                                                   checked="@isEnabled"
-                                                   @onchange="() => ToggleVendor(vendor.Id)"
-                                                   style="cursor:pointer; width:2.5em; height:1.4em;" />
-                                        </div>
+                                    <td class="text-end">
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => RemoveVendor(vendor.Id)"
+                                                title="Remove vendor from this location">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
@@ -128,22 +125,10 @@
                 }
             </div>
 
-            @if (_companyVendors.Any())
+            @if (_locationVendors.Any())
             {
                 <div class="card-footer d-flex justify-content-end gap-2">
-                    @if (_saveSuccess)
-                    {
-                        <span class="text-success align-self-center me-2">
-                            <i class="bi bi-check-circle me-1"></i>Saved!
-                        </span>
-                    }
-                    <button class="btn btn-primary" @onclick="SaveVendors" disabled="@_saving">
-                        @if (_saving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        }
-                        Save Changes
-                    </button>
+                    <span class="text-muted align-self-center small">@_locationVendors.Count vendor(s) at this location</span>
                 </div>
             }
         </div>
@@ -259,13 +244,6 @@
                             <InputTextArea class="form-control" @bind-Value="_newVendor.Notes" rows="2" placeholder="Optional notes..." />
                         </div>
 
-                        <div class="form-check mb-3">
-                            <InputCheckbox class="form-check-input" id="autoAssign" @bind-Value="_autoAssignToLocation" />
-                            <label class="form-check-label" for="autoAssign">
-                                Also enable this vendor for <strong>@(_location?.Name ?? "this location")</strong>
-                            </label>
-                        </div>
-
                         <div class="d-flex justify-content-end gap-2">
                             <button type="button" class="btn btn-secondary" @onclick="CloseAddVendorModal">Cancel</button>
                             <button type="submit" class="btn btn-success" disabled="@_creatingVendor">
@@ -287,15 +265,11 @@
     [Parameter] public int LocationId { get; set; }
 
     private Location? _location;
-    private List<Vendor> _companyVendors = new();
-    private HashSet<int> _selectedVendorIds = new();
+    private List<Vendor> _locationVendors = new();
 
     private bool _hydrated;
-    private bool _saving;
-    private bool _saveSuccess;
     private bool _showAddVendorModal;
     private bool _creatingVendor;
-    private bool _autoAssignToLocation = true;
 
     private Vendor _newVendor = new();
     private int? _companyId;
@@ -338,38 +312,23 @@
 
         if (_location is not null && _companyId.HasValue)
         {
-            _companyVendors = await VendorService.GetVendorsByCompanyAsync(_companyId.Value);
-            var locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
-            _selectedVendorIds = locationVendors.Select(v => v.Id).ToHashSet();
+            _locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
         }
 
         _hydrated = true;
     }
 
-    private void ToggleVendor(int vendorId)
-    {
-        if (_selectedVendorIds.Contains(vendorId))
-            _selectedVendorIds.Remove(vendorId);
-        else
-            _selectedVendorIds.Add(vendorId);
-
-        _saveSuccess = false;
-    }
+    private void ToggleVendor(int vendorId) { }
 
     private async Task SaveVendors()
     {
-        _saving = true;
-        _saveSuccess = false;
+        await Task.CompletedTask;
+    }
 
-        await VendorService.SetLocationVendorsAsync(LocationId, _selectedVendorIds);
-
-        _saving = false;
-        _saveSuccess = true;
-        StateHasChanged();
-
-        // Auto-hide success message after 3 seconds
-        await Task.Delay(3000);
-        _saveSuccess = false;
+    private async Task RemoveVendor(int vendorId)
+    {
+        await VendorService.RemoveVendorFromLocationAsync(LocationId, vendorId);
+        _locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
         StateHasChanged();
     }
 
@@ -380,7 +339,6 @@
         _searchResults = new();
         _searchActiveIndex = -1;
         _selectedLogoUrl = null;
-        _autoAssignToLocation = true;
         _showAddVendorModal = true;
     }
 
@@ -478,13 +436,10 @@
         _newVendor.LogoUrl = _selectedLogoUrl;
         var created = await VendorService.CreateVendorAsync(_newVendor);
 
-        if (_autoAssignToLocation)
-        {
-            _selectedVendorIds.Add(created.Id);
-            await VendorService.AddVendorToLocationAsync(LocationId, created.Id);
-        }
+        // Always link the new vendor to this location
+        await VendorService.AddVendorToLocationAsync(LocationId, created.Id);
 
-        _companyVendors = await VendorService.GetVendorsByCompanyAsync(_companyId.Value);
+        _locationVendors = await VendorService.GetVendorsByLocationAsync(LocationId);
 
         _creatingVendor = false;
         _showAddVendorModal = false;
