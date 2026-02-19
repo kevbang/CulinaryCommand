@@ -1,20 +1,149 @@
 @page "/users/create"
-@using CulinaryCommand.Data.Entities
-@inject IUserService UserService
-@inject NavigationManager Nav
 @rendermode InteractiveServer
 
-<h3>Create User</h3>
+@using CulinaryCommand.Services.UserContextSpace
+@inject IUserService UserService
+@inject IUserContextService UserCtx
+@inject LocationState LocationState
+@inject NavigationManager Nav
 
-<UserForm Model="model" FormTitle="Create User" OnValidSubmit="Save" />
+<h3>Invite User</h3>
+
+@if (!_hydrated)
+{
+    <p>Loading...</p>
+}
+else if (!_allowed)
+{
+    <div class="alert alert-warning">You do not have permission to invite users.</div>
+}
+else
+{
+    <EditForm Model="_model" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">First Name</label>
+            <InputText class="form-control" @bind-Value="_model.FirstName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Last Name</label>
+            <InputText class="form-control" @bind-Value="_model.LastName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="_model.Email" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+            <InputSelect class="form-select" @bind-Value="_model.Role">
+                <option value="Employee">Employee</option>
+                <option value="Manager">Manager</option>
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Assigned Locations</label>
+            <UserLocationTagPicker CompanyId="_companyId"
+                                   AssignedIds="_model.LocationIds"
+                                   UserId="0"
+                                   OnChanged="OnLocationsChanged" />
+        </div>
+
+        <button class="btn btn-success" type="button" @onclick="Save" disabled="@_saving">
+            @(_saving ? "Inviting..." : "Send Invite")
+        </button>
+        <button class="btn btn-outline-secondary ms-2" type="button" @onclick="Cancel" disabled="_saving">Cancel</button>
+    </EditForm>
+}
 
 @code {
-    private User model = new();
+    private bool _hydrated;
+    private bool _allowed;
+    private bool _saving;
 
-    private async Task Save(User u)
+    private int _companyId;
+    private int _createdByUserId;
+
+    private InviteUserVm _model = new()
     {
-        await UserService.CreateUserAsync(u);
-        await UserService.AssignLocationsAsync(u.Id, u.UserLocations.Select(x => x.LocationId).ToList());
-        Nav.NavigateTo("/users");
+        Role = "Employee",
+        LocationIds = new List<int>()
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ctx = await UserCtx.GetAsync();
+
+        if (ctx.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        if (ctx.User is null)
+        {
+            Nav.NavigateTo("/no-access", true);
+            return;
+        }
+
+        _allowed =
+            string.Equals(ctx.User.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(ctx.User.Role, "Manager", StringComparison.OrdinalIgnoreCase);
+
+        _companyId = ctx.User.CompanyId ?? 0;
+        _createdByUserId = ctx.User.Id;
+
+        // default to current location if you want
+        var current = LocationState.CurrentLocation;
+        if (current != null && !_model.LocationIds.Contains(current.Id))
+            _model.LocationIds.Add(current.Id);
+
+        _hydrated = true;
+    }
+
+    private Task OnLocationsChanged(List<int> ids)
+    {
+        _model.LocationIds = ids ?? new List<int>();
+        return Task.CompletedTask;
+    }
+
+    private async Task Save()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            await UserService.InviteUserAsync(
+                _model.FirstName,
+                _model.LastName,
+                _model.Email,
+                _model.Role,
+                _companyId,
+                _createdByUserId,
+                _model.LocationIds
+            );
+
+            Nav.NavigateTo("/users");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo("/users");
+
+    private class InviteUserVm
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "Employee";
+        public List<int> LocationIds { get; set; } = new();
     }
 }

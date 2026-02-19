@@ -29,6 +29,7 @@ namespace CulinaryCommand.Services
         Task SendInviteEmailAsync(User user);
         Task<User?> GetUserByInviteTokenAsync(string token);
         Task<bool> ActivateUserAsync(string token, string password);
+        Task<User> InviteUserAsync(string firstName, string lastName, string email, string role, int companyId, int createdByUserId, List<int> locationIds);
     }
 
     public class UserService : IUserService
@@ -50,7 +51,7 @@ namespace CulinaryCommand.Services
         {
             // check that the user with that email DOESN'T exist
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-               { throw new Exception("Email already exists.");}
+            { throw new Exception("Email already exists."); }
 
             user.Password = HashPassword(user.Password!);
             user.CreatedAt = DateTime.UtcNow;
@@ -447,7 +448,7 @@ namespace CulinaryCommand.Services
             if (string.IsNullOrWhiteSpace(user.InviteToken))
                 throw new InvalidOperationException("User does not have an invite token.");
 
-            string link = $"https://yourdomain.com/account/setup?token={user.InviteToken}";
+            string link = $"https://culinary-command.com/account/setup?token={user.InviteToken}";
 
             string subject = "Your CulinaryCommand Account Invitation";
             string body = $@"
@@ -474,22 +475,86 @@ namespace CulinaryCommand.Services
         public async Task<bool> ActivateUserAsync(string token, string password)
         {
             var user = await GetUserByInviteTokenAsync(token);
+            if (user == null) return false;
 
-            if (user == null)
-                return false;
+            // Create the user in Cognito (so they can log in)
+            await _cognito.CreateUserWithPasswordAsync(
+                user.Email!,
+                user.Name ?? user.Email!,
+                password
+            );
 
-            user.Password = HashPassword(password);   
-            //user.CreatedAt = DateTime.UtcNow;
+            // Mark active in DB (your existing logic)
+            user.Password = HashPassword(password);
             user.UpdatedAt = DateTime.UtcNow;
             user.IsActive = true;
             user.EmailConfirmed = true;
             user.InviteToken = null;
             user.InviteTokenExpires = null;
-            user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<User> InviteUserAsync(
+                string firstName,
+                string lastName,
+                string email,
+                string role,
+                int companyId,
+                int createdByUserId,
+                List<int> locationIds)
+        {
+            if (string.IsNullOrWhiteSpace(email)) throw new InvalidOperationException("Email is required.");
+            if (locationIds == null || locationIds.Count == 0) throw new InvalidOperationException("At least one location must be selected.");
+
+            email = email.Trim().ToLowerInvariant();
+
+            // create invited user for ONE location (your existing method)
+            var primaryLocId = locationIds[0];
+
+            var user = await CreateInvitedUserForLocationAsync(new CreateUserForLocationRequest
+            {
+                FirstName = firstName?.Trim() ?? "",
+                LastName = lastName?.Trim() ?? "",
+                Email = email,
+                Role = role,
+                LocationId = primaryLocId
+            }, companyId, createdByUserId);
+
+            // now assign any additional locations (since CreateInvitedUserForLocationAsync only attaches one)
+            var extraLocs = locationIds.Skip(1).ToList();
+            if (extraLocs.Count > 0)
+            {
+                // add userlocations for extras
+                foreach (var locId in extraLocs)
+                {
+                    _context.UserLocations.Add(new UserLocation
+                    {
+                        UserId = user.Id,
+                        LocationId = locId
+                    });
+
+                    // if manager, add manager mapping too
+                    if (string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _context.ManagerLocations.Add(new ManagerLocation
+                        {
+                            UserId = user.Id,
+                            LocationId = locId
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            // send invite email
+            await SendInviteEmailAsync(user);
+
+            return user;
+        }
+
 
     }
 }

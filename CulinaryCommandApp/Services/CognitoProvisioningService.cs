@@ -50,7 +50,7 @@ public class CognitoProvisioningService
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("Failed to create Cognito user.", ex);
+            throw new InvalidOperationException($"Failed to create Cognito user. {ex.GetType().Name}: {ex.Message}", ex);
         }
 
         try

@@ -55,4 +55,8 @@ inventory/.copilot_instructions.md
 # ============================
 publish/
 
+.dpkeys/
+**/.dpkeys/
+
+
 appsettings.Development.json
