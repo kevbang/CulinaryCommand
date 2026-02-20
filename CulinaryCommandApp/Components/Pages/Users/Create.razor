@@ -1,6 +1,7 @@
 @page "/users/create"
 @rendermode InteractiveServer
 
+@using CulinaryCommand.Models
 @using CulinaryCommand.Services.UserContextSpace
 @inject IUserService UserService
 @inject IUserContextService UserCtx
@@ -19,6 +20,11 @@ else if (!_allowed)
 }
 else
 {
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
     <EditForm Model="_model" OnValidSubmit="Save">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -54,20 +60,21 @@ else
                                    OnChanged="OnLocationsChanged" />
         </div>
 
-        <button class="btn btn-success" type="button" @onclick="Save" disabled="@_saving">
+        <button class="btn btn-success" type="submit" disabled="@_saving">
             @(_saving ? "Inviting..." : "Send Invite")
         </button>
-        <button class="btn btn-outline-secondary ms-2" type="button" @onclick="Cancel" disabled="_saving">Cancel</button>
+        <button class="btn btn-outline-secondary ms-2" type="button" @onclick="Cancel" disabled="@_saving">Cancel</button>
     </EditForm>
 }
 
 @code {
     private bool _hydrated;
     private bool _allowed;
-    private bool _saving;
+    private bool _saving = false;
 
     private int _companyId;
     private int _createdByUserId;
+    private string? _error;
 
     private InviteUserVm _model = new()
     {
@@ -111,13 +118,26 @@ else
         _model.LocationIds = ids ?? new List<int>();
         return Task.CompletedTask;
     }
-
     private async Task Save()
     {
         if (_saving) return;
         _saving = true;
+        _error = null;
+
         try
         {
+            if (string.IsNullOrWhiteSpace(_model.Email))
+            {
+                _error = "Email is required.";
+                return;
+            }
+
+            if (_model.LocationIds == null || _model.LocationIds.Count == 0)
+            {
+                _error = "Select at least one location.";
+                return;
+            }
+
             await UserService.InviteUserAsync(
                 _model.FirstName,
                 _model.LastName,
@@ -130,20 +150,17 @@ else
 
             Nav.NavigateTo("/users");
         }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
         finally
         {
             _saving = false;
         }
     }
 
+
     private void Cancel() => Nav.NavigateTo("/users");
 
-    private class InviteUserVm
-    {
-        public string FirstName { get; set; } = "";
-        public string LastName { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string Role { get; set; } = "Employee";
-        public List<int> LocationIds { get; set; } = new();
-    }
 }

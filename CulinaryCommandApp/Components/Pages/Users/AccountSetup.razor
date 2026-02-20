@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using CulinaryCommand.Data.Entities
+@using CulinaryCommand.Models
 @using Microsoft.AspNetCore.WebUtilities
 
 @inject NavigationManager Nav
@@ -24,15 +25,21 @@ else
 {
     <EditForm Model="@model" OnValidSubmit="Submit">
         <DataAnnotationsValidator />
+        <ValidationSummary />
 
         <div class="mb-3">
             <label class="form-label">New Password</label>
             <InputText class="form-control" @bind-Value="model.Password" type="password" />
+            <ValidationMessage For="@(() => model.Password)" />
+            <small class="text-muted d-block mt-1">
+                Must meet password requirements (length + character rules).
+            </small>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Confirm Password</label>
             <InputText class="form-control" @bind-Value="model.ConfirmPassword" type="password" />
+            <ValidationMessage For="@(() => model.ConfirmPassword)" />
         </div>
 
         <button class="btn btn-success" disabled="@submitting">
@@ -81,13 +88,6 @@ else
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(model.Password) ||
-                model.Password != model.ConfirmPassword)
-            {
-                invalid = true;
-                return;
-            }
-
             // Activate in your DB (invite-only gate)
             var ok = await UserService.ActivateUserAsync(token, model.Password);
 
@@ -116,9 +116,4 @@ else
         }
     }
 
-    public class PasswordModel
-    {
-        public string Password { get; set; } = "";
-        public string ConfirmPassword { get; set; } = "";
-    }
 }

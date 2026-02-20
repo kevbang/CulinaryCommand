@@ -4,51 +4,180 @@
 @using CulinaryCommand.Data.Entities
 @using CulinaryCommand.Services
 @using CulinaryCommand.Services.UserContextSpace
-
+@inject IJSRuntime JS
 @inject IUserService Users
 @inject IUserContextService UserCtx
 @inject LocationState LocationState
 @inject NavigationManager Nav
 
-<h3 class="mb-3">Users</h3>
+<div class="users-head">
+    <div>
+        <div class="text-muted users-sub">Invite teammates and manage access per location.</div>
+    </div>
 
-@if (priv)
-{
-    <button class="btn btn-success mb-3" @onclick="CreateUser">+ Add User</button>
-}
+    @if (priv)
+    {
+        <button class="btn btn-success users-add" @onclick="CreateUser">
+            <i class="bi bi-plus-lg me-1"></i> Add User
+        </button>
+    }
+</div>
 
 @if (_users == null)
 {
-    <p>Loading...</p>
+    <div class="users-card p-3">
+        <div class="text-muted">Loading...</div>
+    </div>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Locations</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in _users)
-            {
-                <tr>
-                    <td>@u.Name</td>
-                    <td>@u.Email</td>
-                    <td>@u.Role</td>
-                    <td>@FormatLocations(u)</td>
-                    <td>
-                        <button class="btn btn-primary me-2" @onclick="() => Edit(u.Id)">Edit</button>
-                        <button class="btn btn-danger" @onclick="() => Delete(u.Id)">Delete</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="users-card">
+        <div class="table-responsive">
+            <div class="users-card p-2">
+                @if (_users.Count == 0)
+                {
+                    <div class="text-muted py-4 text-center">
+                        No users found for this location.
+                    </div>
+                }
+                else
+                {
+                    <div class="accordion users-acc" id="usersAcc">
+                        @foreach (var u in _users)
+                        {
+                            var inviteUrl = (!u.IsActive && !string.IsNullOrWhiteSpace(u.InviteToken))
+                                ? BuildInviteUrl(u)
+                                : null;
+
+                            var itemId = $"u{u.Id}";
+                            var headingId = $"{itemId}-h";
+                            var collapseId = $"{itemId}-c";
+
+                            <div class="accordion-item users-acc-item" @key="u.Id">
+                                <h2 class="accordion-header" id="@headingId">
+                                    <button class="accordion-button collapsed users-acc-btn"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#@collapseId"
+                                            aria-expanded="false"
+                                            aria-controls="@collapseId">
+                                        <div class="users-row">
+                                            <div class="users-main">
+                                                <div class="users-name">@u.Name</div>
+                                                <div class="users-email users-mono">@u.Email</div>
+                                            </div>
+
+                                            <div class="users-meta">
+                                                <span class="badge @RoleBadgeClass(u.Role)">@u.Role</span>
+
+                                                @if (!u.IsActive && !string.IsNullOrWhiteSpace(u.InviteToken))
+                                                {
+                                                    <span class="users-status">Pending</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="users-status active">Active</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+
+                                <div id="@collapseId"
+                                    class="accordion-collapse collapse"
+                                    aria-labelledby="@headingId"
+                                    data-bs-parent="#usersAcc">
+                                    <div class="accordion-body users-acc-body">
+
+                                        <div class="users-details">
+
+                                            <div class="users-detail">
+                                                <div class="users-label">Invite link</div>
+                                                <div>
+                                                    @if (!string.IsNullOrWhiteSpace(inviteUrl))
+                                                    {
+                                                        <div class="invite-wrap" style="max-width: 520px;">
+                                                            <span class="invite-pill users-mono" title="@inviteUrl">
+                                                                @inviteUrl
+                                                            </span>
+
+                                                            <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm invite-copy"
+                                                                    title="Copy invite link"
+                                                                    @onclick="() => CopyInvite(inviteUrl)">
+                                                                <i class="bi bi-clipboard"></i>
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">—</span>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <div class="users-detail">
+                                                <div class="users-label">Locations</div>
+                                                <div>
+                                                    @{
+                                                        var locNames = GetLocationNames(u);
+                                                        var full = string.Join(", ", locNames);
+                                                    }
+
+                                                    @if (locNames.Count == 0)
+                                                    {
+                                                        <span class="text-muted">—</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="loc-chips" title="@full">
+                                                            @foreach (var n in locNames)
+                                                            {
+                                                                <span class="loc-chip">@n</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <div class="users-actions">
+                                                <button class="btn btn-primary btn-sm" @onclick="() => Edit(u.Id)">
+                                                    Edit
+                                                </button>
+
+                                                <button class="btn btn-outline-danger btn-sm"
+                                                        @onclick="() => Delete(u.Id)"
+                                                        disabled="@(!priv)">
+                                                    Delete
+                                                </button>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_toast))
+                {
+                    <div class="users-toast">
+                        <i class="bi bi-check2-circle me-2"></i> @_toast
+                    </div>
+                }
+            </div>
+
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_toast))
+        {
+            <div class="users-toast">
+                <i class="bi bi-check2-circle me-2"></i> @_toast
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -56,27 +185,34 @@ else
     private List<User>? _users;
     private bool priv = false;
 
+    private string? _toast;
+    private CancellationTokenSource? _toastCts;
+    private Dictionary<int, string> _locNamesById = new();
+
+
     protected override async Task OnInitializedAsync()
     {
         _ctx = await UserCtx.GetAsync();
 
-        // If not authenticated, bounce to Cognito login
         if (_ctx.IsAuthenticated != true)
         {
             Nav.NavigateTo("/login", true);
             return;
         }
 
-        // Invite-only: authenticated but not in DB
         if (_ctx.User is null)
         {
             Nav.NavigateTo("/no-access", true);
             return;
         }
 
-        // Ensure LocationState has locations (same as RecipeList)
         if (LocationState.ManagedLocations.Count == 0 && _ctx.AccessibleLocations.Any())
             await LocationState.SetLocationsAsync(_ctx.AccessibleLocations);
+
+        _locNamesById = LocationState.ManagedLocations
+            .Where(l => l != null)
+            .ToDictionary(l => l.Id, l => l.Name);
+
 
         UpdatePriv();
 
@@ -103,7 +239,6 @@ else
             return;
         }
 
-        // ✅ only users for current location (and optionally filtered by company)
         _users = await Users.GetUsersForLocationAsync(loc.Id, _ctx!.User!.CompanyId);
     }
 
@@ -112,9 +247,14 @@ else
         _ = InvokeAsync(async () =>
         {
             await LoadUsersAsync();
+
+            _locNamesById = LocationState.ManagedLocations
+                .ToDictionary(l => l.Id, l => l.Name);
+
             StateHasChanged();
         });
     }
+
 
     void CreateUser() => Nav.NavigateTo("/users/create");
     void Edit(int id) => Nav.NavigateTo($"/users/edit/{id}");
@@ -128,18 +268,88 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private static string FormatLocations(User u)
+    private List<string> GetLocationNames(User u)
     {
-        var names = u.UserLocations?
-            .Select(x => x.Location?.Name)
-            .Where(n => !string.IsNullOrWhiteSpace(n))
-            .ToList() ?? new List<string>();
+        var ids = u.UserLocations?
+            .Select(x => x.LocationId)
+            .Distinct()
+            .ToList() ?? new();
 
-        return names.Count == 0 ? "-" : string.Join(", ", names);
+        var names = new List<string>();
+
+        foreach (var id in ids)
+        {
+            if (_locNamesById.TryGetValue(id, out var name) && !string.IsNullOrWhiteSpace(name))
+                names.Add(name);
+        }
+
+        return names;
     }
+
 
     public void Dispose()
     {
         LocationState.OnChange -= RefreshUsers;
+        _toastCts?.Cancel();
+        _toastCts?.Dispose();
+    }
+
+    private async Task CopyInvite(string url)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
+        ShowToast("Invite link copied");
+    }
+
+    private void ShowToast(string msg)
+    {
+        _toastCts?.Cancel();
+        _toastCts?.Dispose();
+        _toastCts = new CancellationTokenSource();
+
+        _toast = msg;
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(1600, _toastCts.Token);
+                _toast = null;
+                await InvokeAsync(StateHasChanged);
+            }
+            catch { /* ignored */ }
+        });
+    }
+
+    private string BuildInviteUrl(User u)
+    {
+        if (string.IsNullOrWhiteSpace(u.InviteToken)) return "";
+        var baseUri = Nav.BaseUri.TrimEnd('/');
+        return $"{baseUri}/account/setup?token={Uri.EscapeDataString(u.InviteToken)}";
+    }
+
+    private static string TrimInvite(string url)
+    {
+        // Show a short friendly display, but copy the full link.
+        // Example: /account/setup?token=abcd...wxyz
+        var idx = url.IndexOf("/account/setup", StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0)
+        {
+            var tail = url.Substring(idx);
+            return tail.Length > 42 ? tail.Substring(0, 38) + "…" : tail;
+        }
+        return url.Length > 42 ? url.Substring(0, 38) + "…" : url;
+    }
+
+    private static string RoleBadgeClass(string? role)
+    {
+        role = role?.Trim().ToLowerInvariant();
+        return role switch
+        {
+            "admin" => "bg-success",
+            "manager" => "bg-primary",
+            "employee" => "bg-secondary",
+            _ => "bg-dark"
+        };
     }
 }
