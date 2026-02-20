@@ -1,0 +1,113 @@
+.users-acc { padding: 4px; }
+.users-acc-item{
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(17,24,39,.08);
+    margin: 8px 6px;
+    background: #fff;
+}
+
+.users-acc-btn{
+    padding: 14px 14px;
+    background: #fff;
+}
+.users-acc-btn:not(.collapsed){
+    background: rgba(17,24,39,.01);
+}
+.users-acc-btn:focus{
+    box-shadow: none;
+}
+
+.users-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+    width: 100%;
+}
+
+.users-main{ min-width: 0; }
+.users-name{
+    font-weight: 900;
+    color: #111827;
+    line-height: 1.1;
+}
+.users-email{
+    margin-top: 4px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 420px;
+}
+
+.users-meta{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.users-status{
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(107,114,128,.12);
+    color: #374151;
+}
+.users-status.active{
+    background: rgba(25,135,84,.12);
+    color: #198754;
+}
+
+.users-acc-body{ padding: 12px 14px 14px; }
+
+.users-details{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.users-detail{
+    display:grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    align-items:flex-start;
+}
+
+.users-label{
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .2px;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding-top: 6px;
+}
+
+.users-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(17,24,39,.06);
+}
+
+/* Make chips tighter so they don't turn into "bubbles" */
+.loc-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 6px;
+    align-items:center;
+}
+
+.loc-chip{
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(17,24,39,.04);
+    border: 1px solid rgba(17,24,39,.12);
+    color: #374151;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.6;
+}

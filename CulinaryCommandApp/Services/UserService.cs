@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using CulinaryCommand.Models;
 using CulinaryCommandApp.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace CulinaryCommand.Services
 {
@@ -83,8 +84,8 @@ namespace CulinaryCommand.Services
         {
             return await _context.Users
                 .Where(u => u.CompanyId == companyId)
-                .Include(u => u.UserLocations)
-                    .ThenInclude(ul => ul.Location)
+                .Include(u => u.UserLocations).ThenInclude(ul => ul.Location)
+                .OrderBy(u => u.Name)
                 .ToListAsync();
         }
 
@@ -194,21 +195,26 @@ namespace CulinaryCommand.Services
 
         public async Task<List<User>> GetUsersForLocationAsync(int locationId, int? companyId = null)
         {
-            var query = _context.UserLocations
+            // Get the user IDs that are assigned to this location
+            var userIdsQuery = _context.UserLocations
                 .Where(ul => ul.LocationId == locationId)
-                .Include(ul => ul.User)
-                .Include(ul => ul.Location)
-                .AsQueryable();
+                .Select(ul => ul.UserId);
+
+            // Optional company filter (safe and fast)
+            var usersQuery = _context.Users
+                .Where(u => userIdsQuery.Contains(u.Id));
 
             if (companyId.HasValue)
-            {
-                query = query.Where(ul => ul.Location.CompanyId == companyId.Value);
-            }
+                usersQuery = usersQuery.Where(u => u.CompanyId == companyId.Value);
 
-            return await query
-                .Select(ul => ul.User)
+            // ✅ THIS is the key: include the user's locations (and Location names)
+            return await usersQuery
+                .Include(u => u.UserLocations)
+                    .ThenInclude(ul => ul.Location)
+                .AsNoTracking()
                 .ToListAsync();
         }
+
 
         public async Task<User?> GetUserByEmailAsync(string email)
         {
@@ -262,6 +268,8 @@ namespace CulinaryCommand.Services
             if (req?.Admin == null) throw new Exception("Admin information is required.");
             if (req.Company == null) throw new Exception("Company information is required.");
             if (req.Locations == null || req.Locations.Count == 0) throw new Exception("At least one location is required.");
+
+            ValidateOrThrow(req.Admin);
 
             var email = req.Admin.Email.Trim().ToLowerInvariant();
 
@@ -359,7 +367,14 @@ namespace CulinaryCommand.Services
             });
         }
 
+        private static void ValidateOrThrow(object model)
+        {
+            var ctx = new ValidationContext(model);
+            var results = new List<ValidationResult>();
 
+            if (!Validator.TryValidateObject(model, ctx, results, validateAllProperties: true))
+                throw new ValidationException(string.Join("\n", results.Select(r => r.ErrorMessage)));
+        }
 
         private static string GenerateCompanyCode(string companyName)
         {

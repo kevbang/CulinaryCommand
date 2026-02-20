@@ -156,6 +156,13 @@
                         <div class="cc-span2">
                             <label class="form-label">Admin Password</label>
                             <InputText type="password" class="form-control cc-input" @bind-Value="Signup.Admin.Password" />
+                            <ValidationMessage For="@(() => Signup.Admin.Password)" />
+                        </div>
+
+                        <div class="cc-span2">
+                            <label class="form-label">Confirm Password</label>
+                            <InputText type="password" class="form-control cc-input" @bind-Value="Signup.Admin.ConfirmPassword" />
+                            <ValidationMessage For="@(() => Signup.Admin.ConfirmPassword)" />
                         </div>
                     </div>
                 </div>
@@ -366,6 +373,13 @@
     {
         errorMessage = "";
         successMessage = "";
+        
+        if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName))
+        {
+            errorMessage = "First and last name are required.";
+            return;
+        }
+
         isSubmitting = true;
 
         try
